@@ -93,13 +93,32 @@ go build -o stackpulse
 
 ### 2. Configure AWS
 
+First, authenticate your CLI with your AWS account:
+
 ```bash
 aws configure
 ```
 
+You'll be prompted to enter your AWS Access Key ID, Secret Access Key, Default Region Name, and Default Output Format.
+
 ---
 
-### 3. Deploy Stack
+### 3. Prepare EC2 Target (Optional)
+
+If you are deploying StackPulse to a standalone EC2 instance (e.g., running K3s) instead of an EKS cluster, you must ensure your Kubernetes API server is reachable from your local machine.
+
+1. Go to your AWS EC2 Console and select your instance.
+2. Click the **Security** tab, then click the **Security Group**.
+3. Edit the inbound rules and add the following:
+   - **Type**: Custom TCP
+   - **Port range**: `6443`
+   - **Source**: `0.0.0.0/0` (or your specific IP)
+
+This allows StackPulse to communicate with your instance to install the observability stack.
+
+---
+
+### 4. Deploy Stack
 
 ```bash
 ./stackpulse up \

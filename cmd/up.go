@@ -19,22 +19,41 @@ var upCmd = &cobra.Command{
 			return err
 		}
 
-		// Ensure the target cluster actually exists before trying to deploy to it.
-		exists, err := aws.CheckClusterExists(region, clusterName)
+		// First check if an EC2 instance with the same Name tag exists
+		isEC2, ip, instanceID, err := aws.CheckEC2InstanceExists(region, clusterName)
 		if err != nil {
-			return fmt.Errorf("failed during cluster existence check: %w", err)
-		}
-		if !exists {
-			return fmt.Errorf("cluster '%s' does not exist in region %s. Please provide an existing EKS cluster", clusterName, region)
+			return fmt.Errorf("failed during EC2 instance check: %w", err)
 		}
 
-		fmt.Printf("Deploying StackPulse observability stack to cluster %s in region %s...\n", clusterName, region)
-		if err := aws.UpdateKubeconfig(region, clusterName); err != nil {
-			return fmt.Errorf("failed to connect to cluster: %w", err)
+		if isEC2 {
+			fmt.Printf("\nFound EC2 instance '%s' with IP: %s (ID: %s)\n", clusterName, ip, instanceID)
+
+			fmt.Println("\nDeploying StackPulse observability stack to EC2 instance via SSM...")
+			ssmClient, err := aws.NewSSMClient(region)
+			if err != nil {
+				return fmt.Errorf("failed to create SSM client: %w", err)
+			}
+			k8s.DeployEC2(ssmClient, instanceID, ip)
+		} else {
+			// If not EC2, check if an EKS cluster with this name exists
+			fmt.Printf("\nEC2 instance '%s' not found. Checking for an EKS cluster instead...\n", clusterName)
+			isEKS, err := aws.CheckClusterExists(region, clusterName)
+			if err != nil {
+				return fmt.Errorf("failed during EKS cluster existence check: %w", err)
+			}
+
+			if isEKS {
+				fmt.Printf("\nDeploying StackPulse observability stack to EKS cluster %s in region %s...\n", clusterName, region)
+				if err := aws.UpdateKubeconfig(region, clusterName); err != nil {
+					return fmt.Errorf("failed to connect to EKS cluster: %w", err)
+				}
+				k8s.DeployEKS(clusterName)
+			} else {
+				return fmt.Errorf("neither EC2 instance nor EKS cluster named '%s' exists in region %s", clusterName, region)
+			}
 		}
 
-		k8s.Deploy(clusterName)
-		fmt.Println("Deployment complete!")
+		fmt.Println("\n🚀 Deployment sequence finished!")
 		return nil
 	},
 }
@@ -42,7 +61,7 @@ var upCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(upCmd)
 	upCmd.Flags().StringVarP(&region, "region", "r", "", "AWS region for deployment")
-	upCmd.Flags().StringVarP(&clusterName, "cluster-name", "c", "", "Name for the EKS cluster")
+	upCmd.Flags().StringVarP(&clusterName, "cluster-name", "c", "", "Name for the EKS cluster or EC2 instance")
 	upCmd.MarkFlagRequired("region")
 	upCmd.MarkFlagRequired("cluster-name")
 }
