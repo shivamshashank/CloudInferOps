@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ssm"
 	spaws "github.com/yourusername/stackpulse/internal/aws"
+	"github.com/yourusername/stackpulse/internal/grafana"
 	"github.com/yourusername/stackpulse/internal/ingress"
 	"github.com/yourusername/stackpulse/internal/prometheus"
 )
@@ -91,6 +92,10 @@ func DeployEC2(ssmClient *ssm.SSM, instanceID string, ip string) {
 			Name:     "Prometheus Observability Stack",
 			Commands: prometheus.GetEC2InstallCommands(ip),
 		},
+		{
+			Name:     "Grafana Dashboards",
+			Commands: grafana.GetEC2InstallCommands(ip),
+		},
 	}
 
 	for _, step := range steps {
@@ -123,6 +128,7 @@ func DeployEC2(ssmClient *ssm.SSM, instanceID string, ip string) {
 
 	fmt.Println("\n✅ Observability stack deployed successfully!")
 	fmt.Println("\n🔗 Ingress Access Links:")
+	fmt.Printf("   ▶ Grafana           : http://grafana.%s.nip.io (User: admin / Pass: admin)\n", ip)
 	fmt.Printf("   ▶ Prometheus Server : http://prometheus.%s.nip.io\n", ip)
 	fmt.Printf("   ▶ Pushgateway       : http://pushgateway.%s.nip.io\n", ip)
 	fmt.Printf("   ▶ Alertmanager      : http://alertmanager.%s.nip.io\n", ip)

@@ -31,7 +31,7 @@ var integratePagerDutyCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(integrateCmd)
-	
+
 	integrateCmd.AddCommand(integrateSlackCmd)
 	integrateSlackCmd.Flags().StringVarP(&webhookURL, "webhook-url", "w", "", "Slack Webhook URL")
 	integrateSlackCmd.MarkFlagRequired("webhook-url")

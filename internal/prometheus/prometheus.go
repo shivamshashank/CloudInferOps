@@ -34,15 +34,20 @@ func InstallOnEKS() {
 		"--namespace", "observability",
 		"--create-namespace",
 		"--set", "server.ingress.enabled=true",
+		"--set", "server.ingress.ingressClassName=nginx",
 		"--set", "server.ingress.hosts[0]=prometheus.stackpulse.dev",
+		"--set", "server.ingress.path=/",
+		"--set", "server.ingress.pathType=Prefix",
 		"--set", "alertmanager.ingress.enabled=true",
+		"--set", "alertmanager.ingress.ingressClassName=nginx",
 		"--set", "alertmanager.ingress.hosts[0].host=alertmanager.stackpulse.dev",
 		"--set", "alertmanager.ingress.hosts[0].paths[0].path=/",
 		"--set", "alertmanager.ingress.hosts[0].paths[0].pathType=Prefix",
-		"--set", "pushgateway.ingress.enabled=true",
-		"--set", "pushgateway.ingress.hosts[0].host=pushgateway.stackpulse.dev",
-		"--set", "pushgateway.ingress.hosts[0].paths[0].path=/",
-		"--set", "pushgateway.ingress.hosts[0].paths[0].pathType=Prefix",
+		"--set", "prometheus-pushgateway.ingress.enabled=true",
+		"--set", "prometheus-pushgateway.ingress.ingressClassName=nginx",
+		"--set", "prometheus-pushgateway.ingress.hosts[0]=pushgateway.stackpulse.dev",
+		"--set", "prometheus-pushgateway.ingress.paths[0].path=/",
+		"--set", "prometheus-pushgateway.ingress.paths[0].pathType=Prefix",
 		"--atomic",
 		"--wait")
 	installCmd.Stdout = os.Stdout
@@ -54,12 +59,6 @@ func InstallOnEKS() {
 	}
 
 	fmt.Println("\n✅ Prometheus installed successfully!")
-	fmt.Println("\n🔗 Ingress Access Links:")
-	fmt.Println("   ▶ Prometheus Server (Port 9090): http://prometheus.stackpulse.dev")
-	fmt.Println("   ▶ Pushgateway       (Port 9091): http://pushgateway.stackpulse.dev")
-	fmt.Println("   ▶ Alertmanager      (Port 9093): http://alertmanager.stackpulse.dev")
-	fmt.Println("\n💡 Note: Make sure your DNS or local /etc/hosts file maps these domains to your Ingress controller's IP.")
-	fmt.Println("\n🎉 1st phase done!")
 }
 
 // GetEC2InstallCommands returns the SSM shell commands for installing Prometheus on EC2
@@ -69,12 +68,13 @@ func GetEC2InstallCommands(ip string) []string {
 	pushHost := fmt.Sprintf("pushgateway.%s.nip.io", ip)
 
 	return []string{
+		"helm repo add prometheus-community https://prometheus-community.github.io/helm-charts",
+		"helm repo update",
 		fmt.Sprintf("helm upgrade --install prometheus prometheus-community/prometheus --namespace observability --create-namespace "+
-			"--set server.ingress.enabled=true --set server.ingress.hosts[0]=%s "+
+			"--set server.ingress.enabled=true --set server.ingress.hosts[0]=%s --set server.ingress.path=/ --set server.ingress.pathType=Prefix "+
 			"--set alertmanager.ingress.enabled=true --set alertmanager.ingress.hosts[0].host=%s "+
 			"--set alertmanager.ingress.hosts[0].paths[0].path=/ --set alertmanager.ingress.hosts[0].paths[0].pathType=Prefix "+
-			"--set pushgateway.ingress.enabled=true --set pushgateway.ingress.hosts[0].host=%s "+
-			"--set pushgateway.ingress.hosts[0].paths[0].path=/ --set pushgateway.ingress.hosts[0].paths[0].pathType=Prefix "+
+			"--set prometheus-pushgateway.ingress.enabled=true --set prometheus-pushgateway.ingress.hosts[0]=%s --set prometheus-pushgateway.ingress.paths[0].path=/ --set prometheus-pushgateway.ingress.paths[0].pathType=Prefix "+
 			"--atomic --timeout 5m --wait", promHost, alertHost, pushHost),
 	}
 }
