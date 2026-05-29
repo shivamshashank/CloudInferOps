@@ -755,10 +755,4 @@ This project is licensed under the MIT License.
 
 ### ⭐ If StackPulse helps you, please star the repository.
 
-```bash
-stackpulse doctor
-stackpulse deploy observability
-stackpulse status
-```
-
 </div>
