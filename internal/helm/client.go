@@ -16,7 +16,7 @@ func AddRepo(name, url string, dryRun bool) error {
 	}
 
 	fmt.Printf("%sAdding Helm repository '%s' from %s...\n", utils.PrefixInfo, name, url)
-	_, stderr, err := utils.ExecCommand("", "helm", cmdArgs...)
+	_, stderr, err := utils.ExecCommandStream("", "helm", cmdArgs...)
 	if err != nil {
 		return fmt.Errorf("failed to add helm repo '%s': %w (stderr: %s)", name, err, stderr)
 	}
@@ -34,7 +34,7 @@ func UpdateRepos(dryRun bool) error {
 	}
 
 	fmt.Printf("%sUpdating Helm repositories...\n", utils.PrefixInfo)
-	_, stderr, err := utils.ExecCommand("", "helm", cmdArgs...)
+	_, stderr, err := utils.ExecCommandStream("", "helm", cmdArgs...)
 	if err != nil {
 		return fmt.Errorf("failed to update helm registries: %w (stderr: %s)", err, stderr)
 	}
@@ -56,7 +56,7 @@ func InstallRelease(release, chart, namespace string, flags []string, dryRun boo
 	}
 
 	fmt.Printf("%sDeploying Helm release '%s' (%s) into namespace '%s'...\n", utils.PrefixInfo, release, chart, namespace)
-	_, stderr, err := utils.ExecCommand("", "helm", cmdArgs...)
+	_, stderr, err := utils.ExecCommandStream("", "helm", cmdArgs...)
 	if err != nil {
 		return fmt.Errorf("failed to install helm release '%s': %w (stderr: %s)", release, err, stderr)
 	}

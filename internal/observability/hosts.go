@@ -17,25 +17,35 @@ func FetchIngressIP(ns string, dryRun bool) (string, error) {
 		return "127.0.0.1", nil
 	}
 
-	fmt.Printf("%sWaiting for Ingress LoadBalancer IP to provision...\n", utils.PrefixInfo)
+	fmt.Printf("%sResolving Ingress Controller IP...\n", utils.PrefixInfo)
 
-	ingressName := "stackpulse-prometheus-grafana"
-
+	// Strategy 1: Get IP from the NGINX Ingress Controller Service (most reliable)
+	controllerSvc := "stackpulse-ingress-nginx-controller"
 	for i := 0; i < 6; i++ {
-		// Try fetching IP
-		ip, _, err := utils.ExecCommand("", "kubectl", "get", "ingress", ingressName, "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
+		// Try LoadBalancer IP
+		ip, _, err := utils.ExecCommand("", "kubectl", "get", "svc", controllerSvc, "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
 		if err == nil && ip != "" {
 			return strings.TrimSpace(ip), nil
 		}
-
-		// Try fetching Hostname (common on cloud/AWS EKS)
-		host, _, err := utils.ExecCommand("", "kubectl", "get", "ingress", ingressName, "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].hostname}")
+		// Try LoadBalancer Hostname (AWS EKS / cloud)
+		host, _, err := utils.ExecCommand("", "kubectl", "get", "svc", controllerSvc, "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].hostname}")
 		if err == nil && host != "" {
 			return strings.TrimSpace(host), nil
 		}
-
-		fmt.Printf("%sIP address not assigned yet, retrying in 5 seconds...\n", utils.PrefixInfo)
+		// Try ExternalIP
+		extIP, _, err := utils.ExecCommand("", "kubectl", "get", "svc", controllerSvc, "-n", ns, "-o", "jsonpath={.spec.externalIPs[0]}")
+		if err == nil && extIP != "" {
+			return strings.TrimSpace(extIP), nil
+		}
+		fmt.Printf("%sIngress IP not assigned yet, retrying in 5 seconds...\n", utils.PrefixInfo)
 		time.Sleep(5 * time.Second)
+	}
+
+	// Strategy 2: Get IP from the Ingress resource status
+	ingressName := "stackpulse-prometheus-grafana"
+	ip, _, err := utils.ExecCommand("", "kubectl", "get", "ingress", ingressName, "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
+	if err == nil && ip != "" {
+		return strings.TrimSpace(ip), nil
 	}
 
 	return "", fmt.Errorf("ingress IP provisioning timed out")

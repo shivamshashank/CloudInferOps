@@ -8,13 +8,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/shivamshashank/StackPulse/internal/utils"
 )
 
 // CheckOS validates OS and architecture compatibility
 func CheckOS() CheckResult {
-	supportedOS := map[string]bool{"linux": true, "darwin": true}
+	supportedOS := map[string]bool{"linux": true}
 	supportedArch := map[string]bool{"amd64": true, "arm64": true}
 
 	goos := runtime.GOOS
@@ -26,7 +24,7 @@ func CheckOS() CheckResult {
 		return CheckResult{
 			Name:   "OS Support",
 			Status: StatusError,
-			Message: msg + " (Unsupported OS/Arch. Only Linux/macOS and amd64/arm64 are supported)",
+			Message: msg + " (Unsupported OS/Arch. Only Linux and amd64/arm64 are supported)",
 		}
 	}
 
@@ -94,8 +92,6 @@ func CheckMemory() CheckResult {
 	var err error
 
 	switch runtime.GOOS {
-	case "darwin":
-		totalBytes, err = getDarwinMemory()
 	case "linux":
 		totalBytes, err = getLinuxMemory()
 	default:
@@ -128,17 +124,7 @@ func CheckMemory() CheckResult {
 	}
 }
 
-func getDarwinMemory() (uint64, error) {
-	stdout, _, err := utils.ExecCommand("", "sysctl", "-n", "hw.memsize")
-	if err != nil {
-		return 0, err
-	}
-	memSize, err := strconv.ParseUint(strings.TrimSpace(stdout), 10, 64)
-	if err != nil {
-		return 0, err
-	}
-	return memSize, nil
-}
+
 
 func getLinuxMemory() (uint64, error) {
 	data, err := os.ReadFile("/proc/meminfo")

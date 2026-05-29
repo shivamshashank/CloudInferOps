@@ -7,10 +7,10 @@ import (
 
 func TestCheckOS(t *testing.T) {
 	result := CheckOS()
-	// OS must be either OK or Error depending on platform, but since it is tested on macOS or Linux, it should be StatusOK.
-	if runtime.GOOS == "darwin" || runtime.GOOS == "linux" {
+	// OS must be OK only on Linux. On macOS (darwin) and Windows, it must return StatusError.
+	if runtime.GOOS == "linux" {
 		if result.Status != StatusOK {
-			t.Errorf("expected StatusOK on %s, got %v with message: %s", runtime.GOOS, result.Status, result.Message)
+			t.Errorf("expected StatusOK on linux, got %v with message: %s", result.Status, result.Message)
 		}
 	} else {
 		if result.Status != StatusError {

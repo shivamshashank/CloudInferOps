@@ -38,39 +38,19 @@ func TestSetupOSRestrictions(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
 
-	// Since we are running tests on macOS, the command should fail OS restrictions if run.
-	if runtime.GOOS == "darwin" {
+	// Since we are running tests on non-Linux, the command should fail OS restrictions if run.
+	if runtime.GOOS != "linux" {
 		// Mock config variables so execution doesn't block on loading
 		setupType = "k3s"
 		setupYes = true // bypass prompts
 
 		err := k8sCmd.RunE(k8sCmd, []string{})
 		if err == nil {
-			t.Error("expected setup k8s to fail on macOS due to OS platform restriction, but it succeeded")
+			t.Error("expected setup k8s to fail on non-Linux due to OS platform restriction, but it succeeded")
 		}
 
-		if err.Error() == "" || !stringsContains(err.Error(), "unsupported operating system for k3s") {
-			t.Errorf("expected unsupported operating system error on macOS, got: %v", err)
-		}
-	}
-}
-
-func TestSetupMinikubeOSRestrictionBypass(t *testing.T) {
-	tmpHome := t.TempDir()
-	t.Setenv("HOME", tmpHome)
-
-	if runtime.GOOS == "darwin" {
-		setupType = "minikube"
-		setupYes = true
-
-		err := k8sCmd.RunE(k8sCmd, []string{})
-		if err == nil {
-			t.Error("expected setup k8s --type minikube to fail on missing minikube dependency, but it succeeded")
-		}
-
-		// It should fail on missing minikube binary, NOT the macOS safeguard!
-		if err.Error() == "" || !stringsContains(err.Error(), "minikube dependency missing") {
-			t.Errorf("expected minikube dependency missing error, got: %v", err)
+		if err.Error() == "" || !stringsContains(err.Error(), "setup is only supported on Linux") {
+			t.Errorf("expected setup is only supported on Linux error, got: %v", err)
 		}
 	}
 }

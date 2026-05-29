@@ -1,7 +1,10 @@
 package observability
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/shivamshashank/StackPulse/internal/config"
@@ -40,6 +43,12 @@ func DeployObservability(dryRun bool) error {
 	// 2. Add required Helm chart registries
 	reposAdded := false
 
+	// NGINX Ingress Controller is always required for path-based routing
+	if err := helm.AddRepo("ingress-nginx", "https://kubernetes.github.io/ingress-nginx", dryRun); err != nil {
+		return err
+	}
+	reposAdded = true
+
 	if config.GlobalConfig.Observability.Prometheus {
 		if err := helm.AddRepo("prometheus-community", "https://prometheus-community.github.io/helm-charts", dryRun); err != nil {
 			return err
@@ -69,36 +78,54 @@ func DeployObservability(dryRun bool) error {
 	}
 
 	// 3. Deploy Stack Components
-	
+
+	// A0. NGINX Ingress Controller (required for path-based routing to Grafana/Prometheus/Alertmanager)
+	ingressFlags := []string{
+		"--set", "controller.watchIngressWithoutClass=true",
+	}
+	if err := helm.InstallRelease("stackpulse-ingress-nginx", "ingress-nginx/ingress-nginx", ns, ingressFlags, dryRun); err != nil {
+		return err
+	}
+
+	// Wait for ingress controller pod to become ready before deploying apps that create Ingress resources
+	if !dryRun {
+		fmt.Printf("%sWaiting for NGINX Ingress Controller to become ready...\n", utils.PrefixInfo)
+		for i := 0; i < 30; i++ {
+			_, _, waitErr := utils.ExecCommand("", "kubectl", "wait", "--namespace", ns,
+				"--for=condition=Ready", "pod",
+				"-l", "app.kubernetes.io/component=controller,app.kubernetes.io/instance=stackpulse-ingress-nginx",
+				"--timeout=10s")
+			if waitErr == nil {
+				fmt.Printf("%sNGINX Ingress Controller is ready.\n", utils.PrefixOK)
+				break
+			}
+			if i == 29 {
+				fmt.Printf("%sIngress Controller not ready yet, continuing deployment anyway...\n", utils.PrefixWarn)
+			}
+		}
+	}
+
 	// A. Prometheus & Grafana & Alertmanager Stack
 	if config.GlobalConfig.Observability.Prometheus {
 		// Production-grade defaults: configure native NGINX Ingress with path-based routing under any host IP
 		flags := []string{
-			// Grafana Ingress & sub-path config
-			"--set", "grafana.ingress.enabled=true",
-			"--set", "grafana.ingress.hosts[0]=",
-			"--set", "grafana.ingress.path=/grafana",
-			"--set", "grafana.ingress.ingressClassName=nginx",
+			// StackPulse creates one explicit Ingress below; keep chart-generated Ingresses disabled.
+			"--set", "grafana.ingress.enabled=false",
+			"--set", "prometheus.ingress.enabled=false",
+			"--set", "alertmanager.ingress.enabled=false",
+
+			// Sub-path config for the apps behind /grafana, /prometheus, and /alertmanager.
 			"--set", "grafana.grafana.ini.server.root_url=%(protocol)s://%(domain)s/grafana/",
 			"--set", "grafana.grafana.ini.server.serve_from_sub_path=true",
-			
-			// Prometheus Ingress & sub-path config
-			"--set", "prometheus.ingress.enabled=true",
-			"--set", "prometheus.ingress.hosts[0]=",
-			"--set", "prometheus.ingress.paths[0]=/prometheus",
-			"--set", "prometheus.ingress.ingressClassName=nginx",
 			"--set", "prometheus.prometheusSpec.routePrefix=/prometheus",
 			"--set", "prometheus.prometheusSpec.externalUrl=/prometheus",
-
-			// Alertmanager Ingress & sub-path config
-			"--set", "alertmanager.ingress.enabled=true",
-			"--set", "alertmanager.ingress.hosts[0]=",
-			"--set", "alertmanager.ingress.paths[0]=/alertmanager",
-			"--set", "alertmanager.ingress.ingressClassName=nginx",
 			"--set", "alertmanager.alertmanagerSpec.routePrefix=/alertmanager",
 			"--set", "alertmanager.alertmanagerSpec.externalUrl=/alertmanager",
 		}
 		if err := helm.InstallRelease("stackpulse-prometheus", "prometheus-community/kube-prometheus-stack", ns, flags, dryRun); err != nil {
+			return err
+		}
+		if err := applyObservabilityIngress(ns, dryRun); err != nil {
 			return err
 		}
 	}
@@ -135,14 +162,8 @@ func DeployObservability(dryRun bool) error {
 		if err == nil && ingressIP != "" {
 			instanceIP = ingressIP
 		} else {
-			context, _, _ := utils.ExecCommand("", "kubectl", "config", "current-context")
-			context = strings.TrimSpace(context)
-			if strings.Contains(context, "minikube") {
-				minikubeIP, _, err := utils.ExecCommand("", "minikube", "ip")
-				if err == nil && minikubeIP != "" {
-					instanceIP = strings.TrimSpace(minikubeIP)
-				}
-			}
+			// Fallback: Resolve active interface IP of the host machine (e.g., VM / EC2 IP)
+			instanceIP = utils.GetLocalIP()
 		}
 	}
 
@@ -151,7 +172,7 @@ func DeployObservability(dryRun bool) error {
 	fmt.Printf("%s%sStackPulse Observability Stack deployed successfully!%s\n", utils.PrefixReady, utils.ColorBold, utils.ColorReset)
 	fmt.Println("-----------------------------------------------------------------")
 	fmt.Printf("🌐  Namespace: %s\n", ns)
-	
+
 	if config.GlobalConfig.Observability.Prometheus {
 		fmt.Println("\n📊  Access Telemetry Dashboards via Ingress:")
 		fmt.Printf("    🔗  Grafana Dashboard:     %s\n", utils.ColorBold+fmt.Sprintf("http://%s/grafana", instanceIP)+utils.ColorReset)
@@ -163,4 +184,128 @@ func DeployObservability(dryRun bool) error {
 
 	fmt.Println("-----------------------------------------------------------------")
 	return nil
+}
+
+func applyObservabilityIngress(ns string, dryRun bool) error {
+	grafanaSvc := "stackpulse-prometheus-grafana"
+	prometheusSvc := "stackpulse-prometheus-kube-prom-prometheus"
+	alertmanagerSvc := "stackpulse-prometheus-kube-prom-alertmanager"
+
+	if !dryRun {
+		var err error
+		grafanaSvc, err = findServiceByPort(ns, "grafana", 80, grafanaSvc)
+		if err != nil {
+			return err
+		}
+		prometheusSvc, err = findServiceByPort(ns, "prometheus", 9090, prometheusSvc)
+		if err != nil {
+			return err
+		}
+		alertmanagerSvc, err = findServiceByPort(ns, "alertmanager", 9093, alertmanagerSvc)
+		if err != nil {
+			return err
+		}
+	}
+
+	manifest := fmt.Sprintf(`apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stackpulse-observability
+  namespace: %s
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /grafana
+            pathType: Prefix
+            backend:
+              service:
+                name: %s
+                port:
+                  number: 80
+          - path: /prometheus
+            pathType: Prefix
+            backend:
+              service:
+                name: %s
+                port:
+                  number: 9090
+          - path: /alertmanager
+            pathType: Prefix
+            backend:
+              service:
+                name: %s
+                port:
+                  number: 9093
+`, ns, grafanaSvc, prometheusSvc, alertmanagerSvc)
+
+	if dryRun {
+		fmt.Printf("%s[DRY-RUN] kubectl apply -f stackpulse-observability-ingress.yaml\n", utils.PrefixInfo)
+		return nil
+	}
+
+	fmt.Printf("%sApplying StackPulse observability Ingress routes...\n", utils.PrefixInfo)
+	tmpPath := filepath.Join(os.TempDir(), "stackpulse-observability-ingress.yaml")
+	if err := os.WriteFile(tmpPath, []byte(manifest), 0600); err != nil {
+		return fmt.Errorf("failed to write temporary ingress manifest: %w", err)
+	}
+	defer os.Remove(tmpPath)
+
+	_, stderr, err := utils.ExecCommand("", "kubectl", "apply", "-f", tmpPath)
+	if err != nil {
+		return fmt.Errorf("failed to apply observability ingress routes: %w (stderr: %s)", err, stderr)
+	}
+	fmt.Printf("%sStackPulse observability Ingress routes applied.\n", utils.PrefixOK)
+	return nil
+}
+
+func findServiceByPort(ns, nameHint string, port int, fallback string) (string, error) {
+	output, stderr, err := utils.ExecCommand("", "kubectl", "get", "svc", "-n", ns, "-o", "json")
+	if err != nil {
+		return "", fmt.Errorf("failed to list services in namespace %s: %w (stderr: %s)", ns, err, stderr)
+	}
+
+	var services struct {
+		Items []struct {
+			Metadata struct {
+				Name string `json:"name"`
+			} `json:"metadata"`
+			Spec struct {
+				Ports []struct {
+					Port int `json:"port"`
+				} `json:"ports"`
+			} `json:"spec"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal([]byte(output), &services); err != nil {
+		return "", fmt.Errorf("failed to parse Kubernetes services: %w", err)
+	}
+
+	for _, svc := range services.Items {
+		name := strings.ToLower(svc.Metadata.Name)
+		if !strings.Contains(name, "stackpulse") || !strings.Contains(name, nameHint) {
+			continue
+		}
+		for _, svcPort := range svc.Spec.Ports {
+			if svcPort.Port == port {
+				return svc.Metadata.Name, nil
+			}
+		}
+	}
+
+	for _, svc := range services.Items {
+		name := strings.ToLower(svc.Metadata.Name)
+		if !strings.Contains(name, nameHint) {
+			continue
+		}
+		for _, svcPort := range svc.Spec.Ports {
+			if svcPort.Port == port {
+				return svc.Metadata.Name, nil
+			}
+		}
+	}
+
+	fmt.Printf("%sCould not discover %s service on port %d. Falling back to %s.\n", utils.PrefixWarn, nameHint, port, fallback)
+	return fallback, nil
 }

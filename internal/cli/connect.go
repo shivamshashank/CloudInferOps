@@ -47,27 +47,9 @@ decrypts Grafana admin credentials, and automatically opens your default web bro
 		// 3. Fetch Ingress IP
 		ingressIP, err := observability.FetchIngressIP(ns, false)
 		if err != nil || ingressIP == "" {
-			// Check if we can fallback to context-based default IP
-			fmt.Printf("%sIngress IP is still provisioning or empty. Checking environment context...\n", utils.PrefixInfo)
-			context, _, _ := utils.ExecCommand("", "kubectl", "config", "current-context")
-			context = strings.TrimSpace(context)
-			
-			if strings.Contains(context, "desktop") || strings.Contains(context, "docker") {
-				ingressIP = "127.0.0.1"
-				fmt.Printf("%sDocker Desktop detected. Bypassing loadBalancer IP and using local loopback IP: %s\n", utils.PrefixOK, ingressIP)
-			} else if strings.Contains(context, "minikube") {
-				minikubeIP, _, err := utils.ExecCommand("", "minikube", "ip")
-				if err == nil && minikubeIP != "" {
-					ingressIP = strings.TrimSpace(minikubeIP)
-					fmt.Printf("%sMinikube context detected. Resolved VM Host IP: %s\n", utils.PrefixOK, ingressIP)
-				} else {
-					ingressIP = "127.0.0.1"
-					fmt.Printf("%sMinikube detected but IP lookup failed. Bypassing loadBalancer IP and using loopback IP: %s\n", utils.PrefixWarn, ingressIP)
-				}
-			} else {
-				ingressIP = "127.0.0.1"
-				fmt.Printf("%sCould not fetch real Ingress IP. Falling back to default loopback IP: %s\n", utils.PrefixWarn, ingressIP)
-			}
+			// Fallback: Resolve active interface IP of the host machine (e.g., VM / EC2 IP)
+			fmt.Printf("%sIngress IP is still provisioning or empty. Resolving host interface IP...\n", utils.PrefixInfo)
+			ingressIP = utils.GetLocalIP()
 		}
 
 		// 4. Fetch and decode Grafana admin password
@@ -98,14 +80,11 @@ decrypts Grafana admin credentials, and automatically opens your default web bro
 			fmt.Printf("%sOpening %s in your default web browser...\n", utils.PrefixInfo, grafanaURL)
 			time.Sleep(1 * time.Second)
 			var browserErr error
-			if _, err := exec.LookPath("open"); err == nil {
-				// macOS default browser open command
-				_, _, browserErr = utils.ExecCommand("", "open", grafanaURL)
-			} else if _, err := exec.LookPath("xdg-open"); err == nil {
+			if _, err := exec.LookPath("xdg-open"); err == nil {
 				// Linux default browser open command
 				_, _, browserErr = utils.ExecCommand("", "xdg-open", grafanaURL)
 			} else {
-				fmt.Printf("%sSystem 'open' or 'xdg-open' commands not found. Please open %s manually.\n", utils.PrefixInfo, grafanaURL)
+				fmt.Printf("%sSystem 'xdg-open' command not found. Please open %s manually.\n", utils.PrefixInfo, grafanaURL)
 			}
 			
 			if browserErr == nil {

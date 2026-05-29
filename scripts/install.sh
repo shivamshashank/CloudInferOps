@@ -27,15 +27,17 @@ OS_NAME=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH_NAME=$(uname -m)
 
 case "${OS_NAME}" in
-    darwin)
-        OS="darwin"
-        ;;
     linux)
         OS="linux"
         ;;
+    darwin)
+        echo -e "${ERROR}StackPulse no longer supports macOS (darwin) natively."
+        echo -e "${INFO}To test locally on macOS, please run inside a Linux VM (e.g., using Multipass)."
+        exit 1
+        ;;
     *)
         echo -e "${ERROR}Unsupported operating system: ${OS_NAME}"
-        echo -e "${ERROR}StackPulse supports macOS (darwin) and Linux."
+        echo -e "${ERROR}StackPulse only supports Linux."
         exit 1
         ;;
 esac

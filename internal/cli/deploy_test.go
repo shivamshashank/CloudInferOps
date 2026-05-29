@@ -30,6 +30,10 @@ func TestDeployClusterPreCheckSafeguard(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
 
+	// Enable dry-run to bypass interactive cluster installation prompt during testing.
+	deployDryRun = true
+	defer func() { deployDryRun = false }()
+
 	// Since there is no active K8s cluster in this environment, it should immediately fail with K8s unreachable error.
 	err := observabilityCmd.RunE(observabilityCmd, []string{})
 	if err == nil {
@@ -38,5 +42,32 @@ func TestDeployClusterPreCheckSafeguard(t *testing.T) {
 
 	if err.Error() == "" || !strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
 		t.Errorf("expected cluster unreachable safeguard error, got: %v", err)
+	}
+}
+
+func TestPromptClusterOption(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "kind", input: "1\n", want: "kind"},
+		{name: "k3s", input: "2\n", want: "k3s"},
+		{name: "minikube", input: "3\n", want: "minikube"},
+		{name: "self managed", input: "4\n", want: "no"},
+		{name: "default", input: "\n", want: "no"},
+		{name: "invalid", input: "kind\n", want: "no"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := promptClusterOption(strings.NewReader(tt.input))
+			if err != nil {
+				t.Fatalf("promptClusterOption returned unexpected error: %v", err)
+			}
+			if got != tt.want {
+				t.Errorf("expected choice %q, got %q", tt.want, got)
+			}
+		})
 	}
 }

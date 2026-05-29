@@ -32,40 +32,30 @@ var k8sCmd = &cobra.Command{
 	Short: "Install and configure a local Kubernetes cluster (k3s or minikube)",
 	Long:  `Automatically installs lightweight single-node Kubernetes (k3s on Linux) or bootstraps Minikube (cross-platform on macOS/Linux) and configures cluster permissions.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// 1. Validate installation type
+		// 1. OS platform safeguard: exclusively support Linux
+		if runtime.GOOS != "linux" {
+			return fmt.Errorf("setup is only supported on Linux")
+		}
+
+		// 2. Validate installation type
 		setupType = strings.ToLower(strings.TrimSpace(setupType))
 		if setupType != "k3s" && setupType != "minikube" {
 			return fmt.Errorf("unsupported Kubernetes type '%s' (only 'k3s' and 'minikube' are supported)", setupType)
 		}
 
-		// 2. Initialize configuration (create default if missing)
+		// 3. Initialize configuration (create default if missing)
 		if err := config.InitConfig(true); err != nil {
 			return fmt.Errorf("failed to load configuration: %w", err)
 		}
 
-		// 3. Check Minikube pre-requisites
+		// 4. Check Minikube pre-requisites
 		if setupType == "minikube" {
 			if _, err := exec.LookPath("minikube"); err != nil {
 				fmt.Printf("%s'minikube' binary not found in your $PATH.\n", utils.PrefixError)
-				fmt.Printf("%sPlease install Minikube using your platform package manager:\n", utils.PrefixInfo)
-				if runtime.GOOS == "darwin" {
-					fmt.Printf("      Brew:   brew install minikube\n")
-				} else {
-					fmt.Printf("      Linux:  curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube\n")
-				}
+				fmt.Printf("%sPlease install Minikube using the Linux installer:\n", utils.PrefixInfo)
+				fmt.Printf("      Linux:  curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube\n")
 				return fmt.Errorf("minikube dependency missing")
 			}
-		}
-
-		// 4. Platform OS safeguards for K3s
-		if setupType == "k3s" && runtime.GOOS != "linux" {
-			fmt.Printf("%s'k3s' Kubernetes installation is only supported on Linux.\n", utils.PrefixError)
-			fmt.Printf("%sTo develop on macOS, please run one of these tools to stand up a local cluster:\n", utils.PrefixInfo)
-			fmt.Printf("      - Docker Desktop: Enable Kubernetes in settings\n")
-			fmt.Printf("      - Kind:           'kind create cluster --name stackpulse'\n")
-			fmt.Printf("      - Minikube:       'minikube start'\n\n")
-			fmt.Printf("%sOnce running, run '%s' to verify.\n", utils.PrefixInfo, utils.ColorBold+"stackpulse doctor"+utils.ColorReset)
-			return fmt.Errorf("unsupported operating system for k3s: %s", runtime.GOOS)
 		}
 
 		// 5. Pre-check if K8s is already present & reachable
