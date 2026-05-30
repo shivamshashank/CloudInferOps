@@ -76,4 +76,3 @@ func TestGetConfigPath(t *testing.T) {
 		t.Errorf("expected path %q, got %q", expected, path)
 	}
 }
-

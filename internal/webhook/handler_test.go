@@ -26,11 +26,11 @@ func TestStartServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to query /health: %v", err)
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200 OK, got %d", resp.StatusCode)
 	}
 	body, _ := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
 	if !strings.Contains(string(body), "healthy") {
 		t.Errorf("expected body to contain 'healthy', got %s", body)
 	}
@@ -40,30 +40,30 @@ func TestStartServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to query /incidents: %v", err)
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200 OK, got %d", resp.StatusCode)
 	}
+	_ = resp.Body.Close()
 
 	// 3. Test /incidents invalid method POST
 	resp, err = http.Post(baseURL+"/incidents", "application/json", nil)
 	if err != nil {
 		t.Fatalf("failed to post /incidents: %v", err)
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusMethodNotAllowed {
 		t.Errorf("expected 405 Method Not Allowed, got %d", resp.StatusCode)
 	}
+	_ = resp.Body.Close()
 
 	// 4. Test /webhook/alertmanager invalid method GET
 	resp, err = http.Get(baseURL + "/webhook/alertmanager")
 	if err != nil {
 		t.Fatalf("failed to get /webhook/alertmanager: %v", err)
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusMethodNotAllowed {
 		t.Errorf("expected 405 Method Not Allowed, got %d", resp.StatusCode)
 	}
+	_ = resp.Body.Close()
 
 	// 5. Test /webhook/alertmanager valid POST
 	payloadJSON := `{
@@ -81,18 +81,18 @@ func TestStartServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to post /webhook/alertmanager: %v", err)
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200 OK, got %d", resp.StatusCode)
 	}
+	_ = resp.Body.Close()
 
 	// Verify the incident is now stored
 	resp, err = http.Get(baseURL + "/incidents")
 	if err != nil {
 		t.Fatalf("failed to query /incidents: %v", err)
 	}
-	defer resp.Body.Close()
 	body, _ = io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
 	if !strings.Contains(string(body), "TestServerAlert") {
 		t.Errorf("expected TestServerAlert in incidents, got %s", body)
 	}
@@ -102,8 +102,8 @@ func TestStartServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to post invalid JSON: %v", err)
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("expected 400 Bad Request, got %d", resp.StatusCode)
 	}
+	_ = resp.Body.Close()
 }

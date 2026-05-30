@@ -130,7 +130,7 @@ exit 0
 
 	// Write mock inputs into pipe
 	_, _ = w.Write([]byte("https://hooks.slack.com/services/mock\npd-key-123\n"))
-	w.Close()
+	_ = w.Close()
 
 	// Configure both slack and pagerduty
 	configureSlack = true

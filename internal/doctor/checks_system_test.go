@@ -69,4 +69,3 @@ func TestGetLinuxMemory(t *testing.T) {
 		t.Error("expected error for missing MemTotal, got nil")
 	}
 }
-

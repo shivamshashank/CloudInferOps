@@ -129,7 +129,7 @@ exit 1
 
 	t.Setenv("PATH", mockBinDir+":"+oldPath)
 
-	results, detected = CheckK8sCluster()
+	_, detected = CheckK8sCluster()
 	if detected {
 		t.Error("expected cluster to not be detected when kubectl command fails")
 	}

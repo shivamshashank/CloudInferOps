@@ -93,4 +93,3 @@ func TestExecCommandInteractive(t *testing.T) {
 		t.Errorf("expected empty stderr, got '%s'", stderr)
 	}
 }
-

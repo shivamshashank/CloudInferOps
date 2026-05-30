@@ -105,4 +105,3 @@ esac
 		t.Errorf("PrintStatus failed: %v", err)
 	}
 }
-

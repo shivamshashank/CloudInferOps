@@ -74,11 +74,6 @@ func TestUpdateHostsFile(t *testing.T) {
 
 	mockCpPath := filepath.Join(mockBinDir, "cp")
 	mockCpContent := `#!/bin/sh
-# Real cp under mock path to simulate copying hosts.tmp to mock hosts file
-exec /bin/cp "$1" "$2"
-`
-	// Wait, on Mac, /bin/cp exists, but it's safer to just do a simple copy in shell
-	mockCpContent = `#!/bin/sh
 cat "$1" > "$2"
 exit 0
 `

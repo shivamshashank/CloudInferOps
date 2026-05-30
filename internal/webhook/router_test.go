@@ -182,4 +182,3 @@ func TestDispatchAlerts(t *testing.T) {
 		t.Error("expected PagerDuty resolved request to be captured")
 	}
 }
-
