@@ -1,0 +1,39 @@
+---
+name: 🐛 Bug Report
+about: Create a report to help us improve StackPulse.
+title: "[BUG] "
+labels: ["bug"]
+assignees: ""
+---
+
+## 🐛 Bug Description
+A clear and concise description of what the bug is.
+
+## 🔄 Steps to Reproduce
+Steps to reproduce the behavior:
+1. Run command '...'
+2. See error '...'
+
+## 📋 Expected Behavior
+A clear and concise description of what you expected to happen.
+
+## 🩺 StackPulse Doctor Output
+Please paste the output of running `stackpulse doctor` (or `sudo stackpulse doctor` if running in elevated mode) here:
+```text
+# Paste 'stackpulse doctor' output here
+```
+
+## 💻 Environment Details
+* **StackPulse Version:** (e.g., `stackpulse version` or `v0.1.0`)
+* **OS & CPU Architecture:** (e.g., Ubuntu 22.04 amd64, macOS arm64)
+* **Kubernetes Distribution:** (e.g., k3s, kind, minikube, EKS, GKE, none)
+* **Local config (`~/.stackpulse/config.yaml`):** (If relevant, please remove any secrets/tokens before pasting)
+  ```yaml
+  # Paste config here if applicable
+  ```
+
+## 📸 Screenshots or Logs
+If applicable, add screenshots or CLI logs to help explain the problem.
+
+## 💡 Additional Context
+Add any other context about the problem here (e.g., specific cloud VM setups, container runtime details).

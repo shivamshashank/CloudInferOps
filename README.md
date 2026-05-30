@@ -13,6 +13,7 @@ dashboards, alerts, and incident webhooks.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/shivamshashank/StackPulse/ci.yml?branch=main&label=CI&logo=githubactions&style=flat-square)](https://github.com/shivamshashank/StackPulse/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/actions/workflow/status/shivamshashank/StackPulse/release.yml?branch=main&label=Release&logo=githubactions&style=flat-square)](https://github.com/shivamshashank/StackPulse/actions/workflows/release.yml)
+[![Codecov](https://img.shields.io/codecov/c/github/shivamshashank/StackPulse?logo=codecov&style=flat-square)](https://codecov.io/gh/shivamshashank/StackPulse)
 [![Go Report Card](https://goreportcard.com/badge/github.com/shivamshashank/StackPulse)](https://goreportcard.com/report/github.com/shivamshashank/StackPulse)
 [![GitHub release](https://img.shields.io/github/v/release/shivamshashank/StackPulse?style=flat-square)](https://github.com/shivamshashank/StackPulse/releases)
 [![GitHub stars](https://img.shields.io/github/stars/shivamshashank/StackPulse?style=flat-square)](https://github.com/shivamshashank/StackPulse/stargazers)
@@ -66,9 +67,9 @@ StackPulse follows a simple workflow:
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/shivamshashank/StackPulse/main/scripts/install.sh | bash
-stackpulse doctor
-stackpulse deploy observability
-stackpulse status
+sudo stackpulse doctor
+sudo stackpulse deploy observability
+sudo stackpulse status
 ```
 
 ---
@@ -81,7 +82,6 @@ stackpulse status
 - Detects `kubectl`
 - Detects Kubernetes cluster availability
 - Detects Helm
-- Detects Docker/containerd
 - Checks memory, CPU, ports, storage class, and namespace permissions
 - Warns about existing observability stack conflicts
 
@@ -149,8 +149,13 @@ stackpulse version
 
 ### 2. Check Your System
 
+> [!IMPORTANT]
+> **Sudo Privileges Required** StackPulse requires administrative/root
+> privileges (`sudo`) to manage system observability resources, check system
+> metrics, and set up networking or local clusters.
+
 ```bash
-stackpulse doctor
+sudo stackpulse doctor
 ```
 
 Example output:
@@ -163,11 +168,10 @@ StackPulse Doctor
 [OK] kubectl found
 [WARN] Kubernetes cluster not detected
 [OK] Helm found
-[OK] Docker found
 [OK] Minimum memory: 4GB+
 [OK] Minimum CPU: 2 cores+
 
-[INFO] Run: stackpulse deploy observability
+[INFO] Run: sudo stackpulse deploy observability
 ```
 
 If Kubernetes already exists:
@@ -179,7 +183,7 @@ If Kubernetes already exists:
 [OK] Helm found
 [OK] StorageClass found
 
-[READY] Run: stackpulse deploy observability
+[READY] Run: sudo stackpulse deploy observability
 ```
 
 ---
@@ -189,12 +193,16 @@ If Kubernetes already exists:
 To deploy the observability stack, simply run:
 
 ```bash
-stackpulse deploy observability
+sudo stackpulse deploy observability
 ```
 
 > [!TIP]
-> **No Kubernetes? No problem!**
-> If StackPulse does not detect an existing Kubernetes cluster, it will automatically ask to install and bootstrap a lightweight local Kubernetes cluster (supporting `kind`, `minikube`, or `k3s`) on-the-fly, then automatically deploy the observability stack onto it. If you already have a cluster running, it will deploy directly onto your active context.
+> **No Kubernetes? No problem!** If StackPulse does not detect an existing
+> Kubernetes cluster, it will automatically ask to install and bootstrap a
+> lightweight local Kubernetes cluster (supporting `kind`, `minikube`, or `k3s`)
+> on-the-fly, then automatically deploy the observability stack onto it. If you
+> already have a cluster running, it will deploy directly onto your active
+> context.
 
 StackPulse deploys:
 
@@ -215,7 +223,7 @@ StackPulse deploys:
 ### 5. Check Status
 
 ```bash
-stackpulse status
+sudo stackpulse status
 ```
 
 Example:
@@ -297,42 +305,42 @@ kubectl port-forward svc/stackpulse-grafana 3000:80 -n observability
 
 ```bash
 stackpulse version
-stackpulse init
-stackpulse doctor
-stackpulse status
+sudo stackpulse init
+sudo stackpulse doctor
+sudo stackpulse status
 ```
 
 ### Observability
 
 ```bash
-stackpulse deploy observability
-stackpulse deploy observability --dry-run
-stackpulse dashboards import
-stackpulse logs
-stackpulse logs --component grafana
-stackpulse logs --component prometheus
-stackpulse logs --component loki
+sudo stackpulse deploy observability
+sudo stackpulse deploy observability --dry-run
+sudo stackpulse dashboards import
+sudo stackpulse logs
+sudo stackpulse logs --component grafana
+sudo stackpulse logs --component prometheus
+sudo stackpulse logs --component loki
 ```
 
 ### Alerts
 
 ```bash
-stackpulse alerts configure --slack
-stackpulse alerts configure --pagerduty
-stackpulse alerts test
+sudo stackpulse alerts configure --slack
+sudo stackpulse alerts configure --pagerduty
+sudo stackpulse alerts test
 ```
 
 ### Webhook Handler
 
 ```bash
-stackpulse deploy webhook-handler
+sudo stackpulse deploy webhook-handler
 ```
 
 ### Cleanup
 
 ```bash
-stackpulse uninstall observability
-stackpulse uninstall all
+sudo stackpulse uninstall observability
+sudo stackpulse uninstall all
 ```
 
 ---
@@ -400,19 +408,19 @@ StackPulse includes SRE-focused alert rules:
 ### Configure Slack
 
 ```bash
-stackpulse alerts configure --slack
+sudo stackpulse alerts configure --slack
 ```
 
 ### Configure PagerDuty
 
 ```bash
-stackpulse alerts configure --pagerduty
+sudo stackpulse alerts configure --pagerduty
 ```
 
 ### Send Test Alert
 
 ```bash
-stackpulse alerts test
+sudo stackpulse alerts test
 ```
 
 Expected output:
@@ -450,7 +458,7 @@ GET  /incidents
 Deploy it with:
 
 ```bash
-stackpulse deploy webhook-handler
+sudo stackpulse deploy webhook-handler
 ```
 
 ---
@@ -498,9 +506,9 @@ golangci-lint run
 
 ```bash
 kind create cluster --name stackpulse-test
-stackpulse doctor
-stackpulse deploy observability --dry-run
-stackpulse uninstall observability --dry-run
+sudo stackpulse doctor
+sudo stackpulse deploy observability --dry-run
+sudo stackpulse uninstall observability --dry-run
 kind delete cluster --name stackpulse-test
 ```
 
@@ -591,7 +599,9 @@ sudo mv stackpulse-linux-amd64 /usr/local/bin/stackpulse
 # 4. Verify the installation
 stackpulse version
 ```
-*(For ARM64 processors, replace `stackpulse-linux-amd64` with `stackpulse-linux-arm64`)*
+
+_(For ARM64 processors, replace `stackpulse-linux-amd64` with
+`stackpulse-linux-arm64`)_
 
 ### Go Install
 
@@ -601,13 +611,17 @@ go install github.com/shivamshashank/StackPulse/cmd/stackpulse@latest
 
 ### GitHub Releases
 
-Alternatively, you can manually download precompiled binaries for all supported platforms (Linux & macOS) directly from [GitHub Releases](https://github.com/shivamshashank/StackPulse/releases).
+Alternatively, you can manually download precompiled binaries for all supported
+platforms (Linux & macOS) directly from
+[GitHub Releases](https://github.com/shivamshashank/StackPulse/releases).
 
 ---
 
 ## 👑 Running with Sudo / Root Privileges
 
-To install system prerequisites (such as Kubernetes clusters and core networking configurations) and bind services locally, you can run StackPulse fully under elevated privileges (`sudo` mode):
+To install system prerequisites (such as Kubernetes clusters and core networking
+configurations) and bind services locally, you can run StackPulse fully under
+elevated privileges (`sudo` mode):
 
 ```bash
 sudo stackpulse deploy observability
@@ -615,24 +629,36 @@ sudo stackpulse status
 ```
 
 > [!NOTE]
-> StackPulse is built with **smart environment-aware root fallback**. When run as `sudo`, the CLI automatically detects the original invoking user (`$SUDO_USER`) and correctly references their standard home directory paths (such as `~/.kube/config` and `~/.stackpulse/config.yaml`), preventing configuration directory pollution inside the `/root` path.
+> StackPulse is built with **smart environment-aware root fallback**. When run
+> as `sudo`, the CLI automatically detects the original invoking user
+> (`$SUDO_USER`) and correctly references their standard home directory paths
+> (such as `~/.kube/config` and `~/.stackpulse/config.yaml`), preventing
+> configuration directory pollution inside the `/root` path.
 
 ---
 
 ## 🧪 Local Testing via Multipass (Recommended for macOS Users)
 
-Since native Linux VMs are required for k3s, macOS developers can test StackPulse locally using a lightweight [Multipass](https://multipass.run/) Ubuntu VM. 
+Since native Linux VMs are required for k3s, macOS developers can test
+StackPulse locally using a lightweight [Multipass](https://multipass.run/)
+Ubuntu VM.
 
 Follow this step-by-step pipeline to run globally inside a local VM:
 
 ### 1. Launch a Multipass VM
-Provision an Ubuntu instance meeting minimum system requirements (2 CPUs, 4GB RAM):
+
+Provision an Ubuntu instance meeting minimum system requirements (2 CPUs, 4GB
+RAM):
+
 ```bash
 multipass launch --name stackpulse-vm --cpus 2 --memory 4G --disk 20G
 ```
 
 ### 2. Move Binary Globally inside the VM
-Compile the Linux AMD64 binary locally on your host machine, transfer it to the VM, and move it to `/usr/local/bin` to make it globally available:
+
+Compile the Linux AMD64 binary locally on your host machine, transfer it to the
+VM, and move it to `/usr/local/bin` to make it globally available:
+
 ```bash
 # Compile for Linux (from host machine)
 env GOOS=linux GOARCH=amd64 go build -o stackpulse cmd/stackpulse/main.go
@@ -649,23 +675,34 @@ sudo mv /home/ubuntu/stackpulse /usr/local/bin/stackpulse
 ```
 
 ### 3. Verify Global Run
-Now you can execute the `stackpulse` CLI globally from anywhere in the VM shell (just like standard system commands):
+
+Now you can execute the `stackpulse` CLI globally from anywhere in the VM shell
+(just like standard system commands):
+
 ```bash
-stackpulse doctor
+sudo stackpulse doctor
 ```
 
 ### 4. Deploy Observability Stack
+
 ```bash
-stackpulse deploy observability
+sudo stackpulse deploy observability
 ```
-When prompt options appear, select `2` to automatically install `k3s` lightweight Kubernetes or `1` for `kind`.
+
+When prompt options appear, select `2` to automatically install `k3s`
+lightweight Kubernetes or `1` for `kind`.
 
 ### 5. Access Dashboards from Host Browser
+
 Once fully deployed, retrieve the service status:
+
 ```bash
-stackpulse status
+sudo stackpulse status
 ```
-StackPulse will automatically resolve the active VM interface IP. Simply open the generated links (e.g. `http://<VM_IP>/grafana`) directly in your host machine's web browser!
+
+StackPulse will automatically resolve the active VM interface IP. Simply open
+the generated links (e.g. `http://<VM_IP>/grafana`) directly in your host
+machine's web browser!
 
 ---
 
@@ -674,13 +711,13 @@ StackPulse will automatically resolve the active VM interface IP. Simply open th
 Remove observability stack:
 
 ```bash
-stackpulse uninstall observability
+sudo stackpulse uninstall observability
 ```
 
 Remove everything managed by StackPulse:
 
 ```bash
-stackpulse uninstall all
+sudo stackpulse uninstall all
 ```
 
 ---

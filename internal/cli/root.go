@@ -15,6 +15,20 @@ var RootCmd = &cobra.Command{
 validates Kubernetes readiness, installs lightweight Kubernetes when needed, and
 deploys a production-style observability stack with metrics, logs, traces,
 dashboards, alerts, and incident webhooks.`,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Skip root check for 'version' and 'help' commands/flags, or if executing RootCmd itself
+		if cmd.Parent() == nil || cmd.Name() == "version" || cmd.Name() == "help" {
+			return nil
+		}
+		if flag := cmd.Flags().Lookup("help"); flag != nil && flag.Changed {
+			return nil
+		}
+
+		if os.Geteuid() != 0 {
+			return fmt.Errorf("StackPulse requires root privileges. Please run with sudo")
+		}
+		return nil
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

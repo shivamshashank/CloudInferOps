@@ -1,0 +1,19 @@
+# Codecov configuration file.
+# For more information, see https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  status:
+    # Project coverage configuration
+    project:
+      default:
+        # Set to 'auto' to ensure PRs do not decrease the overall coverage.
+        # (Since current overall coverage is 15%, setting this to 80% will block all PRs)
+        target: auto
+        # Allow coverage to drop by this amount without failing.
+        threshold: 5%
+
+    # Patch coverage configuration (for new code in a PR)
+    patch:
+      default:
+        # PR should not merge if new code coverage is less than 80%
+        target: 80%
