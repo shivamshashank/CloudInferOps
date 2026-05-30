@@ -115,12 +115,27 @@ func DeployObservability(dryRun bool) error {
 			"--set", "alertmanager.ingress.enabled=false",
 
 			// Sub-path config for the apps behind /grafana, /prometheus, and /alertmanager.
-			"--set", "grafana.grafana.ini.server.root_url=%(protocol)s://%(domain)s/grafana/",
-			"--set", "grafana.grafana.ini.server.serve_from_sub_path=true",
+			"--set-string", "grafana.grafana\\.ini.server.root_url=%(protocol)s://%(domain)s/grafana/",
+			"--set", "grafana.grafana\\.ini.server.serve_from_sub_path=true",
+
+			// Force a stable Grafana datasource. The bundled dashboards query uid "prometheus".
+			"--set", "grafana.sidecar.datasources.enabled=true",
+			"--set", "grafana.sidecar.datasources.defaultDatasourceEnabled=true",
+			"--set", "grafana.sidecar.datasources.isDefaultDatasource=true",
+			"--set", "grafana.sidecar.datasources.name=Prometheus",
+			"--set", "grafana.sidecar.datasources.uid=prometheus",
+			"--set", "grafana.sidecar.datasources.url=http://stackpulse-prometheus-kube-prometheus.observability:9090/prometheus",
+			"--set", "grafana.sidecar.datasources.alertmanager.enabled=true",
+			"--set", "grafana.sidecar.datasources.alertmanager.name=Alertmanager",
+			"--set", "grafana.sidecar.datasources.alertmanager.uid=alertmanager",
+			"--set", "grafana.sidecar.datasources.alertmanager.url=http://stackpulse-prometheus-kube-alertmanager.observability:9093/alertmanager",
+
+			// The stock dashboards filter by cluster="default"; ensure single-node installs emit that label.
+			"--set", "prometheus.prometheusSpec.externalLabels.cluster=default",
 			"--set", "prometheus.prometheusSpec.routePrefix=/prometheus",
-			"--set", "prometheus.prometheusSpec.externalUrl=/prometheus",
+			"--set", "prometheus.prometheusSpec.externalUrl=http://localhost/prometheus",
 			"--set", "alertmanager.alertmanagerSpec.routePrefix=/alertmanager",
-			"--set", "alertmanager.alertmanagerSpec.externalUrl=/alertmanager",
+			"--set", "alertmanager.alertmanagerSpec.externalUrl=http://localhost/alertmanager",
 		}
 		if err := helm.InstallRelease("stackpulse-prometheus", "prometheus-community/kube-prometheus-stack", ns, flags, dryRun); err != nil {
 			return err
@@ -132,7 +147,12 @@ func DeployObservability(dryRun bool) error {
 
 	// B. Loki Log Collector Stack
 	if config.GlobalConfig.Observability.Loki {
-		if err := helm.InstallRelease("stackpulse-loki", "grafana/loki-stack", ns, nil, dryRun); err != nil {
+		flags := []string{
+			// The loki-stack chart uses loki.isDefault to control the datasource ConfigMap's isDefault field.
+			// Must be false so it doesn't conflict with the Prometheus datasource marked as default.
+			"--set", "loki.isDefault=false",
+		}
+		if err := helm.InstallRelease("stackpulse-loki", "grafana/loki-stack", ns, flags, dryRun); err != nil {
 			return err
 		}
 	}
@@ -175,9 +195,9 @@ func DeployObservability(dryRun bool) error {
 
 	if config.GlobalConfig.Observability.Prometheus {
 		fmt.Println("\n📊  Access Telemetry Dashboards via Ingress:")
-		fmt.Printf("    🔗  Grafana Dashboard:     %s\n", utils.ColorBold+fmt.Sprintf("http://%s/grafana", instanceIP)+utils.ColorReset)
-		fmt.Printf("    🔗  Prometheus Server:     %s\n", utils.ColorBold+fmt.Sprintf("http://%s/prometheus", instanceIP)+utils.ColorReset)
-		fmt.Printf("    🔗  Alertmanager Panel:    %s\n", utils.ColorBold+fmt.Sprintf("http://%s/alertmanager", instanceIP)+utils.ColorReset)
+		fmt.Printf("    🔗  Grafana Dashboard:     %s\n", utils.ColorBold+fmt.Sprintf("http://%s/grafana/", instanceIP)+utils.ColorReset)
+		fmt.Printf("    🔗  Prometheus Server:     %s\n", utils.ColorBold+fmt.Sprintf("http://%s/prometheus/", instanceIP)+utils.ColorReset)
+		fmt.Printf("    🔗  Alertmanager Panel:    %s\n", utils.ColorBold+fmt.Sprintf("http://%s/alertmanager/", instanceIP)+utils.ColorReset)
 		fmt.Println("\n    👤  Default credentials:   Username: admin")
 		fmt.Printf("                               Password command: %s\n", utils.ColorCyan+fmt.Sprintf("kubectl get secret --namespace %s stackpulse-prometheus-grafana -o jsonpath=\"{.data.admin-password}\" | base64 --decode ; echo", ns)+utils.ColorReset)
 	}
@@ -188,8 +208,8 @@ func DeployObservability(dryRun bool) error {
 
 func applyObservabilityIngress(ns string, dryRun bool) error {
 	grafanaSvc := "stackpulse-prometheus-grafana"
-	prometheusSvc := "stackpulse-prometheus-kube-prom-prometheus"
-	alertmanagerSvc := "stackpulse-prometheus-kube-prom-alertmanager"
+	prometheusSvc := "stackpulse-prometheus-kube-prometheus"
+	alertmanagerSvc := "stackpulse-prometheus-kube-alertmanager"
 
 	if !dryRun {
 		var err error
@@ -212,27 +232,31 @@ kind: Ingress
 metadata:
   name: stackpulse-observability
   namespace: %s
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   ingressClassName: nginx
   rules:
     - http:
         paths:
-          - path: /grafana
-            pathType: Prefix
+          - path: /grafana(/|$)(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: %s
                 port:
                   number: 80
-          - path: /prometheus
-            pathType: Prefix
+          - path: /prometheus(/|$)(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: %s
                 port:
                   number: 9090
-          - path: /alertmanager
-            pathType: Prefix
+          - path: /alertmanager(/|$)(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: %s
@@ -250,7 +274,7 @@ spec:
 	if err := os.WriteFile(tmpPath, []byte(manifest), 0600); err != nil {
 		return fmt.Errorf("failed to write temporary ingress manifest: %w", err)
 	}
-	defer os.Remove(tmpPath)
+	defer func() { _ = os.Remove(tmpPath) }()
 
 	_, stderr, err := utils.ExecCommand("", "kubectl", "apply", "-f", tmpPath)
 	if err != nil {

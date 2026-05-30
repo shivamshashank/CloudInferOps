@@ -94,7 +94,7 @@ spec:
 
 	// Execute kubectl apply pipeline
 	fmt.Printf("%sApplying Custom Webhook manifests into Kubernetes namespace '%s'...\n", utils.PrefixInfo, ns)
-	
+
 	// Create pipe command
 	_, stderr, err := utils.ExecCommand("", "sh", "-c", fmt.Sprintf("echo '%s' | kubectl apply -f -", manifests))
 	if err != nil {

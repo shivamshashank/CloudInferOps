@@ -133,7 +133,7 @@ func preferredKubeconfig() string {
 		return kubeconfig
 	}
 
-	home, err := os.UserHomeDir()
+	home, err := utils.GetRealHomeDir()
 	if err != nil {
 		return ""
 	}

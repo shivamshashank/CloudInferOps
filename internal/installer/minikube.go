@@ -69,7 +69,7 @@ func InstallMinikube() error {
 	}
 
 	if !success {
-		return fmt.Errorf("Minikube nodes failed to become ready in time. Please check your minikube status")
+		return fmt.Errorf("minikube nodes failed to become ready in time. Please check your minikube status")
 	}
 
 	fmt.Printf("%sAll Kubernetes nodes are in ready state.\n", utils.PrefixOK)

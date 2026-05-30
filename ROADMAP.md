@@ -18,7 +18,6 @@ The MVP should focus on this flow:
 ```bash
 curl -sSL https://raw.githubusercontent.com/shivamshashank/stackpulse/main/install.sh | bash
 stackpulse doctor
-stackpulse setup k8s --type k3s
 stackpulse deploy observability
 stackpulse status
 ```
@@ -126,7 +125,6 @@ stackpulse/
 stackpulse version
 stackpulse init
 stackpulse doctor
-stackpulse setup k8s --type k3s
 stackpulse deploy observability
 stackpulse deploy webhook-handler
 stackpulse status
@@ -299,7 +297,7 @@ StackPulse Doctor
 [OK] Docker found
 [OK] Minimum memory: 4GB+
 [OK] Minimum CPU: 2 cores+
-[INFO] Run: stackpulse setup k8s --type k3s
+[INFO] Run: stackpulse deploy observability
 ```
 
 ## If Kubernetes Exists
@@ -317,53 +315,29 @@ StackPulse Doctor
 
 ```text
 [WARN] Kubernetes cluster not found
-[INFO] You can install k3s using:
-stackpulse setup k8s --type k3s
+[INFO] Run: stackpulse deploy observability (which can automatically set up a local cluster for you)
 ```
 
 ---
 
-# Phase 4: Kubernetes Setup
+# Phase 4: Integrated Kubernetes Auto-Bootstrap
 
 ## Goal
 
-If Kubernetes does not exist, user can install k3s.
+If Kubernetes is not found during deployment, the CLI should prompt to install a local cluster (`k3s`, `minikube`, or `kind`) automatically.
 
-## Command
+## Integration Flow
 
-```bash
-stackpulse setup k8s --type k3s
-```
-
-## Behaviour
-
-The command should:
-
-1. Check if Kubernetes already exists
-2. If not, install k3s
-3. Configure kubeconfig
-4. Wait for node readiness
-5. Verify cluster access
-
-## Safety
-
-Before installing k3s:
-
-```text
-Kubernetes was not detected.
-StackPulse can install k3s on this machine.
-Continue? [y/N]
-```
-
-## Example Output
-
-```text
-Installing k3s...
-Configuring kubeconfig...
-Waiting for node to become ready...
-Kubernetes is ready.
-Run: stackpulse deploy observability
-```
+During `stackpulse deploy observability`:
+1. Check if Kubernetes cluster is reachable.
+2. If unreachable, prompt choice:
+   - kind (Docker-based)
+   - k3s (Linux-only lightweight)
+   - minikube (Cross-platform)
+   - Cancel / exit
+3. Automatically download and run the appropriate cluster installer.
+4. Verify cluster is reachable and active.
+5. Proceed seamlessly with Helm installation.
 
 ---
 
@@ -908,7 +882,6 @@ Add badges for:
 ```bash
 curl -sSL https://raw.githubusercontent.com/shivamshashank/stackpulse/main/scripts/install.sh | bash
 stackpulse doctor
-stackpulse setup k8s --type k3s
 stackpulse deploy observability
 stackpulse status
 ```

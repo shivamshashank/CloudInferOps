@@ -89,8 +89,8 @@ func UpdateHostsFile(ip, host string) error {
 		return err
 	}
 	tempPath := filepath.Join(configDir, "hosts.tmp")
-	if err := os.WriteFile(tempPath, []byte(newContent), 0644); err != nil {
-		return fmt.Errorf("failed to write temp hosts file: %w", err)
+	if writeErr := os.WriteFile(tempPath, []byte(newContent), 0644); writeErr != nil {
+		return fmt.Errorf("failed to write temp hosts file: %w", writeErr)
 	}
 
 	// 5. Use sudo cp to copy back to /etc/hosts
@@ -105,7 +105,7 @@ func UpdateHostsFile(ip, host string) error {
 	}
 
 	// Clean up temporary file
-	os.Remove(tempPath)
+	_ = os.Remove(tempPath)
 
 	if err != nil {
 		return fmt.Errorf("failed to copy back to /etc/hosts: %w (stderr: %s)", err, stderr)

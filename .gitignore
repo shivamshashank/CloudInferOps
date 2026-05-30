@@ -1,6 +1,2 @@
-# Local SRE virtual machine testing binaries and utilities
-stackpulse-linux
-stackpulse-linux-amd64
-stackpulse-linux-arm64
 stackpulse
-test_multipass.sh
+coverage.out

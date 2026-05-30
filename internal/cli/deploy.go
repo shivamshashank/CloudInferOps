@@ -36,7 +36,7 @@ var observabilityCmd = &cobra.Command{
 		_, hasK8s := doctor.CheckK8sCluster()
 		if !hasK8s {
 			if deployDryRun {
-				return fmt.Errorf("Kubernetes cluster unreachable (dry-run bypassed setup)")
+				return fmt.Errorf("kubernetes cluster unreachable (dry-run bypassed setup)")
 			}
 
 			// Prompt the user to install a local cluster or exit so they can bring their own.
@@ -47,12 +47,11 @@ var observabilityCmd = &cobra.Command{
 
 			if choice == "no" {
 				fmt.Printf("%sDeployment cancelled. Install or start Kubernetes (k3s, minikube, kind, Docker Desktop, or another cluster), then rerun deploy.\n", utils.PrefixWarn)
-				fmt.Printf("%sYou can also run:\n", utils.PrefixInfo)
-				fmt.Printf("    %s\n", utils.ColorBold+"stackpulse setup k8s"+utils.ColorReset)
-				return fmt.Errorf("Kubernetes cluster unreachable")
+				return fmt.Errorf("kubernetes cluster unreachable")
 			}
 
-			if choice == "kind" {
+			switch choice {
+			case "kind":
 				if _, err := exec.LookPath("docker"); err != nil {
 					fmt.Printf("%sDocker is required for kind but was not found. Installing Docker now...\n", utils.PrefixInfo)
 					if dockerErr := installer.InstallDocker(); dockerErr != nil {
@@ -69,7 +68,7 @@ var observabilityCmd = &cobra.Command{
 				if err := installer.InstallKind(); err != nil {
 					return fmt.Errorf("kind installation failed: %w", err)
 				}
-			} else if choice == "minikube" {
+			case "minikube":
 				if _, err := exec.LookPath("docker"); err != nil {
 					fmt.Printf("%sDocker is required for minikube but was not found. Installing Docker now...\n", utils.PrefixInfo)
 					if dockerErr := installer.InstallDocker(); dockerErr != nil {
@@ -84,11 +83,11 @@ var observabilityCmd = &cobra.Command{
 				}
 				fmt.Printf("%sStarting Minikube cluster installation...\n", utils.PrefixInfo)
 				if err := installer.InstallMinikube(); err != nil {
-					return fmt.Errorf("Minikube installation failed: %w", err)
+					return fmt.Errorf("minikube installation failed: %w", err)
 				}
-			} else if choice == "k3s" {
+			case "k3s":
 				if runtime.GOOS != "linux" {
-					return fmt.Errorf("K3s installation is only supported on Linux")
+					return fmt.Errorf("k3s installation is only supported on Linux")
 				}
 				fmt.Printf("%sStarting K3s cluster installation...\n", utils.PrefixInfo)
 				if err := config.InitConfig(true); err != nil {
@@ -101,10 +100,23 @@ var observabilityCmd = &cobra.Command{
 			}
 
 			if _, hasK8s = doctor.CheckK8sCluster(); !hasK8s {
-				return fmt.Errorf("Kubernetes cluster unreachable after setup")
+				return fmt.Errorf("kubernetes cluster unreachable after setup")
 			}
 
 			fmt.Printf("%sKubernetes cluster setup completed successfully.\n\n", utils.PrefixOK)
+		}
+
+		// 1.5 Pre-flight check: Verify Helm is installed and install if missing
+		if _, err := exec.LookPath("helm"); err != nil {
+			if deployDryRun {
+				fmt.Printf("%s[DRY-RUN] Would install Helm\n", utils.PrefixInfo)
+			} else {
+				fmt.Printf("%sHelm is required but was not found. Installing Helm now...\n", utils.PrefixInfo)
+				if _, stderr, installErr := utils.ExecCommandInteractive("", "bash", "-c", "curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash"); installErr != nil {
+					return fmt.Errorf("failed to install Helm: %w (stderr: %s)", installErr, stderr)
+				}
+				fmt.Printf("%sHelm installed successfully.\n", utils.PrefixOK)
+			}
 		}
 
 		// 2. Load configuration (fallback on defaults if not initialized)
@@ -133,9 +145,8 @@ var webhookHandlerCmd = &cobra.Command{
 		_, hasK8s := doctor.CheckK8sCluster()
 		if !hasK8s {
 			fmt.Printf("%sKubernetes cluster not detected.\n", utils.PrefixError)
-			fmt.Printf("%sPlease ensure a local cluster is running (Docker Desktop, Kind, or Minikube), or run:\n", utils.PrefixInfo)
-			fmt.Printf("    %s\n", utils.ColorBold+"stackpulse setup k8s"+utils.ColorReset)
-			return fmt.Errorf("Kubernetes cluster unreachable")
+			fmt.Printf("%sPlease ensure a local cluster is running (Docker Desktop, Kind, or Minikube) and rerun this command.\n", utils.PrefixInfo)
+			return fmt.Errorf("kubernetes cluster unreachable")
 		}
 
 		// 2. Load configuration (fallback on defaults if not initialized)

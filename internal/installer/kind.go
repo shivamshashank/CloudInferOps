@@ -13,9 +13,10 @@ import (
 // DownloadKindBinary downloads the kind binary from the official release and installs it to /usr/local/bin/kind.
 func DownloadKindBinary() error {
 	arch := runtime.GOARCH
-	if arch == "amd64" {
+	switch arch {
+	case "amd64":
 		arch = "amd64"
-	} else if arch == "arm64" {
+	case "arm64":
 		arch = "arm64"
 	}
 

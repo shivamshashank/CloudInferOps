@@ -45,31 +45,31 @@ func InstallK3s(targetKubeconfig string) error {
 	fmt.Printf("%sConfiguring Kubeconfig path at: %s...\n", utils.PrefixInfo, targetKubeconfig)
 	var configContent string
 	if os.Getuid() == 0 {
-		data, err := os.ReadFile("/etc/rancher/k3s/k3s.yaml")
-		if err != nil {
-			return fmt.Errorf("failed to read /etc/rancher/k3s/k3s.yaml directly: %w", err)
+		data, readErr := os.ReadFile("/etc/rancher/k3s/k3s.yaml")
+		if readErr != nil {
+			return fmt.Errorf("failed to read /etc/rancher/k3s/k3s.yaml directly: %w", readErr)
 		}
 		configContent = string(data)
 	} else {
-		stdout, stderr, err := utils.ExecCommandInteractive("", "sudo", "cat", "/etc/rancher/k3s/k3s.yaml")
-		if err != nil {
-			return fmt.Errorf("failed to read /etc/rancher/k3s/k3s.yaml: %w (stderr: %s)", err, stderr)
+		stdout, catStderr, catErr := utils.ExecCommandInteractive("", "sudo", "cat", "/etc/rancher/k3s/k3s.yaml")
+		if catErr != nil {
+			return fmt.Errorf("failed to read /etc/rancher/k3s/k3s.yaml: %w (stderr: %s)", catErr, catStderr)
 		}
 		configContent = stdout
 	}
 
 	// Ensure destination directory exists
 	destDir := filepath.Dir(targetKubeconfig)
-	if err := os.MkdirAll(destDir, 0755); err != nil {
-		return fmt.Errorf("failed to create kubeconfig directory %s: %w", destDir, err)
+	if mkErr := os.MkdirAll(destDir, 0755); mkErr != nil {
+		return fmt.Errorf("failed to create kubeconfig directory %s: %w", destDir, mkErr)
 	}
 
 	// Write file (automatically owned by current executing user)
-	if err := os.WriteFile(targetKubeconfig, []byte(configContent), 0600); err != nil {
-		return fmt.Errorf("failed to write kubeconfig file to %s: %w", targetKubeconfig, err)
+	if writeErr := os.WriteFile(targetKubeconfig, []byte(configContent), 0600); writeErr != nil {
+		return fmt.Errorf("failed to write kubeconfig file to %s: %w", targetKubeconfig, writeErr)
 	}
-	if err := os.Setenv("KUBECONFIG", targetKubeconfig); err != nil {
-		return fmt.Errorf("failed to set KUBECONFIG to %s: %w", targetKubeconfig, err)
+	if setenvErr := os.Setenv("KUBECONFIG", targetKubeconfig); setenvErr != nil {
+		return fmt.Errorf("failed to set KUBECONFIG to %s: %w", targetKubeconfig, setenvErr)
 	}
 	fmt.Printf("%sKubeconfig written successfully.\n", utils.PrefixOK)
 
@@ -82,18 +82,20 @@ func InstallK3s(targetKubeconfig string) error {
 	success := false
 	for i := 0; i < 24; i++ {
 		// Run kubectl wait for node readiness
-		_, stderr, err = utils.ExecCommandEnv("", kubeEnv, "kubectl", "wait", "--for=condition=Ready", "node", "--all", "--timeout=10s")
-		if err == nil {
+		var waitStderr string
+		var waitErr error
+		_, waitStderr, waitErr = utils.ExecCommandEnv("", kubeEnv, "kubectl", "wait", "--for=condition=Ready", "node", "--all", "--timeout=10s")
+		if waitErr == nil {
 			success = true
 			break
 		}
 		// If kubectl failed or nodes aren't ready, sleep and try again
-		fmt.Printf("%sNodes are initializing, retrying in 5 seconds... (%s)\n", utils.PrefixInfo, stderr)
+		fmt.Printf("%sNodes are initializing, retrying in 5 seconds... (%s)\n", utils.PrefixInfo, waitStderr)
 		time.Sleep(5 * time.Second)
 	}
 
 	if !success {
-		return fmt.Errorf("Kubernetes nodes failed to become ready in time. Please check system logs")
+		return fmt.Errorf("kubernetes nodes failed to become ready in time. Please check system logs")
 	}
 
 	fmt.Printf("%sAll Kubernetes nodes are in ready state.\n", utils.PrefixOK)

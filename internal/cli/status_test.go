@@ -21,7 +21,7 @@ func TestStatusClusterPreCheckSafeguard(t *testing.T) {
 		t.Error("expected status command to fail due to missing K8s cluster connectivity, but it succeeded")
 	}
 
-	if err.Error() == "" || !strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
+	if err.Error() == "" || !strings.Contains(err.Error(), "kubernetes cluster unreachable") {
 		t.Errorf("expected cluster unreachable safeguard error, got: %v", err)
 	}
 }

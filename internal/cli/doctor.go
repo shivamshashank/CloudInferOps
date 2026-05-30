@@ -21,14 +21,14 @@ var doctorCmd = &cobra.Command{
 			// Configuration doesn't exist, we will warn the user but still proceed with defaults
 			fmt.Printf("%sConfiguration file not found. Running doctor with default settings...\n", utils.PrefixInfo)
 			fmt.Printf("%sRun 'stackpulse init' to create a custom configuration file.\n\n", utils.PrefixInfo)
-			
+
 			// Setup default Kubeconfig path env
 			defaultKubeconfig := config.ExpandPath("~/.kube/config")
-			os.Setenv("KUBECONFIG", defaultKubeconfig)
+			_ = os.Setenv("KUBECONFIG", defaultKubeconfig)
 		} else {
 			// Config found, load Kubeconfig into env for kubectl execution
 			if config.GlobalConfig.Kubernetes.Kubeconfig != "" {
-				os.Setenv("KUBECONFIG", config.GlobalConfig.Kubernetes.Kubeconfig)
+				_ = os.Setenv("KUBECONFIG", config.GlobalConfig.Kubernetes.Kubeconfig)
 			}
 		}
 

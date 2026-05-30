@@ -27,9 +27,8 @@ decrypts Grafana admin credentials, and automatically opens your default web bro
 		_, hasK8s := doctor.CheckK8sCluster()
 		if !hasK8s {
 			fmt.Printf("%sKubernetes cluster not detected.\n", utils.PrefixError)
-			fmt.Printf("%sPlease ensure a local cluster is running (Docker Desktop, Kind, or Minikube), or run:\n", utils.PrefixInfo)
-			fmt.Printf("    %s\n", utils.ColorBold+"stackpulse setup k8s"+utils.ColorReset)
-			return fmt.Errorf("Kubernetes cluster unreachable")
+			fmt.Printf("%sPlease ensure a local cluster is running (Docker Desktop, Kind, or Minikube) and rerun this command.\n", utils.PrefixInfo)
+			return fmt.Errorf("kubernetes cluster unreachable")
 		}
 
 		// 2. Load configuration (fallback on defaults if not initialized)
@@ -86,7 +85,7 @@ decrypts Grafana admin credentials, and automatically opens your default web bro
 			} else {
 				fmt.Printf("%sSystem 'xdg-open' command not found. Please open %s manually.\n", utils.PrefixInfo, grafanaURL)
 			}
-			
+
 			if browserErr == nil {
 				fmt.Printf("%sSuccessfully opened browser!\n", utils.PrefixOK)
 			} else {

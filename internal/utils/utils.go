@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/user"
 	"strings"
 )
 
@@ -118,4 +119,18 @@ func ExecCommandStream(dir string, name string, arg ...string) (string, string, 
 	stderr := strings.TrimSpace(stderrBuf.String())
 
 	return stdout, stderr, err
+}
+
+// GetRealHomeDir returns the home directory of the actual user,
+// even when the command is run under sudo/root on Linux.
+func GetRealHomeDir() (string, error) {
+	if os.Getuid() == 0 {
+		if sudoUser := os.Getenv("SUDO_USER"); sudoUser != "" {
+			u, err := user.Lookup(sudoUser)
+			if err == nil {
+				return u.HomeDir, nil
+			}
+		}
+	}
+	return os.UserHomeDir()
 }

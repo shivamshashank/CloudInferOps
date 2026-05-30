@@ -44,9 +44,10 @@ func PrintStatus() error {
 			podState := fields[2]
 
 			statusStr := "🔴  Failed (" + podState + ")"
-			if podState == "Running" {
+			switch podState {
+			case "Running":
 				statusStr = "🟢  Running"
-			} else if podState == "Pending" || podState == "ContainerCreating" || podState == "PodInitializing" {
+			case "Pending", "ContainerCreating", "PodInitializing":
 				statusStr = "🟡  Initializing"
 			}
 
@@ -111,9 +112,9 @@ func PrintStatus() error {
 		}
 
 		fmt.Println("📊  Access Telemetry Dashboards via Ingress:")
-		fmt.Printf("    🔗  Grafana Dashboard:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/grafana", instanceIP)+utils.ColorReset)
-		fmt.Printf("    🔗  Prometheus Server:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/prometheus", instanceIP)+utils.ColorReset)
-		fmt.Printf("    🔗  Alertmanager Panel:  %s\n", utils.ColorBold+fmt.Sprintf("http://%s/alertmanager", instanceIP)+utils.ColorReset)
+		fmt.Printf("    🔗  Grafana Dashboard:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/grafana/", instanceIP)+utils.ColorReset)
+		fmt.Printf("    🔗  Prometheus Server:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/prometheus/", instanceIP)+utils.ColorReset)
+		fmt.Printf("    🔗  Alertmanager Panel:  %s\n", utils.ColorBold+fmt.Sprintf("http://%s/alertmanager/", instanceIP)+utils.ColorReset)
 		fmt.Printf("    🔑  Username:            admin\n")
 		fmt.Printf("    🔑  Password:            %s\n", utils.ColorGreen+plainPassword+utils.ColorReset)
 		fmt.Println()
