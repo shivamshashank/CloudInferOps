@@ -88,7 +88,10 @@ else
         echo -e "${INFO}Compiling local binary via 'go build'..."
         # If in repository context, build locally
         if [ -f "cmd/stackpulse/main.go" ]; then
-            go build -o "${TEMP_BIN}" cmd/stackpulse/main.go
+            COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+            BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date +%Y-%m-%dT%H:%M:%SZ)
+            PKG="github.com/shivamshashank/StackPulse/internal/cli"
+            go build -ldflags="-s -w -X ${PKG}.Version=${VERSION} -X ${PKG}.Commit=${COMMIT} -X ${PKG}.BuildDate=${BUILD_DATE}" -o "${TEMP_BIN}" cmd/stackpulse/main.go
             echo -e "${SUCCESS}Compiled local StackPulse binary successfully."
         else
             echo -e "${ERROR}Cannot install: No release asset exists yet, and not in StackPulse repository source folder."
