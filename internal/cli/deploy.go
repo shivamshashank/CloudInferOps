@@ -122,7 +122,7 @@ var observabilityCmd = &cobra.Command{
 		// 2. Load configuration (fallback on defaults if not initialized)
 		if err := config.InitConfig(false); err != nil {
 			fmt.Printf("%sConfiguration file not found. Deploying with default settings...\n", utils.PrefixInfo)
-			fmt.Printf("%sRun '%s' to configure custom namespaces and metrics.\n\n", utils.PrefixInfo, utils.ColorBold+"stackpulse init"+utils.ColorReset)
+			fmt.Printf("%sRun '%s' to configure custom namespaces and metrics.\n\n", utils.PrefixInfo, utils.ColorBold+"sudo stackpulse init"+utils.ColorReset)
 			config.GlobalConfig = config.DefaultConfig()
 		}
 

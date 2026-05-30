@@ -1,0 +1,17 @@
+# Codecov configuration file.
+# For more information, see https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  status:
+    # Project coverage configuration
+    project:
+      default:
+        # Target overall project coverage percentage.
+        target: 80%
+        # Allow coverage to drop by this amount without failing.
+        threshold: 5%
+
+    # Patch coverage configuration (for new code in a PR)
+    patch:
+      default:
+        target: 90%

@@ -51,10 +51,10 @@ func (r *DoctorReport) Print() {
 	if r.HasErrors {
 		fmt.Printf("%sSome critical prerequisites failed. Please resolve them before proceeding.\n", utils.PrefixError)
 	} else if r.HasK8s {
-		fmt.Printf("%sRun: stackpulse deploy observability\n", utils.PrefixReady)
+		fmt.Printf("%sRun: sudo stackpulse deploy observability\n", utils.PrefixReady)
 	} else {
 		fmt.Printf("%sKubernetes cluster not detected.\n", utils.PrefixWarn)
-		fmt.Printf("%sRun: stackpulse deploy observability (which can automatically set up a local cluster for you) or configure an existing cluster.\n", utils.PrefixInfo)
+		fmt.Printf("%sRun: sudo stackpulse deploy observability (which can automatically set up a local cluster for you) or configure an existing cluster.\n", utils.PrefixInfo)
 	}
 }
 
@@ -69,7 +69,6 @@ func RunDoctor() *DoctorReport {
 	// Tool checks
 	report.Results = append(report.Results, CheckTool("kubectl", false))
 	report.Results = append(report.Results, CheckTool("helm", false))
-	report.Results = append(report.Results, CheckTool("docker", false))
 
 	// Hardware checks
 	report.Results = append(report.Results, CheckMemory())
