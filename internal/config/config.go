@@ -6,15 +6,16 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/shivamshashank/StackPulse/internal/utils"
 	"github.com/spf13/viper"
 )
 
 // Config represents the schema of StackPulse configuration.
 type Config struct {
-	Namespace     string        `mapstructure:"namespace"`
-	Kubernetes    K8sConfig     `mapstructure:"kubernetes"`
-	Observability ObsConfig     `mapstructure:"observability"`
-	Alerts        AlertsConfig  `mapstructure:"alerts"`
+	Namespace     string       `mapstructure:"namespace"`
+	Kubernetes    K8sConfig    `mapstructure:"kubernetes"`
+	Observability ObsConfig    `mapstructure:"observability"`
+	Alerts        AlertsConfig `mapstructure:"alerts"`
 }
 
 type K8sConfig struct {
@@ -86,7 +87,7 @@ func DefaultConfig() Config {
 
 // GetConfigDir returns the absolute path to StackPulse configuration directory (~/.stackpulse)
 func GetConfigDir() (string, error) {
-	home, err := os.UserHomeDir()
+	home, err := utils.GetRealHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("unable to determine home directory: %w", err)
 	}
@@ -105,7 +106,7 @@ func GetConfigPath() (string, error) {
 // ExpandPath replaces leading "~" with user's home directory.
 func ExpandPath(path string) string {
 	if strings.HasPrefix(path, "~") {
-		home, err := os.UserHomeDir()
+		home, err := utils.GetRealHomeDir()
 		if err == nil {
 			return filepath.Clean(filepath.Join(home, path[1:]))
 		}
@@ -119,7 +120,7 @@ func InitConfig(createIfMissing bool) error {
 	if err != nil {
 		return err
 	}
-	
+
 	configPath := filepath.Join(dir, "config.yaml")
 
 	// Ensure the config directory exists

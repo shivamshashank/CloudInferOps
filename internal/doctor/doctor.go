@@ -15,9 +15,9 @@ const (
 )
 
 type CheckResult struct {
-	Name        string
-	Status      CheckStatus
-	Message     string
+	Name    string
+	Status  CheckStatus
+	Message string
 }
 
 // DoctorReport contains all check results and overall status
@@ -54,7 +54,7 @@ func (r *DoctorReport) Print() {
 		fmt.Printf("%sRun: stackpulse deploy observability\n", utils.PrefixReady)
 	} else {
 		fmt.Printf("%sKubernetes cluster not detected.\n", utils.PrefixWarn)
-		fmt.Printf("%sRun: stackpulse setup k8s --type k3s (Linux only) or configure an existing cluster.\n", utils.PrefixInfo)
+		fmt.Printf("%sRun: stackpulse deploy observability (which can automatically set up a local cluster for you) or configure an existing cluster.\n", utils.PrefixInfo)
 	}
 }
 

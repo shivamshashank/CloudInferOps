@@ -22,15 +22,15 @@ func CheckOS() CheckResult {
 
 	if !supportedOS[goos] || !supportedArch[goarch] {
 		return CheckResult{
-			Name:   "OS Support",
-			Status: StatusError,
+			Name:    "OS Support",
+			Status:  StatusError,
 			Message: msg + " (Unsupported OS/Arch. Only Linux and amd64/arm64 are supported)",
 		}
 	}
 
 	return CheckResult{
-		Name:   "OS Support",
-		Status: StatusOK,
+		Name:    "OS Support",
+		Status:  StatusOK,
 		Message: msg,
 	}
 }
@@ -42,26 +42,26 @@ func CheckInternet() CheckResult {
 	conn, err := d.Dial("tcp", "1.1.1.1:53")
 	if err != nil {
 		return CheckResult{
-			Name:   "Internet Connection",
-			Status: StatusError,
+			Name:    "Internet Connection",
+			Status:  StatusError,
 			Message: "Internet connection (No internet access - failed to connect to 1.1.1.1:53)",
 		}
 	}
-	conn.Close()
+	_ = conn.Close()
 
 	// 2. DNS resolution test
 	_, err = net.LookupHost("github.com")
 	if err != nil {
 		return CheckResult{
-			Name:   "Internet Connection",
-			Status: StatusError,
+			Name:    "Internet Connection",
+			Status:  StatusError,
 			Message: "Internet connection (DNS resolution failed - github.com unreachable)",
 		}
 	}
 
 	return CheckResult{
-		Name:   "Internet Connection",
-		Status: StatusOK,
+		Name:    "Internet Connection",
+		Status:  StatusOK,
 		Message: "Internet connection",
 	}
 }
@@ -73,15 +73,15 @@ func CheckCPU() CheckResult {
 
 	if cores < 2 {
 		return CheckResult{
-			Name:   "CPU Cores",
-			Status: StatusWarn,
+			Name:    "CPU Cores",
+			Status:  StatusWarn,
 			Message: msg + " - CPU might be insufficient for full observability stack",
 		}
 	}
 
 	return CheckResult{
-		Name:   "CPU Cores",
-		Status: StatusOK,
+		Name:    "CPU Cores",
+		Status:  StatusOK,
 		Message: msg,
 	}
 }
@@ -100,8 +100,8 @@ func CheckMemory() CheckResult {
 
 	if err != nil {
 		return CheckResult{
-			Name:   "System Memory",
-			Status: StatusWarn,
+			Name:    "System Memory",
+			Status:  StatusWarn,
 			Message: fmt.Sprintf("Minimum memory: Unknown (%v) - 4GB+ recommended", err),
 		}
 	}
@@ -111,20 +111,18 @@ func CheckMemory() CheckResult {
 
 	if totalGB < 4.0 {
 		return CheckResult{
-			Name:   "System Memory",
-			Status: StatusWarn,
+			Name:    "System Memory",
+			Status:  StatusWarn,
 			Message: msg + " - Observability components might suffer from OOM kills",
 		}
 	}
 
 	return CheckResult{
-		Name:   "System Memory",
-		Status: StatusOK,
+		Name:    "System Memory",
+		Status:  StatusOK,
 		Message: msg,
 	}
 }
-
-
 
 func getLinuxMemory() (uint64, error) {
 	data, err := os.ReadFile("/proc/meminfo")

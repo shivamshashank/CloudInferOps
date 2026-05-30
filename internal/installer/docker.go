@@ -45,5 +45,5 @@ func InstallDocker() error {
 		time.Sleep(2 * time.Second)
 	}
 
-	return fmt.Errorf("Docker installed but daemon failed to start in time")
+	return fmt.Errorf("docker installed but daemon failed to start in time")
 }

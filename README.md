@@ -13,7 +13,6 @@ dashboards, alerts, and incident webhooks.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/shivamshashank/StackPulse/ci.yml?branch=main&label=CI&logo=githubactions&style=flat-square)](https://github.com/shivamshashank/StackPulse/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/actions/workflow/status/shivamshashank/StackPulse/release.yml?branch=main&label=Release&logo=githubactions&style=flat-square)](https://github.com/shivamshashank/StackPulse/actions/workflows/release.yml)
-[![Docker](https://img.shields.io/github/actions/workflow/status/shivamshashank/StackPulse/docker.yml?branch=main&label=Docker&logo=docker&style=flat-square)](https://github.com/shivamshashank/StackPulse/actions/workflows/docker.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/shivamshashank/StackPulse)](https://goreportcard.com/report/github.com/shivamshashank/StackPulse)
 [![GitHub release](https://img.shields.io/github/v/release/shivamshashank/StackPulse?style=flat-square)](https://github.com/shivamshashank/StackPulse/releases)
 [![GitHub stars](https://img.shields.io/github/stars/shivamshashank/StackPulse?style=flat-square)](https://github.com/shivamshashank/StackPulse/stargazers)
@@ -68,7 +67,6 @@ StackPulse follows a simple workflow:
 ```bash
 curl -sSL https://raw.githubusercontent.com/shivamshashank/StackPulse/main/scripts/install.sh | bash
 stackpulse doctor
-stackpulse setup k8s --type k3s
 stackpulse deploy observability
 stackpulse status
 ```
@@ -169,7 +167,7 @@ StackPulse Doctor
 [OK] Minimum memory: 4GB+
 [OK] Minimum CPU: 2 cores+
 
-[INFO] Run: stackpulse setup k8s --type k3s
+[INFO] Run: stackpulse deploy observability
 ```
 
 If Kubernetes already exists:
@@ -186,24 +184,17 @@ If Kubernetes already exists:
 
 ---
 
-### 3. Install Kubernetes if Needed
+### 3. Deploy Observability Stack & Auto-bootstrap Kubernetes
 
-If Kubernetes is not available:
-
-```bash
-stackpulse setup k8s --type k3s
-```
-
-This installs k3s, configures kubeconfig, and waits for the node to become
-ready.
-
----
-
-### 4. Deploy Observability Stack
+To deploy the observability stack, simply run:
 
 ```bash
 stackpulse deploy observability
 ```
+
+> [!TIP]
+> **No Kubernetes? No problem!**
+> If StackPulse does not detect an existing Kubernetes cluster, it will automatically ask to install and bootstrap a lightweight local Kubernetes cluster (supporting `kind`, `minikube`, or `k3s`) on-the-fly, then automatically deploy the observability stack onto it. If you already have a cluster running, it will deploy directly onto your active context.
 
 StackPulse deploys:
 
@@ -309,12 +300,6 @@ stackpulse version
 stackpulse init
 stackpulse doctor
 stackpulse status
-```
-
-### Kubernetes
-
-```bash
-stackpulse setup k8s --type k3s
 ```
 
 ### Observability
@@ -589,19 +574,98 @@ ghcr.io/shivamshashank/stackpulse-webhook-handler:latest
 curl -sSL https://raw.githubusercontent.com/shivamshashank/StackPulse/main/scripts/install.sh | bash
 ```
 
+### Linux Manual Installation (via Curl)
+
+You can download and install the latest compiled binary manually for Linux:
+
+```bash
+# 1. Download the latest binary for your architecture (e.g., AMD64 / x86_64)
+curl -LO https://github.com/shivamshashank/StackPulse/releases/latest/download/stackpulse-linux-amd64
+
+# 2. Make the binary executable
+chmod +x stackpulse-linux-amd64
+
+# 3. Move it to your local system's bin directory to make it globally available
+sudo mv stackpulse-linux-amd64 /usr/local/bin/stackpulse
+
+# 4. Verify the installation
+stackpulse version
+```
+*(For ARM64 processors, replace `stackpulse-linux-amd64` with `stackpulse-linux-arm64`)*
+
 ### Go Install
 
 ```bash
 go install github.com/shivamshashank/StackPulse/cmd/stackpulse@latest
 ```
 
-### Download Binary
+### GitHub Releases
 
-Download the latest binary from:
+Alternatively, you can manually download precompiled binaries for all supported platforms (Linux & macOS) directly from [GitHub Releases](https://github.com/shivamshashank/StackPulse/releases).
 
-```text
-https://github.com/shivamshashank/StackPulse/releases
+---
+
+## 👑 Running with Sudo / Root Privileges
+
+To install system prerequisites (such as Kubernetes clusters and core networking configurations) and bind services locally, you can run StackPulse fully under elevated privileges (`sudo` mode):
+
+```bash
+sudo stackpulse deploy observability
+sudo stackpulse status
 ```
+
+> [!NOTE]
+> StackPulse is built with **smart environment-aware root fallback**. When run as `sudo`, the CLI automatically detects the original invoking user (`$SUDO_USER`) and correctly references their standard home directory paths (such as `~/.kube/config` and `~/.stackpulse/config.yaml`), preventing configuration directory pollution inside the `/root` path.
+
+---
+
+## 🧪 Local Testing via Multipass (Recommended for macOS Users)
+
+Since native Linux VMs are required for k3s, macOS developers can test StackPulse locally using a lightweight [Multipass](https://multipass.run/) Ubuntu VM. 
+
+Follow this step-by-step pipeline to run globally inside a local VM:
+
+### 1. Launch a Multipass VM
+Provision an Ubuntu instance meeting minimum system requirements (2 CPUs, 4GB RAM):
+```bash
+multipass launch --name stackpulse-vm --cpus 2 --memory 4G --disk 20G
+```
+
+### 2. Move Binary Globally inside the VM
+Compile the Linux AMD64 binary locally on your host machine, transfer it to the VM, and move it to `/usr/local/bin` to make it globally available:
+```bash
+# Compile for Linux (from host machine)
+env GOOS=linux GOARCH=amd64 go build -o stackpulse cmd/stackpulse/main.go
+
+# Transfer to Multipass VM
+multipass transfer stackpulse stackpulse-vm:/home/ubuntu/stackpulse
+
+# Shell into the VM
+multipass shell stackpulse-vm
+
+# Inside the VM shell: Make it executable and move to global bin path
+chmod +x /home/ubuntu/stackpulse
+sudo mv /home/ubuntu/stackpulse /usr/local/bin/stackpulse
+```
+
+### 3. Verify Global Run
+Now you can execute the `stackpulse` CLI globally from anywhere in the VM shell (just like standard system commands):
+```bash
+stackpulse doctor
+```
+
+### 4. Deploy Observability Stack
+```bash
+stackpulse deploy observability
+```
+When prompt options appear, select `2` to automatically install `k3s` lightweight Kubernetes or `1` for `kind`.
+
+### 5. Access Dashboards from Host Browser
+Once fully deployed, retrieve the service status:
+```bash
+stackpulse status
+```
+StackPulse will automatically resolve the active VM interface IP. Simply open the generated links (e.g. `http://<VM_IP>/grafana`) directly in your host machine's web browser!
 
 ---
 

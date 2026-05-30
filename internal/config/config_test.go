@@ -62,7 +62,7 @@ func TestInitConfig(t *testing.T) {
 
 	// Verify the config directory and file were generated
 	expectedPath := filepath.Join(tmpHome, ".stackpulse", "config.yaml")
-	if _, err := os.Stat(expectedPath); os.IsNotExist(err) {
+	if _, statErr := os.Stat(expectedPath); os.IsNotExist(statErr) {
 		t.Fatalf("expected config file to be written at '%s'", expectedPath)
 	}
 

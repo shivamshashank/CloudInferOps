@@ -34,7 +34,7 @@ var configureCmd = &cobra.Command{
 		// 1. Verify Kubernetes cluster connectivity first
 		_, hasK8s := doctor.CheckK8sCluster()
 		if !hasK8s {
-			return fmt.Errorf("Kubernetes cluster not detected. Cannot configure alert secrets without an active cluster context")
+			return fmt.Errorf("kubernetes cluster not detected. Cannot configure alert secrets without an active cluster context")
 		}
 
 		// 2. Load configuration (initialize if missing)
@@ -61,7 +61,7 @@ var configureCmd = &cobra.Command{
 			}
 			url = strings.TrimSpace(url)
 			if url == "" {
-				return fmt.Errorf("Slack Webhook URL cannot be empty")
+				return fmt.Errorf("slack webhook URL cannot be empty")
 			}
 
 			fmt.Printf("%sProvisioning Slack Webhook Secret in cluster...\n", utils.PrefixInfo)
@@ -111,7 +111,7 @@ var testCmd = &cobra.Command{
 	Short: "Send a mock SRE test alert to verify notification integrations",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Sending mock SRE test alert...")
-		
+
 		// In a fully deployed environment, Alertmanager routes this payload to our webhook-handler.
 		// For CLI verification, we simulate successful mock delivery.
 		fmt.Printf("%sMock Alert: HighCPUUsage triggered on node-01.\n", utils.PrefixInfo)

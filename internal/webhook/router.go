@@ -96,9 +96,9 @@ func DispatchSlackAlert(inc Incident) {
 	message := map[string]interface{}{
 		"attachments": []map[string]interface{}{
 			{
-				"color":      color,
-				"title":      fmt.Sprintf("%s %s on %s", emoji, inc.AlertName, inc.Instance),
-				"fallback":   fmt.Sprintf("%s Alert: %s - %s", emoji, inc.AlertName, inc.Summary),
+				"color":    color,
+				"title":    fmt.Sprintf("%s %s on %s", emoji, inc.AlertName, inc.Instance),
+				"fallback": fmt.Sprintf("%s Alert: %s - %s", emoji, inc.AlertName, inc.Summary),
 				"fields": []map[string]interface{}{
 					{
 						"title": "Severity",
@@ -128,7 +128,7 @@ func DispatchSlackAlert(inc Incident) {
 
 	resp, err := http.Post(slackWebhook, "application/json", bytes.NewBuffer(bodyBytes))
 	if err == nil {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 }
 
@@ -149,13 +149,13 @@ func DispatchPagerDutyAlert(inc Incident) {
 		"event_action": action,
 		"dedup_key":    inc.ID,
 		"payload": map[string]interface{}{
-			"summary":       fmt.Sprintf("%s on %s: %s", inc.AlertName, inc.Instance, inc.Summary),
-			"source":        inc.Instance,
-			"severity":      mapPDSeverity(inc.Severity),
-			"timestamp":     inc.Timestamp.Format(time.RFC3339),
-			"component":     "Kubernetes",
-			"group":         "Observability",
-			"class":         "Infrastructure",
+			"summary":   fmt.Sprintf("%s on %s: %s", inc.AlertName, inc.Instance, inc.Summary),
+			"source":    inc.Instance,
+			"severity":  mapPDSeverity(inc.Severity),
+			"timestamp": inc.Timestamp.Format(time.RFC3339),
+			"component": "Kubernetes",
+			"group":     "Observability",
+			"class":     "Infrastructure",
 			"custom_details": map[string]string{
 				"description": inc.Description,
 			},
@@ -169,7 +169,7 @@ func DispatchPagerDutyAlert(inc Incident) {
 
 	resp, err := http.Post("https://events.pagerduty.com/v2/enqueue", "application/json", bytes.NewBuffer(bodyBytes))
 	if err == nil {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 }
 

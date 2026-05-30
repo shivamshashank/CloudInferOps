@@ -24,7 +24,7 @@ func TestCheckCPU(t *testing.T) {
 	if result.Name != "CPU Cores" {
 		t.Errorf("expected check name 'CPU Cores', got '%s'", result.Name)
 	}
-	
+
 	cores := runtime.NumCPU()
 	if cores >= 2 {
 		if result.Status != StatusOK {

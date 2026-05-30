@@ -1,0 +1,32 @@
+{
+  "version": "2",
+  "run": {
+    "issues-exit-code": 1,
+    "tests": true
+  },
+  "linters": {
+    "enable": [
+      "gosec",
+      "misspell",
+      "revive",
+      "unconvert"
+    ],
+    "exclusions": {
+      "rules": [
+        {
+          "linters": ["gosec"],
+          "text": "G101|G107|G204|G301|G306|G703|G704"
+        },
+        {
+          "linters": ["revive"],
+          "text": "exported|package-comments|unused-parameter|var-naming"
+        }
+      ]
+    }
+  },
+  "formatters": {
+    "enable": [
+      "gofmt"
+    ]
+  }
+}

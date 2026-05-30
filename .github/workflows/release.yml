@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.3'
+          cache: true
+
+      - name: Determine Next Semantic Version
+        id: next_version
+        run: |
+          git fetch --tags --force
+          LATEST_TAG=$(git tag -l "v*" | sort -V | tail -n1 || true)
+          if [ -z "$LATEST_TAG" ]; then
+            NEXT_TAG="v0.1.0"
+          else
+            VERSION_PART=${LATEST_TAG#v}
+            # Parse version parts
+            IFS='.' read -r major minor patch <<< "$VERSION_PART"
+            next_patch=$((patch + 1))
+            NEXT_TAG="v${major}.${minor}.${next_patch}"
+          fi
+          echo "NEXT_TAG=${NEXT_TAG}" >> $GITHUB_ENV
+          echo "Calculated next tag: ${NEXT_TAG}"
+
+      - name: Create and Push Git Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ env.NEXT_TAG }}"
+          git push origin "${{ env.NEXT_TAG }}"
+
+      - name: Compile Cross-Platform Binaries
+        run: |
+          mkdir -p dist
+          
+          # Linux AMD64
+          echo "Compiling Linux AMD64 binary..."
+          env GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/stackpulse-linux-amd64 cmd/stackpulse/main.go
+          
+          # Linux ARM64
+          echo "Compiling Linux ARM64 binary..."
+          env GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/stackpulse-linux-arm64 cmd/stackpulse/main.go
+          
+          # macOS AMD64
+          echo "Compiling macOS AMD64 binary..."
+          env GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/stackpulse-darwin-amd64 cmd/stackpulse/main.go
+          
+          # macOS ARM64
+          echo "Compiling macOS ARM64 binary..."
+          env GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/stackpulse-darwin-arm64 cmd/stackpulse/main.go
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.NEXT_TAG }}
+          name: Release ${{ env.NEXT_TAG }}
+          body: |
+            ## 🚀 StackPulse Release ${{ env.NEXT_TAG }}
+            
+            Automated production release generated after merging to `main`.
+            
+            ### 📦 Supported Platform Downloads
+            
+            - **Linux (x86_64 / amd64)**: `stackpulse-linux-amd64`
+            - **Linux (arm64 / aarch64)**: `stackpulse-linux-arm64`
+            - **macOS (Intel / amd64)**: `stackpulse-darwin-amd64`
+            - **macOS (Apple Silicon / arm64)**: `stackpulse-darwin-arm64`
+            
+            ---
+            *Built with Go 1.26.3*
+          draft: false
+          prerelease: false
+          files: |
+            dist/stackpulse-linux-amd64
+            dist/stackpulse-linux-arm64
+            dist/stackpulse-darwin-amd64
+            dist/stackpulse-darwin-arm64

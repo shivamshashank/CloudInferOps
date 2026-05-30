@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 )
 
 var (
@@ -20,7 +21,7 @@ func StartServer(port string) error {
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"healthy"}`))
+		_, _ = w.Write([]byte(`{"status":"healthy"}`))
 	})
 
 	// Incidents list query
@@ -41,7 +42,7 @@ func StartServer(port string) error {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(data)
+		_, _ = w.Write(data)
 	})
 
 	// Alertmanager Webhook Router
@@ -72,9 +73,15 @@ func StartServer(port string) error {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"success","message":"webhook processed successfully"}`))
+		_, _ = w.Write([]byte(`{"status":"success","message":"webhook processed successfully"}`))
 	})
 
 	fmt.Printf("Incident webhook handler daemon listening on port :%s...\n", port)
-	return http.ListenAndServe(":"+port, mux)
+	server := &http.Server{
+		Addr:         ":" + port,
+		Handler:      mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+	return server.ListenAndServe()
 }
