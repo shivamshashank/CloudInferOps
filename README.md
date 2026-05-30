@@ -14,7 +14,7 @@ dashboards, alerts, and incident webhooks.
 [![CI](https://img.shields.io/github/actions/workflow/status/shivamshashank/StackPulse/ci.yml?branch=main&label=CI&logo=githubactions&style=flat-square)](https://github.com/shivamshashank/StackPulse/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/actions/workflow/status/shivamshashank/StackPulse/release.yml?branch=main&label=Release&logo=githubactions&style=flat-square)](https://github.com/shivamshashank/StackPulse/actions/workflows/release.yml)
 [![Codecov](https://img.shields.io/codecov/c/github/shivamshashank/StackPulse?logo=codecov&style=flat-square)](https://codecov.io/gh/shivamshashank/StackPulse)
-[![Go Report Card](https://goreportcard.com/badge/github.com/shivamshashank/StackPulse)](https://goreportcard.com/report/github.com/shivamshashank/StackPulse)
+[![Go Report Card](https://goreportcard.com/badge/github.com/shivamshashank/StackPulse?https://img.shields.io/badge/go%20report-A+-brightgreen.svg?style=flat)](https://goreportcard.com/report/github.com/shivamshashank/StackPulse)
 [![GitHub release](https://img.shields.io/github/v/release/shivamshashank/StackPulse?style=flat-square)](https://github.com/shivamshashank/StackPulse/releases)
 [![GitHub stars](https://img.shields.io/github/stars/shivamshashank/StackPulse?style=flat-square)](https://github.com/shivamshashank/StackPulse/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/shivamshashank/StackPulse?style=flat-square)](https://github.com/shivamshashank/StackPulse/network/members)
