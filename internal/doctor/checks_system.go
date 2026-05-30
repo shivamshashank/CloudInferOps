@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var procMeminfoPath = "/proc/meminfo"
+
 // CheckOS validates OS and architecture compatibility
 func CheckOS() CheckResult {
 	supportedOS := map[string]bool{"linux": true}
@@ -125,7 +127,7 @@ func CheckMemory() CheckResult {
 }
 
 func getLinuxMemory() (uint64, error) {
-	data, err := os.ReadFile("/proc/meminfo")
+	data, err := os.ReadFile(procMeminfoPath)
 	if err != nil {
 		return 0, err
 	}

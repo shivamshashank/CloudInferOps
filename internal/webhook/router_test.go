@@ -2,6 +2,9 @@ package webhook
 
 import (
 	"encoding/json"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 )
@@ -96,3 +99,87 @@ func TestPDAndSlackPayloadHelpers(t *testing.T) {
 		t.Errorf("expected unknown severity mapping to fallback to error, got '%s'", mapPDSeverity("unknown"))
 	}
 }
+
+type mockTransport struct {
+	roundTripFunc func(req *http.Request) (*http.Response, error)
+}
+
+func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return m.roundTripFunc(req)
+}
+
+func TestDispatchAlerts(t *testing.T) {
+	// Intercept default HTTP client
+	oldTransport := http.DefaultClient.Transport
+	defer func() { http.DefaultClient.Transport = oldTransport }()
+
+	var capturedSlackReq *http.Request
+	var capturedPDReq *http.Request
+
+	http.DefaultClient.Transport = &mockTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			if strings.Contains(req.URL.String(), "slack.com") || strings.Contains(req.URL.String(), "localhost") {
+				capturedSlackReq = req
+			} else if strings.Contains(req.URL.String(), "pagerduty.com") {
+				capturedPDReq = req
+			}
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(`{"status":"ok"}`)),
+			}, nil
+		},
+	}
+
+	inc := Incident{
+		ID:          "inc-123",
+		AlertName:   "CPUUsageHigh",
+		Status:      "firing",
+		Severity:    "critical",
+		Summary:     "CPU usage is high",
+		Description: "CPU has been above 90% for 5 mins",
+		Instance:    "server-01",
+	}
+
+	// 1. Dispatch without env variables set (should do nothing)
+	t.Setenv("SLACK_WEBHOOK_URL", "")
+	t.Setenv("PAGERDUTY_INTEGRATION_KEY", "")
+	DispatchSlackAlert(inc)
+	DispatchPagerDutyAlert(inc)
+	if capturedSlackReq != nil || capturedPDReq != nil {
+		t.Error("expected no requests dispatched when env variables are empty")
+	}
+
+	// 2. Dispatch with env variables set (firing)
+	t.Setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/test/webhook")
+	t.Setenv("PAGERDUTY_INTEGRATION_KEY", "pd-integration-key-123")
+
+	DispatchSlackAlert(inc)
+	if capturedSlackReq == nil {
+		t.Error("expected Slack request to be captured")
+	} else if capturedSlackReq.URL.String() != "https://hooks.slack.com/services/test/webhook" {
+		t.Errorf("unexpected Slack URL: %s", capturedSlackReq.URL.String())
+	}
+
+	DispatchPagerDutyAlert(inc)
+	if capturedPDReq == nil {
+		t.Error("expected PagerDuty request to be captured")
+	} else if capturedPDReq.URL.String() != "https://events.pagerduty.com/v2/enqueue" {
+		t.Errorf("unexpected PagerDuty URL: %s", capturedPDReq.URL.String())
+	}
+
+	// 3. Dispatch resolved status
+	inc.Status = "resolved"
+	capturedSlackReq = nil
+	capturedPDReq = nil
+
+	DispatchSlackAlert(inc)
+	if capturedSlackReq == nil {
+		t.Error("expected Slack resolved request to be captured")
+	}
+
+	DispatchPagerDutyAlert(inc)
+	if capturedPDReq == nil {
+		t.Error("expected PagerDuty resolved request to be captured")
+	}
+}
+

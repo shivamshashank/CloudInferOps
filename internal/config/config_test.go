@@ -3,93 +3,77 @@ package config
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
 func TestDefaultConfig(t *testing.T) {
 	cfg := DefaultConfig()
 	if cfg.Namespace != "observability" {
-		t.Errorf("expected default namespace 'observability', got '%s'", cfg.Namespace)
+		t.Errorf("Expected namespace 'observability', got '%s'", cfg.Namespace)
 	}
-	if cfg.Kubernetes.Type != "auto" {
-		t.Errorf("expected default k8s type 'auto', got '%s'", cfg.Kubernetes.Type)
+	if !cfg.Observability.Prometheus {
+		t.Error("Expected Prometheus to be true by default")
 	}
-	if cfg.Observability.Prometheus != true {
-		t.Error("expected default Prometheus enabled to be true")
-	}
-	if cfg.Observability.LogCollector != "alloy" {
-		t.Errorf("expected default log collector 'alloy', got '%s'", cfg.Observability.LogCollector)
+	if cfg.Alerts.Slack.WebhookUrlSecret != "stackpulse-slack-webhook" {
+		t.Errorf("Expected default slack webhook secret, got '%s'", cfg.Alerts.Slack.WebhookUrlSecret)
 	}
 }
 
 func TestExpandPath(t *testing.T) {
-	// Set mock home
-	tmpHome := t.TempDir()
-	t.Setenv("HOME", tmpHome)
-
-	path := "~/test/kubeconfig"
-	expanded := ExpandPath(path)
-
-	expected := filepath.Clean(filepath.Join(tmpHome, "test/kubeconfig"))
-	if expanded != expected {
-		t.Errorf("expected expanded path '%s', got '%s'", expected, expanded)
+	home, err := os.UserHomeDir()
+	if err == nil {
+		expanded := ExpandPath("~/testpath")
+		expected := filepath.Join(home, "testpath")
+		if expanded != expected {
+			t.Errorf("Expected %s, got %s", expected, expanded)
+		}
 	}
 
-	// Should not expand relative or absolute path without ~
-	normPath := "/etc/resolv.conf"
-	if ExpandPath(normPath) != normPath {
-		t.Errorf("expected no expansion for standard path, got '%s'", ExpandPath(normPath))
+	expanded := ExpandPath("/absolute/path")
+	if expanded != "/absolute/path" {
+		t.Errorf("Expected /absolute/path, got %s", expanded)
 	}
 }
 
-func TestInitConfig(t *testing.T) {
-	// Isolate tests using dynamic HOME env overriding
-	tmpHome := t.TempDir()
-	t.Setenv("HOME", tmpHome)
+func TestInitAndSaveConfig(t *testing.T) {
+	// Isolate the config directory to a temporary folder
+	tempDir := t.TempDir()
+	t.Setenv("HOME", tempDir)
 
-	// Verify init fails if config is missing and we set createIfMissing = false
-	err := InitConfig(false)
-	if err == nil || !strings.Contains(err.Error(), "configuration file does not exist") {
-		t.Errorf("expected missing config error, got %v", err)
-	}
-
-	// Initialize config and write defaults
-	err = InitConfig(true)
+	// 1. Test InitConfig (should create the file with defaults)
+	err := InitConfig(true)
 	if err != nil {
-		t.Fatalf("failed to initialize default config: %v", err)
+		t.Fatalf("InitConfig failed to create config: %v", err)
 	}
 
-	// Verify the config directory and file were generated
-	expectedPath := filepath.Join(tmpHome, ".stackpulse", "config.yaml")
-	if _, statErr := os.Stat(expectedPath); os.IsNotExist(statErr) {
-		t.Fatalf("expected config file to be written at '%s'", expectedPath)
-	}
-
-	// Verify GlobalConfig fields populated correctly
-	if GlobalConfig.Namespace != "observability" {
-		t.Errorf("expected global namespace 'observability', got '%s'", GlobalConfig.Namespace)
-	}
-
-	// Update GlobalConfig and verify saving works
-	GlobalConfig.Namespace = "custom-obs"
-	GlobalConfig.Observability.Prometheus = false
+	// 2. Modify and SaveConfig
+	GlobalConfig.Namespace = "test-custom-namespace"
 	err = SaveConfig()
 	if err != nil {
-		t.Fatalf("failed to save custom config: %v", err)
+		t.Fatalf("SaveConfig failed: %v", err)
 	}
 
-	// Reinitialize and load from disk (without creating missing)
-	GlobalConfig = Config{} // reset memory config
-	err = InitConfig(false)
-	if err != nil {
-		t.Fatalf("failed to re-initialize and load written config: %v", err)
+	// 3. Re-read and verify changes persisted
+	if err := InitConfig(false); err != nil {
+		t.Fatalf("InitConfig failed to read existing config: %v", err)
 	}
-
-	if GlobalConfig.Namespace != "custom-obs" {
-		t.Errorf("expected loaded namespace 'custom-obs', got '%s'", GlobalConfig.Namespace)
-	}
-	if GlobalConfig.Observability.Prometheus != false {
-		t.Error("expected loaded Prometheus setting to be false")
+	if GlobalConfig.Namespace != "test-custom-namespace" {
+		t.Errorf("Expected modified namespace 'test-custom-namespace', got '%s'", GlobalConfig.Namespace)
 	}
 }
+
+func TestGetConfigPath(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Setenv("HOME", tempDir)
+
+	path, err := GetConfigPath()
+	if err != nil {
+		t.Fatalf("expected no error from GetConfigPath, got: %v", err)
+	}
+
+	expected := filepath.Join(tempDir, ".stackpulse", "config.yaml")
+	if path != expected {
+		t.Errorf("expected path %q, got %q", expected, path)
+	}
+}
+

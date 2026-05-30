@@ -11,6 +11,8 @@ import (
 	"github.com/shivamshashank/StackPulse/internal/utils"
 )
 
+var hostsFilePath = "/etc/hosts"
+
 // FetchIngressIP polls the cluster to retrieve the provisioned Ingress LoadBalancer IP/Hostname
 func FetchIngressIP(ns string, dryRun bool) (string, error) {
 	if dryRun {
@@ -53,12 +55,12 @@ func FetchIngressIP(ns string, dryRun bool) (string, error) {
 
 // UpdateHostsFile idempotently maps the Ingress IP to 'grafana.local' in local /etc/hosts
 func UpdateHostsFile(ip, host string) error {
-	hostsPath := "/etc/hosts"
+	hostsPath := hostsFilePath
 
 	// 1. Read existing world-readable hosts file
 	data, err := os.ReadFile(hostsPath)
 	if err != nil {
-		return fmt.Errorf("failed to read /etc/hosts: %w", err)
+		return fmt.Errorf("failed to read hosts file: %w", err)
 	}
 
 	lines := strings.Split(string(data), "\n")

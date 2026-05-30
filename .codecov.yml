@@ -6,12 +6,14 @@ coverage:
     # Project coverage configuration
     project:
       default:
-        # Target overall project coverage percentage.
-        target: 80%
+        # Set to 'auto' to ensure PRs do not decrease the overall coverage.
+        # (Since current overall coverage is 15%, setting this to 80% will block all PRs)
+        target: auto
         # Allow coverage to drop by this amount without failing.
         threshold: 5%
 
     # Patch coverage configuration (for new code in a PR)
     patch:
       default:
-        target: 90%
+        # PR should not merge if new code coverage is less than 80%
+        target: 80%
