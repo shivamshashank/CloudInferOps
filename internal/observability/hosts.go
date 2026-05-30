@@ -12,6 +12,7 @@ import (
 )
 
 var hostsFilePath = "/etc/hosts"
+var ingressIPRetryDelay = 5 * time.Second
 
 // FetchIngressIP polls the cluster to retrieve the provisioned Ingress LoadBalancer IP/Hostname
 func FetchIngressIP(ns string, dryRun bool) (string, error) {
@@ -40,7 +41,7 @@ func FetchIngressIP(ns string, dryRun bool) (string, error) {
 			return strings.TrimSpace(extIP), nil
 		}
 		fmt.Printf("%sIngress IP not assigned yet, retrying in 5 seconds...\n", utils.PrefixInfo)
-		time.Sleep(5 * time.Second)
+		time.Sleep(ingressIPRetryDelay)
 	}
 
 	// Strategy 2: Get IP from the Ingress resource status

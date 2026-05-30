@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestFetchIngressIP(t *testing.T) {
@@ -107,5 +108,121 @@ exec "$@"
 	content := string(data)
 	if !strings.Contains(content, "192.168.99.100   grafana.local") {
 		t.Errorf("expected updated mapping in hosts file, got:\n%s", content)
+	}
+}
+
+func TestFetchIngressIPStrategies(t *testing.T) {
+	// Temporarily set ingressIPRetryDelay to 1ms
+	oldDelay := ingressIPRetryDelay
+	ingressIPRetryDelay = 1 * time.Millisecond
+	defer func() { ingressIPRetryDelay = oldDelay }()
+
+	tmpDir := t.TempDir()
+	mockBinDir := filepath.Join(tmpDir, "bin")
+	if err := os.MkdirAll(mockBinDir, 0755); err != nil {
+		t.Fatalf("failed to create mock bin dir: %v", err)
+	}
+
+	mockKubectlPath := filepath.Join(mockBinDir, "kubectl")
+	oldPath := os.Getenv("PATH")
+
+	// 1. Hostname strategy test
+	mockKubectlContent := `#!/bin/sh
+case "$*" in
+  *"loadBalancer.ingress[0].ip"*)
+    exit 1
+    ;;
+  *"loadBalancer.ingress[0].hostname"*)
+    echo "my-loadbalancer.aws.com"
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+`
+	if err := os.WriteFile(mockKubectlPath, []byte(mockKubectlContent), 0755); err != nil {
+		t.Fatalf("failed to write mock kubectl: %v", err)
+	}
+
+	t.Setenv("PATH", mockBinDir+":"+oldPath)
+	ip, err := FetchIngressIP("observability", false)
+	if err != nil {
+		t.Fatalf("expected no error under hostname strategy, got: %v", err)
+	}
+	if ip != "my-loadbalancer.aws.com" {
+		t.Errorf("expected my-loadbalancer.aws.com, got %s", ip)
+	}
+
+	// 2. ExternalIP strategy test
+	mockKubectlContent = `#!/bin/sh
+case "$*" in
+  *"loadBalancer.ingress[0].ip"*)
+    exit 1
+    ;;
+  *"loadBalancer.ingress[0].hostname"*)
+    exit 1
+    ;;
+  *"externalIPs[0]"*)
+    echo "192.168.1.15"
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+`
+	if err := os.WriteFile(mockKubectlPath, []byte(mockKubectlContent), 0755); err != nil {
+		t.Fatalf("failed to write mock kubectl: %v", err)
+	}
+
+	ip, err = FetchIngressIP("observability", false)
+	if err != nil {
+		t.Fatalf("expected no error under externalIP strategy, got: %v", err)
+	}
+	if ip != "192.168.1.15" {
+		t.Errorf("expected 192.168.1.15, got %s", ip)
+	}
+
+	// 3. Ingress strategy test
+	mockKubectlContent = `#!/bin/sh
+case "$*" in
+  *"get svc"*)
+    exit 1
+    ;;
+  *"get ingress"*)
+    echo "10.0.5.25"
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+`
+	if err := os.WriteFile(mockKubectlPath, []byte(mockKubectlContent), 0755); err != nil {
+		t.Fatalf("failed to write mock kubectl: %v", err)
+	}
+
+	ip, err = FetchIngressIP("observability", false)
+	if err != nil {
+		t.Fatalf("expected no error under ingress strategy, got: %v", err)
+	}
+	if ip != "10.0.5.25" {
+		t.Errorf("expected 10.0.5.25, got %s", ip)
+	}
+
+	// 4. Timeout strategy test
+	mockKubectlContent = `#!/bin/sh
+exit 1
+`
+	if err := os.WriteFile(mockKubectlPath, []byte(mockKubectlContent), 0755); err != nil {
+		t.Fatalf("failed to write mock kubectl: %v", err)
+	}
+
+	_, err = FetchIngressIP("observability", false)
+	if err == nil {
+		t.Error("expected timeout error, got nil")
+	} else if !strings.Contains(err.Error(), "ingress IP provisioning timed out") {
+		t.Errorf("expected error containing 'ingress IP provisioning timed out', got: %v", err)
 	}
 }
