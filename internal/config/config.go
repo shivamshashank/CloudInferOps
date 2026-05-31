@@ -28,6 +28,7 @@ type ObsConfig struct {
 	Grafana          bool   `mapstructure:"grafana"`
 	Loki             bool   `mapstructure:"loki"`
 	Tempo            bool   `mapstructure:"tempo"`
+	ArgoCD           bool   `mapstructure:"argoCD"`
 	Alertmanager     bool   `mapstructure:"alertmanager"`
 	OpenTelemetry    bool   `mapstructure:"opentelemetry"`
 	NodeExporter     bool   `mapstructure:"nodeExporter"`
@@ -66,6 +67,7 @@ func DefaultConfig() Config {
 			Grafana:          true,
 			Loki:             true,
 			Tempo:            true,
+			ArgoCD:           true,
 			Alertmanager:     true,
 			OpenTelemetry:    true,
 			NodeExporter:     true,
@@ -142,6 +144,7 @@ func InitConfig(createIfMissing bool) error {
 			viper.Set("observability.grafana", defaults.Observability.Grafana)
 			viper.Set("observability.loki", defaults.Observability.Loki)
 			viper.Set("observability.tempo", defaults.Observability.Tempo)
+			viper.Set("observability.argoCD", defaults.Observability.ArgoCD)
 			viper.Set("observability.alertmanager", defaults.Observability.Alertmanager)
 			viper.Set("observability.opentelemetry", defaults.Observability.OpenTelemetry)
 			viper.Set("observability.nodeExporter", defaults.Observability.NodeExporter)
@@ -191,6 +194,7 @@ func SaveConfig() error {
 	viper.Set("observability.grafana", GlobalConfig.Observability.Grafana)
 	viper.Set("observability.loki", GlobalConfig.Observability.Loki)
 	viper.Set("observability.tempo", GlobalConfig.Observability.Tempo)
+	viper.Set("observability.argoCD", GlobalConfig.Observability.ArgoCD)
 	viper.Set("observability.alertmanager", GlobalConfig.Observability.Alertmanager)
 	viper.Set("observability.opentelemetry", GlobalConfig.Observability.OpenTelemetry)
 	viper.Set("observability.nodeExporter", GlobalConfig.Observability.NodeExporter)

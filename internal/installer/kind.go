@@ -3,6 +3,7 @@ package installer
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -50,37 +51,54 @@ func InstallKind() error {
 
 	fmt.Printf("%sInitializing kind cluster setup...\n", utils.PrefixInfo)
 
-	clusters, _, existingErr := utils.ExecCommand("", "kind", "get", "clusters")
+	realHome, err := utils.GetRealHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get real home directory: %w", err)
+	}
+	targetKubeconfig := filepath.Join(realHome, ".kube", "config")
+	kubeEnv := map[string]string{"KUBECONFIG": targetKubeconfig}
+
+	clusters, _, existingErr := utils.ExecCommandEnv("", kubeEnv, "kind", "get", "clusters")
 	if existingErr != nil {
 		return fmt.Errorf("failed to list kind clusters: %w", existingErr)
 	}
 
 	if strings.Contains("\n"+clusters+"\n", "\n"+clusterName+"\n") {
 		fmt.Printf("%sKind cluster '%s' already exists. Reusing it.\n", utils.PrefixOK, clusterName)
-		_, stderr, err := utils.ExecCommand("", "kubectl", "config", "use-context", "kind-"+clusterName)
+		_, stderr, err := utils.ExecCommandEnv("", kubeEnv, "kubectl", "config", "use-context", "kind-"+clusterName)
 		if err != nil {
 			return fmt.Errorf("failed to switch to existing kind cluster '%s': %w (stderr: %s)", clusterName, err, stderr)
 		}
 	} else {
-		_, stderr, err := utils.ExecCommand("", "kind", "create", "cluster", "--name", clusterName)
+		_, stderr, err := utils.ExecCommandEnv("", kubeEnv, "kind", "create", "cluster", "--name", clusterName)
 		if err != nil {
 			return fmt.Errorf("failed to execute 'kind create cluster --name %s': %w (stderr: %s)", clusterName, err, stderr)
 		}
+
+		// Fix file ownership if created under sudo
+		if os.Getuid() == 0 {
+			if sudoUser := os.Getenv("SUDO_USER"); sudoUser != "" {
+				_, _, _ = utils.ExecCommand("", "chown", sudoUser, targetKubeconfig)
+			}
+		}
 	}
 
+	// Export KUBECONFIG for the current process (used by subsequent Helm / kubectl commands)
+	_ = os.Setenv("KUBECONFIG", targetKubeconfig)
+
 	fmt.Printf("%sKind cluster started successfully.\n", utils.PrefixOK)
-	fmt.Printf("%sWaiting for Kubernetes nodes to become ready...\n", utils.PrefixInfo)
+	stopSpinner := utils.StartSpinner("Waiting for Kubernetes nodes to become ready...")
 
 	success := false
-	for i := 0; i < 24; i++ {
-		_, stderr, err := utils.ExecCommand("", "kubectl", "wait", "--for=condition=Ready", "node", "--all", "--timeout=10s")
+	for i := 0; i < 60; i++ {
+		_, _, err := utils.ExecCommandEnv("", kubeEnv, "kubectl", "wait", "--for=condition=Ready", "node", "--all", "--timeout=10s")
 		if err == nil {
 			success = true
 			break
 		}
-		fmt.Printf("%sNodes are initializing, retrying in 5 seconds... (%s)\n", utils.PrefixInfo, stderr)
 		time.Sleep(5 * time.Second)
 	}
+	stopSpinner()
 
 	if !success {
 		return fmt.Errorf("kind nodes failed to become ready in time. Please check 'kind get clusters' and 'kubectl get nodes'")

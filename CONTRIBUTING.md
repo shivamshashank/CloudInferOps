@@ -41,6 +41,10 @@ To set up a local development environment, you will need:
    ```bash
    git remote add upstream https://github.com/shivamshashank/StackPulse.git
    ```
+4. Install the pre-commit hooks to automatically lint your code:
+   ```bash
+   ./scripts/setup-hooks.sh
+   ```
 
 ---
 

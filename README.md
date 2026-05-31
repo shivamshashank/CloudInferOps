@@ -29,6 +29,7 @@ dashboards, alerts, and incident webhooks.
 ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white)
 ![Loki](https://img.shields.io/badge/Loki-F46800?style=for-the-badge&logo=grafana&logoColor=white)
 ![Tempo](https://img.shields.io/badge/Tempo-F46800?style=for-the-badge&logo=grafana&logoColor=white)
+![ArgoCD](https://img.shields.io/badge/ArgoCD-EF7B4D?style=for-the-badge&logo=argo&logoColor=white)
 ![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-000000?style=for-the-badge&logo=opentelemetry&logoColor=white)
 ![Alertmanager](https://img.shields.io/badge/Alertmanager-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)
 ![Slack](https://img.shields.io/badge/Slack-4A154B?style=for-the-badge&logo=slack&logoColor=white)
@@ -100,6 +101,7 @@ sudo stackpulse status
 | Dashboards         | Grafana                  |
 | Logs               | Loki                     |
 | Traces             | Tempo                    |
+| Continuous Delivery| ArgoCD                   |
 | Telemetry Pipeline | OpenTelemetry Collector  |
 | Alerts             | Alertmanager             |
 | Node Metrics       | Node Exporter            |
@@ -210,6 +212,7 @@ StackPulse deploys:
 - Grafana
 - Loki
 - Tempo
+- ArgoCD
 - Alertmanager
 - OpenTelemetry Collector
 - Node Exporter
@@ -238,12 +241,16 @@ Prometheus: running
 Grafana: running
 Loki: running
 Tempo: running
+ArgoCD Delivery: running
 Alertmanager: running
 OpenTelemetry Collector: running
 Webhook Handler: running
 
 Grafana:
 kubectl port-forward svc/stackpulse-grafana 3000:80 -n observability
+
+ArgoCD:
+kubectl port-forward svc/stackpulse-argocd-server 8080:80 -n observability
 ```
 
 ---

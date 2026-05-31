@@ -2,40 +2,29 @@ package cli
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"runtime"
-	"strings"
 
 	"github.com/shivamshashank/StackPulse/internal/config"
 	"github.com/shivamshashank/StackPulse/internal/doctor"
+	"github.com/shivamshashank/StackPulse/internal/gitops"
 	"github.com/shivamshashank/StackPulse/internal/installer"
-	"github.com/shivamshashank/StackPulse/internal/observability"
 	"github.com/shivamshashank/StackPulse/internal/utils"
-	"github.com/shivamshashank/StackPulse/internal/webhook"
 	"github.com/spf13/cobra"
 )
 
-var deployDryRun bool
+var bootstrapDryRun bool
 
-// deployCmd represents the parent deploy command
-var deployCmd = &cobra.Command{
-	Use:   "deploy",
-	Short: "Deploy StackPulse components onto Kubernetes",
-	Long:  `Parent command for provisioning observability pipelines and gateway services in your active cluster.`,
-}
-
-// observabilityCmd represents the deploy observability subcommand
-var observabilityCmd = &cobra.Command{
-	Use:   "observability",
-	Short: "Deploy the complete observability stack",
-	Long:  `Deploys Prometheus, Grafana, Loki, Tempo, OpenTelemetry, alert rules, and standard Grafana dashboards onto Kubernetes.`,
+var bootstrapCmd = &cobra.Command{
+	Use:   "bootstrap",
+	Short: "Deploy the GitOps-managed observability stack via ArgoCD",
+	Long:  `Installs ArgoCD, a local in-cluster Git server, and registers GitOps Applications to continuously sync and manage your observability platform.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// 1. Pre-flight check: Verify cluster reachability early
 		_, hasK8s := doctor.CheckK8sCluster()
 		if !hasK8s {
-			if deployDryRun {
+			if bootstrapDryRun {
 				return fmt.Errorf("kubernetes cluster unreachable (dry-run bypassed setup)")
 			}
 
@@ -46,7 +35,7 @@ var observabilityCmd = &cobra.Command{
 			}
 
 			if choice == "no" {
-				fmt.Printf("%sDeployment cancelled. Install or start Kubernetes (k3s, minikube, kind, Docker Desktop, or another cluster), then rerun deploy.\n", utils.PrefixWarn)
+				fmt.Printf("%sBootstrap cancelled. Install or start Kubernetes, then rerun bootstrap.\n", utils.PrefixWarn)
 				return fmt.Errorf("kubernetes cluster unreachable")
 			}
 
@@ -120,7 +109,7 @@ var observabilityCmd = &cobra.Command{
 
 		// 1.5 Pre-flight check: Verify Helm is installed and install if missing
 		if _, err := exec.LookPath("helm"); err != nil {
-			if deployDryRun {
+			if bootstrapDryRun {
 				fmt.Printf("%s[DRY-RUN] Would install Helm\n", utils.PrefixInfo)
 			} else {
 				fmt.Printf("%sHelm is required but was not found. Installing Helm now...\n", utils.PrefixInfo)
@@ -134,40 +123,14 @@ var observabilityCmd = &cobra.Command{
 		// 2. Load configuration (fallback on defaults if not initialized)
 		if err := config.InitConfig(false); err != nil {
 			fmt.Printf("%sConfiguration file not found. Deploying with default settings...\n", utils.PrefixInfo)
-			fmt.Printf("%sRun '%s' to configure custom namespaces and metrics.\n\n", utils.PrefixInfo, utils.ColorBold+"sudo stackpulse init"+utils.ColorReset)
 			config.GlobalConfig = config.DefaultConfig()
 		}
 
-		// 3. Trigger observability stack orchestrator
-		if err := observability.DeployObservability(deployDryRun); err != nil {
-			return err
-		}
+		// Always force ArgoCD to true for GitOps bootstrap
+		config.GlobalConfig.Observability.ArgoCD = true
 
-		return nil
-	},
-}
-
-// webhookHandlerCmd represents the deploy webhook-handler subcommand
-var webhookHandlerCmd = &cobra.Command{
-	Use:   "webhook-handler",
-	Short: "Deploy the custom Go webhook incident gateway",
-	Long:  `Deploys the custom SRE alert processor which intercepts Alertmanager webhooks and routes incidents to Slack and PagerDuty.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		// 1. Pre-flight check: Verify cluster reachability early
-		_, hasK8s := doctor.CheckK8sCluster()
-		if !hasK8s {
-			fmt.Printf("%sKubernetes cluster not detected.\n", utils.PrefixError)
-			fmt.Printf("%sPlease ensure a local cluster is running (Docker Desktop, Kind, or Minikube) and rerun this command.\n", utils.PrefixInfo)
-			return fmt.Errorf("kubernetes cluster unreachable")
-		}
-
-		// 2. Load configuration (fallback on defaults if not initialized)
-		if err := config.InitConfig(false); err != nil {
-			config.GlobalConfig = config.DefaultConfig()
-		}
-
-		// 3. Trigger webhook deployment engine
-		if err := webhook.DeployWebhookHandler(deployDryRun); err != nil {
+		// 3. Trigger GitOps bootstrap orchestrator
+		if err := gitops.BootstrapGitOps(bootstrapDryRun); err != nil {
 			return err
 		}
 
@@ -176,37 +139,6 @@ var webhookHandlerCmd = &cobra.Command{
 }
 
 func init() {
-	observabilityCmd.Flags().BoolVar(&deployDryRun, "dry-run", false, "Print Helm commands and manifest applications without executing them")
-	webhookHandlerCmd.Flags().BoolVar(&deployDryRun, "dry-run", false, "Print manifests without executing them")
-	deployCmd.AddCommand(observabilityCmd)
-	deployCmd.AddCommand(webhookHandlerCmd)
-	RootCmd.AddCommand(deployCmd)
-}
-
-func promptClusterOption(reader io.Reader) (string, error) {
-	fmt.Println("Kubernetes cluster not detected.")
-	fmt.Println("Would you like StackPulse to install a local Kubernetes cluster for you?")
-	fmt.Println("  1. kind (Docker-based local Kubernetes)")
-	fmt.Println("  2. k3s (Lightweight Linux-only Kubernetes)")
-	fmt.Println("  3. minikube (Cross-platform local Kubernetes)")
-	fmt.Println("  4. No, I will install or manage Kubernetes myself")
-	fmt.Print("Choose an option [1-4] (default: 4): ")
-
-	var response string
-	_, _ = fmt.Fscanln(reader, &response)
-	response = strings.TrimSpace(response)
-
-	switch response {
-	case "1":
-		return "kind", nil
-	case "2":
-		return "k3s", nil
-	case "3":
-		return "minikube", nil
-	case "4", "":
-		return "no", nil
-	default:
-		fmt.Printf("%sInvalid choice '%s'. Defaulting to exit.\n", utils.PrefixWarn, response)
-		return "no", nil
-	}
+	bootstrapCmd.Flags().BoolVar(&bootstrapDryRun, "dry-run", false, "Initialize files and output manifests without committing changes")
+	RootCmd.AddCommand(bootstrapCmd)
 }

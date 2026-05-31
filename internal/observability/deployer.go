@@ -3,9 +3,11 @@ package observability
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/shivamshashank/StackPulse/internal/config"
 	"github.com/shivamshashank/StackPulse/internal/helm"
@@ -70,6 +72,13 @@ func DeployObservability(dryRun bool) error {
 		reposAdded = true
 	}
 
+	if config.GlobalConfig.Observability.ArgoCD {
+		if err := helm.AddRepo("argo", "https://argoproj.github.io/argo-helm", dryRun); err != nil {
+			return err
+		}
+		reposAdded = true
+	}
+
 	// Only update repositories if registries were registered
 	if reposAdded {
 		if err := helm.UpdateRepos(dryRun); err != nil {
@@ -101,6 +110,28 @@ func DeployObservability(dryRun bool) error {
 			}
 			if i == 29 {
 				fmt.Printf("%sIngress Controller not ready yet, continuing deployment anyway...\n", utils.PrefixWarn)
+			}
+		}
+	}
+
+	// E. ArgoCD Continuous Delivery (Bootstrapped first for GitOps management)
+	if config.GlobalConfig.Observability.ArgoCD {
+		argoFlags := []string{
+			"--set", "server.extraArgs={--insecure,--rootpath=/argocd}",
+			"--set", "server.ingress.enabled=false",
+		}
+		if err := helm.InstallRelease("stackpulse-argocd", "argo/argo-cd", ns, argoFlags, dryRun); err != nil {
+			return err
+		}
+		// Wait for ArgoCD Application CRDs to initialize before we apply applications
+		if !dryRun {
+			fmt.Printf("%sWaiting for ArgoCD CRDs to initialize...\n", utils.PrefixInfo)
+			for i := 0; i < 30; i++ {
+				if _, _, err := utils.ExecCommand("", "kubectl", "get", "crd", "applications.argoproj.io"); err == nil {
+					time.Sleep(3 * time.Second) // Let controller settle
+					break
+				}
+				time.Sleep(2 * time.Second)
 			}
 		}
 	}
@@ -137,8 +168,14 @@ func DeployObservability(dryRun bool) error {
 			"--set", "alertmanager.alertmanagerSpec.routePrefix=/alertmanager",
 			"--set", "alertmanager.alertmanagerSpec.externalUrl=http://localhost/alertmanager",
 		}
-		if err := helm.InstallRelease("stackpulse-prometheus", "prometheus-community/kube-prometheus-stack", ns, flags, dryRun); err != nil {
-			return err
+		if config.GlobalConfig.Observability.ArgoCD {
+			if err := deployViaArgoCD("stackpulse-prometheus", "https://prometheus-community.github.io/helm-charts", "kube-prometheus-stack", ns, flags, dryRun); err != nil {
+				return err
+			}
+		} else {
+			if err := helm.InstallRelease("stackpulse-prometheus", "prometheus-community/kube-prometheus-stack", ns, flags, dryRun); err != nil {
+				return err
+			}
 		}
 		if err := applyObservabilityIngress(ns, dryRun); err != nil {
 			return err
@@ -152,15 +189,27 @@ func DeployObservability(dryRun bool) error {
 			// Must be false so it doesn't conflict with the Prometheus datasource marked as default.
 			"--set", "loki.isDefault=false",
 		}
-		if err := helm.InstallRelease("stackpulse-loki", "grafana/loki-stack", ns, flags, dryRun); err != nil {
-			return err
+		if config.GlobalConfig.Observability.ArgoCD {
+			if err := deployViaArgoCD("stackpulse-loki", "https://grafana.github.io/helm-charts", "loki-stack", ns, flags, dryRun); err != nil {
+				return err
+			}
+		} else {
+			if err := helm.InstallRelease("stackpulse-loki", "grafana/loki-stack", ns, flags, dryRun); err != nil {
+				return err
+			}
 		}
 	}
 
 	// C. Tempo Distributed Tracing
 	if config.GlobalConfig.Observability.Tempo {
-		if err := helm.InstallRelease("stackpulse-tempo", "grafana/tempo", ns, nil, dryRun); err != nil {
-			return err
+		if config.GlobalConfig.Observability.ArgoCD {
+			if err := deployViaArgoCD("stackpulse-tempo", "https://grafana.github.io/helm-charts", "tempo", ns, nil, dryRun); err != nil {
+				return err
+			}
+		} else {
+			if err := helm.InstallRelease("stackpulse-tempo", "grafana/tempo", ns, nil, dryRun); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -170,13 +219,20 @@ func DeployObservability(dryRun bool) error {
 			"--set", "mode=deployment",
 			"--set", "image.repository=ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s",
 		}
-		if err := helm.InstallRelease("stackpulse-otel", "open-telemetry/opentelemetry-collector", ns, flags, dryRun); err != nil {
-			return err
+		if config.GlobalConfig.Observability.ArgoCD {
+			if err := deployViaArgoCD("stackpulse-otel", "https://open-telemetry.github.io/opentelemetry-helm-charts", "opentelemetry-collector", ns, flags, dryRun); err != nil {
+				return err
+			}
+		} else {
+			if err := helm.InstallRelease("stackpulse-otel", "open-telemetry/opentelemetry-collector", ns, flags, dryRun); err != nil {
+				return err
+			}
 		}
 	}
 
 	// 4. Resolve Dynamic Ingress IP
 	instanceIP := "127.0.0.1"
+	var detectedPublicIP string
 	if config.GlobalConfig.Observability.Prometheus {
 		ingressIP, err := FetchIngressIP(ns, dryRun)
 		if err == nil && ingressIP != "" {
@@ -184,6 +240,25 @@ func DeployObservability(dryRun bool) error {
 		} else {
 			// Fallback: Resolve active interface IP of the host machine (e.g., VM / EC2 IP)
 			instanceIP = utils.GetLocalIP()
+		}
+
+		// If we are on a cloud VM, the ingress IP might be the private subnet IP.
+		// Attempt to resolve the public IP for correct external browser access.
+		if parsedIP := net.ParseIP(instanceIP); parsedIP != nil && parsedIP.IsPrivate() {
+			detectedPublicIP = utils.GetPublicIP()
+			if utils.IsCloudVM() && detectedPublicIP != "" {
+				instanceIP = detectedPublicIP
+			}
+		}
+	}
+
+	argoSecretName := "argocd-initial-admin-secret"
+	if out, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "-n", ns, "-o", "name"); err == nil {
+		for _, line := range strings.Split(out, "\n") {
+			if strings.Contains(line, "initial-admin-secret") {
+				argoSecretName = strings.TrimPrefix(strings.TrimSpace(line), "secret/")
+				break
+			}
 		}
 	}
 
@@ -198,8 +273,19 @@ func DeployObservability(dryRun bool) error {
 		fmt.Printf("    🔗  Grafana Dashboard:     %s\n", utils.ColorBold+fmt.Sprintf("http://%s/grafana/", instanceIP)+utils.ColorReset)
 		fmt.Printf("    🔗  Prometheus Server:     %s\n", utils.ColorBold+fmt.Sprintf("http://%s/prometheus/", instanceIP)+utils.ColorReset)
 		fmt.Printf("    🔗  Alertmanager Panel:    %s\n", utils.ColorBold+fmt.Sprintf("http://%s/alertmanager/", instanceIP)+utils.ColorReset)
+		if config.GlobalConfig.Observability.ArgoCD {
+			fmt.Printf("    🔗  ArgoCD Dashboard:      %s\n", utils.ColorBold+fmt.Sprintf("http://%s/argocd", instanceIP)+utils.ColorReset)
+		}
+
+		if !utils.IsCloudVM() && detectedPublicIP != "" && detectedPublicIP != instanceIP {
+			fmt.Printf("    %s (External access public IP: %s)\n", utils.PrefixInfo, utils.ColorBold+detectedPublicIP+utils.ColorReset)
+		}
+
 		fmt.Println("\n    👤  Default credentials:   Username: admin")
 		fmt.Printf("                               Password command: %s\n", utils.ColorCyan+fmt.Sprintf("kubectl get secret --namespace %s stackpulse-prometheus-grafana -o jsonpath=\"{.data.admin-password}\" | base64 --decode ; echo", ns)+utils.ColorReset)
+		if config.GlobalConfig.Observability.ArgoCD {
+			fmt.Printf("                               ArgoCD Password:  %s\n", utils.ColorCyan+fmt.Sprintf("kubectl get secret --namespace %s %s -o jsonpath=\"{.data.password}\" | base64 --decode ; echo", ns, argoSecretName)+utils.ColorReset)
+		}
 	}
 
 	fmt.Println("-----------------------------------------------------------------")
@@ -210,6 +296,7 @@ func applyObservabilityIngress(ns string, dryRun bool) error {
 	grafanaSvc := "stackpulse-prometheus-grafana"
 	prometheusSvc := "stackpulse-prometheus-kube-prometheus"
 	alertmanagerSvc := "stackpulse-prometheus-kube-alertmanager"
+	argoSvc := "stackpulse-argocd-server"
 
 	if !dryRun {
 		var err error
@@ -225,6 +312,24 @@ func applyObservabilityIngress(ns string, dryRun bool) error {
 		if err != nil {
 			return err
 		}
+		if config.GlobalConfig.Observability.ArgoCD {
+			argoSvc, err = findServiceByPort(ns, "argocd-server", 80, argoSvc)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	argoRoute := ""
+	if config.GlobalConfig.Observability.ArgoCD {
+		argoRoute = fmt.Sprintf(`
+          - path: /argocd(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: %s
+                port:
+                  number: 80`, argoSvc)
 	}
 
 	manifest := fmt.Sprintf(`apiVersion: networking.k8s.io/v1
@@ -261,8 +366,8 @@ spec:
               service:
                 name: %s
                 port:
-                  number: 9093
-`, ns, grafanaSvc, prometheusSvc, alertmanagerSvc)
+                  number: 9093%s
+`, ns, grafanaSvc, prometheusSvc, alertmanagerSvc, argoRoute)
 
 	if dryRun {
 		fmt.Printf("%s[DRY-RUN] kubectl apply -f stackpulse-observability-ingress.yaml\n", utils.PrefixInfo)
@@ -332,4 +437,78 @@ func findServiceByPort(ns, nameHint string, port int, fallback string) (string, 
 
 	fmt.Printf("%sCould not discover %s service on port %d. Falling back to %s.\n", utils.PrefixWarn, nameHint, port, fallback)
 	return fallback, nil
+}
+
+func deployViaArgoCD(name, repoURL, chart, ns string, flags []string, dryRun bool) error {
+	helmParameters := ""
+	for i := 0; i < len(flags); i++ {
+		if flags[i] == "--set" && i+1 < len(flags) {
+			kv := strings.SplitN(flags[i+1], "=", 2)
+			if len(kv) == 2 {
+				name := strings.ReplaceAll(kv[0], "'", "''")
+				value := strings.ReplaceAll(kv[1], "'", "''")
+				helmParameters += fmt.Sprintf("\n        - name: '%s'\n          value: '%s'", name, value)
+			}
+			i++
+		} else if flags[i] == "--set-string" && i+1 < len(flags) {
+			kv := strings.SplitN(flags[i+1], "=", 2)
+			if len(kv) == 2 {
+				name := strings.ReplaceAll(kv[0], "'", "''")
+				value := strings.ReplaceAll(kv[1], "'", "''")
+				helmParameters += fmt.Sprintf("\n        - name: '%s'\n          value: '%s'\n          forceString: true", name, value)
+			}
+			i++
+		}
+	}
+
+	helmBlock := ""
+	if helmParameters != "" {
+		helmBlock = fmt.Sprintf("\n    helm:\n      parameters:%s", helmParameters)
+	}
+
+	manifest := fmt.Sprintf(`apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: %s
+  namespace: %s
+spec:
+  project: default
+  source:
+    repoURL: '%s'
+    chart: '%s'
+    targetRevision: '*'%s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: %s
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+`, name, ns, repoURL, chart, helmBlock, ns)
+
+	if dryRun {
+		fmt.Printf("%s[DRY-RUN] Deploying %s via ArgoCD Application\n", utils.PrefixInfo, name)
+		return nil
+	}
+
+	tmpPath := filepath.Join(os.TempDir(), name+"-argocd-app.yaml")
+	if err := os.WriteFile(tmpPath, []byte(manifest), 0600); err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(tmpPath) }()
+
+	_, stderr, err := utils.ExecCommand("", "kubectl", "apply", "-f", tmpPath)
+	if err != nil {
+		return fmt.Errorf("failed to create ArgoCD Application for %s: %w (stderr: %s)", name, err, stderr)
+	}
+	fmt.Printf("%sGitOps Application %s created successfully.\n", utils.PrefixOK, name)
+	return nil
 }
