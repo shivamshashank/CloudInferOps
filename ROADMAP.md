@@ -39,6 +39,7 @@ stackpulse status
 - Grafana
 - Loki
 - Tempo
+- ArgoCD
 - Alertmanager
 - OpenTelemetry Collector
 - kube-state-metrics
@@ -195,6 +196,7 @@ observability:
   grafana: true
   loki: true
   tempo: true
+  argoCD: true
   alertmanager: true
   opentelemetry: true
   nodeExporter: true
@@ -398,6 +400,7 @@ The MVP stack should include:
 | Grafana | Dashboards and visualisation |
 | Loki | Log aggregation |
 | Tempo | Distributed tracing |
+| ArgoCD | Continuous delivery and GitOps |
 | Alertmanager | Alert routing |
 | OpenTelemetry Collector | Telemetry pipeline |
 | Node Exporter | Linux node metrics |
@@ -411,11 +414,12 @@ The MVP stack should include:
 3. Install kube-prometheus-stack
 4. Install Loki
 5. Install Tempo
-6. Install OpenTelemetry Collector
-7. Install Alloy or Promtail
-8. Apply alert rules
-9. Import dashboards
-10. Print access instructions
+6. Install ArgoCD
+7. Install OpenTelemetry Collector
+8. Install Alloy or Promtail
+9. Apply alert rules
+10. Import dashboards
+11. Print access instructions
 
 ## Example Output
 
@@ -427,6 +431,7 @@ Deploying StackPulse Observability Stack...
 [OK] Grafana installed
 [OK] Loki installed
 [OK] Tempo installed
+[OK] ArgoCD installed
 [OK] Alertmanager installed
 [OK] OpenTelemetry Collector installed
 [OK] Node Exporter installed
@@ -644,6 +649,7 @@ Prometheus: running
 Grafana: running
 Loki: running
 Tempo: running
+ArgoCD Delivery: running
 Alertmanager: running
 OpenTelemetry Collector: running
 Webhook Handler: running

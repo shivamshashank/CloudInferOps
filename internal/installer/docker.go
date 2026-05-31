@@ -35,15 +35,17 @@ func InstallDocker() error {
 	}
 
 	// Wait for Docker daemon to be ready
-	fmt.Printf("%sWaiting for Docker daemon to initialize...\n", utils.PrefixInfo)
+	stopSpinner := utils.StartSpinner("Waiting for Docker daemon to initialize...")
 	for i := 0; i < 15; i++ {
 		_, _, err := utils.ExecCommand("", "docker", "info")
 		if err == nil {
+			stopSpinner()
 			fmt.Printf("%sDocker daemon is ready.\n", utils.PrefixOK)
 			return nil
 		}
 		time.Sleep(2 * time.Second)
 	}
+	stopSpinner()
 
 	return fmt.Errorf("docker installed but daemon failed to start in time")
 }

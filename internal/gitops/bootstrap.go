@@ -1,0 +1,433 @@
+package gitops
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/shivamshashank/StackPulse/internal/config"
+	"github.com/shivamshashank/StackPulse/internal/helm"
+	"github.com/shivamshashank/StackPulse/internal/utils"
+)
+
+// BootstrapGitOps orchestrates the full Model B GitOps deployment:
+// 1. Installs Ingress NGINX & ArgoCD via Helm
+// 2. Provisions the in-cluster Git server
+// 3. Generates the GitOps repository layout under ~/.stackpulse/gitops-repo
+// 4. Initializes, commits, and pushes the local repo to the Git server
+// 5. Registers ArgoCD Applications pointing to the Git server
+// 6. Configures the ingress controller routing
+func BootstrapGitOps(dryRun bool) error {
+	ns := config.GlobalConfig.Namespace
+	if ns == "" {
+		ns = "observability"
+	}
+
+	fmt.Printf("%sStarting StackPulse GitOps Bootstrap (Model B)...\n", utils.PrefixInfo)
+
+	if !CheckGitInstalled() {
+		return fmt.Errorf("git CLI is required on the host system but was not found. Please install git and try again")
+	}
+
+	// 1. Create namespace
+	if !dryRun {
+		fmt.Printf("%sCreating Kubernetes namespace '%s' if not exists...\n", utils.PrefixInfo, ns)
+		_, _, _ = utils.ExecCommand("", "kubectl", "create", "namespace", ns)
+	}
+
+	// 2. Add Helm repos
+	if err := helm.AddRepo("ingress-nginx", "https://kubernetes.github.io/ingress-nginx", dryRun); err != nil {
+		return err
+	}
+	if err := helm.AddRepo("argo", "https://argoproj.github.io/argo-helm", dryRun); err != nil {
+		return err
+	}
+	if err := helm.UpdateRepos(dryRun); err != nil {
+		return err
+	}
+
+	// 3. Deploy NGINX Ingress Controller
+	ingressFlags := []string{
+		"--set", "controller.watchIngressWithoutClass=true",
+	}
+	if err := helm.InstallRelease("stackpulse-ingress-nginx", "ingress-nginx/ingress-nginx", ns, ingressFlags, dryRun); err != nil {
+		return err
+	}
+
+	// Wait for ingress controller
+	if !dryRun {
+		fmt.Printf("%sWaiting for NGINX Ingress Controller to become ready...\n", utils.PrefixInfo)
+		for i := 0; i < 30; i++ {
+			_, _, waitErr := utils.ExecCommand("", "kubectl", "wait", "--namespace", ns,
+				"--for=condition=Ready", "pod",
+				"-l", "app.kubernetes.io/component=controller,app.kubernetes.io/instance=stackpulse-ingress-nginx",
+				"--timeout=10s")
+			if waitErr == nil {
+				fmt.Printf("%sNGINX Ingress Controller is ready.\n", utils.PrefixOK)
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}
+
+	// 4. Deploy ArgoCD
+	argoFlags := []string{
+		"--set", "server.extraArgs={--insecure,--rootpath=/argocd}",
+		"--set", "server.ingress.enabled=false",
+	}
+	if err := helm.InstallRelease("stackpulse-argocd", "argo/argo-cd", ns, argoFlags, dryRun); err != nil {
+		return err
+	}
+
+	// Wait for ArgoCD CRDs to initialize
+	if !dryRun {
+		fmt.Printf("%sWaiting for ArgoCD CRDs to initialize...\n", utils.PrefixInfo)
+		for i := 0; i < 30; i++ {
+			if _, _, err := utils.ExecCommand("", "kubectl", "get", "crd", "applications.argoproj.io"); err == nil {
+				time.Sleep(3 * time.Second) // Let controller settle
+				break
+			}
+			time.Sleep(2 * time.Second)
+		}
+	}
+
+	// 5. Deploy Git Server
+	if err := DeployGitServer(ns, dryRun); err != nil {
+		return err
+	}
+
+	// 6. Generate local GitOps repository structure
+	home, err := utils.GetRealHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user home directory: %w", err)
+	}
+	repoDir := filepath.Join(home, ".stackpulse", "gitops-repo")
+
+	if !dryRun {
+		if err := generateGitOpsRepo(repoDir); err != nil {
+			return fmt.Errorf("failed to generate local GitOps structure: %w", err)
+		}
+	}
+
+	// 7. Push repository to in-cluster Git server
+	if !dryRun {
+		fmt.Printf("%sSetting up port-forward to Git Server...\n", utils.PrefixInfo)
+		cancelPF, err := StartPortForward(ns, 9418, 9418)
+		if err != nil {
+			return fmt.Errorf("failed to port-forward to Git Server: %w", err)
+		}
+		defer cancelPF()
+
+		fmt.Printf("%sPushing GitOps files to Git Server...\n", utils.PrefixInfo)
+		if err := InitLocalRepo(repoDir); err != nil {
+			return err
+		}
+
+		if err := PushToGitServer(repoDir, "git://127.0.0.1:9418/gitops.git"); err != nil {
+			return err
+		}
+		fmt.Printf("%sSuccessfully pushed GitOps repository to Git Server.\n", utils.PrefixOK)
+	}
+
+	// 8. Deploy ArgoCD Applications
+	if err := deployArgoCDApplications(ns, dryRun); err != nil {
+		return err
+	}
+
+	// 9. Configure Ingress routes
+	if err := applyGitOpsIngress(ns, dryRun); err != nil {
+		return err
+	}
+
+	// Output success instructions
+	instanceIP := "127.0.0.1"
+	if !dryRun {
+		ingressIP, err := fetchIngressIP(ns)
+		if err == nil && ingressIP != "" {
+			instanceIP = ingressIP
+		} else {
+			instanceIP = utils.GetLocalIP()
+		}
+	}
+
+	fmt.Println()
+	fmt.Printf("%s%sStackPulse GitOps Bootstrap (Model B) Completed!%s\n", utils.PrefixReady, utils.ColorBold, utils.ColorReset)
+	fmt.Println("-----------------------------------------------------------------")
+	fmt.Printf("🌐  Namespace:           %s\n", ns)
+	fmt.Printf("📦  GitOps Mode:         %s\n", utils.ColorCyan+"Local GitOps (ArgoCD managed)"+utils.ColorReset)
+	fmt.Printf("📊  ArgoCD Dashboard:    %s\n", utils.ColorBold+fmt.Sprintf("http://%s/argocd", instanceIP)+utils.ColorReset)
+	fmt.Printf("📊  Grafana Dashboard:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/grafana/", instanceIP)+utils.ColorReset)
+	fmt.Printf("📊  Prometheus Server:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/prometheus/", instanceIP)+utils.ColorReset)
+	fmt.Printf("📊  Alertmanager Panel:  %s\n", utils.ColorBold+fmt.Sprintf("http://%s/alertmanager/", instanceIP)+utils.ColorReset)
+	fmt.Println("\n    👤  Default credentials:   Username: admin")
+	fmt.Printf("                               Password: Use 'sudo stackpulse status' to decrypt\n")
+	fmt.Printf("\n    %s Note: ArgoCD is currently bootstrapping the Prometheus, Loki, Tempo, and OTel pods.\n", utils.PrefixInfo)
+	fmt.Println("         It will take 1-2 minutes for the ArgoCD repo-server to pull the Helm dependencies,")
+	fmt.Println("         reconcile their states, and initialize all container pods.")
+	fmt.Printf("         Check progress using: %s\n", utils.ColorBold+"kubectl get pods -n "+ns+utils.ColorReset)
+	fmt.Println("-----------------------------------------------------------------")
+
+	return nil
+}
+
+func generateGitOpsRepo(repoDir string) error {
+	_ = os.RemoveAll(repoDir)
+	if err := os.MkdirAll(repoDir, 0755); err != nil {
+		return err
+	}
+
+	// Create directories
+	dirs := []string{"prometheus", "loki", "tempo", "otel"}
+	for _, dir := range dirs {
+		if err := os.MkdirAll(filepath.Join(repoDir, dir), 0755); err != nil {
+			return err
+		}
+	}
+
+	// 1. Prometheus Chart & values
+	promChart := `apiVersion: v2
+name: prometheus-gitops
+version: 1.0.0
+dependencies:
+  - name: kube-prometheus-stack
+    version: "61.3.0"
+    repository: https://prometheus-community.github.io/helm-charts
+`
+	promValues := `kube-prometheus-stack:
+  grafana:
+    ingress:
+      enabled: false
+    grafana.ini:
+      server:
+        root_url: "%(protocol)s://%(domain)s/grafana/"
+        serve_from_sub_path: true
+    sidecar:
+      datasources:
+        enabled: true
+        defaultDatasourceEnabled: true
+        isDefaultDatasource: true
+        name: Prometheus
+        uid: prometheus
+        url: http://stackpulse-prometheus-kube-prometheus.observability:9090/prometheus
+        alertmanager:
+          enabled: true
+          name: Alertmanager
+          uid: alertmanager
+          url: http://stackpulse-prometheus-kube-alertmanager.observability:9093/alertmanager
+  prometheus:
+    ingress:
+      enabled: false
+    prometheusSpec:
+      externalLabels:
+        cluster: default
+      routePrefix: /prometheus
+      externalUrl: http://localhost/prometheus
+  alertmanager:
+    ingress:
+      enabled: false
+    alertmanagerSpec:
+      routePrefix: /alertmanager
+      externalUrl: http://localhost/alertmanager
+`
+	if err := os.WriteFile(filepath.Join(repoDir, "prometheus", "Chart.yaml"), []byte(promChart), 0644); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(repoDir, "prometheus", "values.yaml"), []byte(promValues), 0644); err != nil {
+		return err
+	}
+
+	// 2. Loki Chart & values
+	lokiChart := `apiVersion: v2
+name: loki-gitops
+version: 1.0.0
+dependencies:
+  - name: loki-stack
+    version: "2.10.2"
+    repository: https://grafana.github.io/helm-charts
+`
+	lokiValues := `loki-stack:
+  loki:
+    isDefault: false
+`
+	if err := os.WriteFile(filepath.Join(repoDir, "loki", "Chart.yaml"), []byte(lokiChart), 0644); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(repoDir, "loki", "values.yaml"), []byte(lokiValues), 0644); err != nil {
+		return err
+	}
+
+	// 3. Tempo Chart & values
+	tempoChart := `apiVersion: v2
+name: tempo-gitops
+version: 1.0.0
+dependencies:
+  - name: tempo
+    version: "1.10.1"
+    repository: https://grafana.github.io/helm-charts
+`
+	tempoValues := `tempo: {}
+`
+	if err := os.WriteFile(filepath.Join(repoDir, "tempo", "Chart.yaml"), []byte(tempoChart), 0644); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(repoDir, "tempo", "values.yaml"), []byte(tempoValues), 0644); err != nil {
+		return err
+	}
+
+	// 4. OTel Chart & values
+	otelChart := `apiVersion: v2
+name: otel-gitops
+version: 1.0.0
+dependencies:
+  - name: opentelemetry-collector
+    version: "0.93.0"
+    repository: https://open-telemetry.github.io/opentelemetry-helm-charts
+`
+	otelValues := `opentelemetry-collector:
+  mode: deployment
+  image:
+    repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
+`
+	if err := os.WriteFile(filepath.Join(repoDir, "otel", "Chart.yaml"), []byte(otelChart), 0644); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(repoDir, "otel", "values.yaml"), []byte(otelValues), 0644); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func deployArgoCDApplications(ns string, dryRun bool) error {
+	apps := []struct {
+		name string
+		path string
+	}{
+		{"stackpulse-prometheus", "prometheus"},
+		{"stackpulse-loki", "loki"},
+		{"stackpulse-tempo", "tempo"},
+		{"stackpulse-otel", "otel"},
+	}
+
+	for _, app := range apps {
+		manifest := fmt.Sprintf(`apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: %s
+  namespace: %s
+spec:
+  project: default
+  source:
+    repoURL: 'git://stackpulse-git-server.observability.svc.cluster.local/gitops.git'
+    path: %s
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: %s
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+`, app.name, ns, app.path, ns)
+
+		if dryRun {
+			fmt.Printf("%s[DRY-RUN] Create ArgoCD Application '%s' sync from path '%s'\n", utils.PrefixInfo, app.name, app.path)
+			continue
+		}
+
+		tmpPath := filepath.Join(os.TempDir(), app.name+"-application.yaml")
+		if err := os.WriteFile(tmpPath, []byte(manifest), 0600); err != nil {
+			return err
+		}
+		defer func() { _ = os.Remove(tmpPath) }()
+
+		_, stderr, err := utils.ExecCommand("", "kubectl", "apply", "-f", tmpPath)
+		if err != nil {
+			return fmt.Errorf("failed to deploy ArgoCD Application '%s': %w (stderr: %s)", app.name, err, stderr)
+		}
+		fmt.Printf("%sGitOps Application '%s' initialized and registered in ArgoCD.\n", utils.PrefixOK, app.name)
+
+		if !dryRun {
+			_, _, _ = utils.ExecCommand("", "kubectl", "patch", "application", app.name, "-n", ns, "--type", "merge", "-p", `{"operation":{"sync":{"prune":true,"syncStrategy":{"apply":{}}}}}`)
+		}
+	}
+
+	return nil
+}
+
+func applyGitOpsIngress(ns string, dryRun bool) error {
+	manifest := fmt.Sprintf(`apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stackpulse-observability
+  namespace: %s
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /grafana(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: stackpulse-prometheus-grafana
+                port:
+                  number: 80
+          - path: /prometheus(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: stackpulse-prometheus-kube-prometheus
+                port:
+                  number: 9090
+          - path: /alertmanager(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: stackpulse-prometheus-kube-alertmanager
+                port:
+                  number: 9093
+          - path: /argocd(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: stackpulse-argocd-server
+                port:
+                  number: 80
+`, ns)
+
+	if dryRun {
+		fmt.Printf("%s[DRY-RUN] kubectl apply -f stackpulse-observability-ingress.yaml\n", utils.PrefixInfo)
+		return nil
+	}
+
+	tmpPath := filepath.Join(os.TempDir(), "stackpulse-observability-ingress.yaml")
+	if err := os.WriteFile(tmpPath, []byte(manifest), 0600); err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(tmpPath) }()
+
+	_, stderr, err := utils.ExecCommand("", "kubectl", "apply", "-f", tmpPath)
+	if err != nil {
+		return fmt.Errorf("failed to apply ingress routing: %w (stderr: %s)", err, stderr)
+	}
+	return nil
+}
+
+func fetchIngressIP(ns string) (string, error) {
+	for i := 0; i < 15; i++ {
+		out, _, err := utils.ExecCommand("", "kubectl", "get", "ingress", "stackpulse-observability", "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
+		if err == nil && out != "" {
+			return out, nil
+		}
+		time.Sleep(2 * time.Second)
+	}
+	return "", fmt.Errorf("ingress IP not resolved yet")
+}

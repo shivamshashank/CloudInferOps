@@ -74,25 +74,23 @@ func InstallK3s(targetKubeconfig string) error {
 	fmt.Printf("%sKubeconfig written successfully.\n", utils.PrefixOK)
 
 	// 3. Wait for Kubernetes node scheduler readiness
-	fmt.Printf("%sWaiting for Kubernetes nodes to become ready...\n", utils.PrefixInfo)
+	stopSpinner := utils.StartSpinner("Waiting for Kubernetes nodes to become ready...")
 
 	kubeEnv := map[string]string{"KUBECONFIG": targetKubeconfig}
 
-	// Try waiting up to 120 seconds
+	// Try waiting for nodes to initialize
 	success := false
-	for i := 0; i < 24; i++ {
+	for i := 0; i < 60; i++ {
 		// Run kubectl wait for node readiness
-		var waitStderr string
-		var waitErr error
-		_, waitStderr, waitErr = utils.ExecCommandEnv("", kubeEnv, "kubectl", "wait", "--for=condition=Ready", "node", "--all", "--timeout=10s")
+		_, _, waitErr := utils.ExecCommandEnv("", kubeEnv, "kubectl", "wait", "--for=condition=Ready", "node", "--all", "--timeout=10s")
 		if waitErr == nil {
 			success = true
 			break
 		}
 		// If kubectl failed or nodes aren't ready, sleep and try again
-		fmt.Printf("%sNodes are initializing, retrying in 5 seconds... (%s)\n", utils.PrefixInfo, waitStderr)
 		time.Sleep(5 * time.Second)
 	}
+	stopSpinner()
 
 	if !success {
 		return fmt.Errorf("kubernetes nodes failed to become ready in time. Please check system logs")

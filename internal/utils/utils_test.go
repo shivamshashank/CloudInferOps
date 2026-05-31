@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"net"
 	"os"
 	"testing"
 )
@@ -30,6 +31,20 @@ func TestGetLocalIP(t *testing.T) {
 	if ip == "" {
 		t.Error("expected non-empty IP address")
 	}
+}
+
+func TestGetPublicIP(t *testing.T) {
+	ip := GetPublicIP()
+	if ip != "" {
+		if parsed := net.ParseIP(ip); parsed == nil {
+			t.Errorf("GetPublicIP returned invalid IP format: %s", ip)
+		}
+	}
+}
+
+func TestIsCloudVM(t *testing.T) {
+	// Just ensure it does not panic and safely returns a boolean
+	IsCloudVM()
 }
 
 func TestExecCommand(t *testing.T) {

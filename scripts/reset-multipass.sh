@@ -17,7 +17,7 @@ VM_NAME="stackpulse-vm"
 
 echo "🚀 Launching new Multipass VM ($VM_NAME)..."
 # Allocating standard resources suitable for running K3s and the Observability stack
-multipass launch --name "$VM_NAME" --cpus 2 --memory 4G --disk 20G
+multipass launch --name "$VM_NAME" --cpus 4 --memory 8G --disk 20G
 
 echo "📦 Transferring binary to the VM..."
 multipass transfer stackpulse "$VM_NAME":/home/ubuntu/stackpulse
@@ -29,4 +29,4 @@ echo "✅ Setup complete! Your fresh VM is ready."
 
 multipass shell $VM_NAME
 
-echo "👉 Then run: ./stackpulse doctor"
+echo "👉 Then run: sudo ./stackpulse doctor"

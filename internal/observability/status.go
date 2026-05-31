@@ -3,6 +3,7 @@ package observability
 import (
 	"encoding/base64"
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/shivamshashank/StackPulse/internal/config"
@@ -32,6 +33,7 @@ func PrintStatus() error {
 	tempoStatus := "⚪  Not Deployed"
 	otelStatus := "⚪  Not Deployed"
 	webhookStatus := "⚪  Not Deployed"
+	argoStatus := "⚪  Not Deployed"
 
 	if hasPods {
 		lines := strings.Split(strings.TrimSpace(podsOut), "\n")
@@ -63,6 +65,8 @@ func PrintStatus() error {
 				otelStatus = statusStr
 			} else if strings.Contains(podName, "webhook-handler") {
 				webhookStatus = statusStr
+			} else if strings.Contains(podName, "argocd") {
+				argoStatus = statusStr
 			}
 		}
 	}
@@ -74,6 +78,25 @@ func PrintStatus() error {
 		decoded, err := DecodeBase64(strings.TrimSpace(pwdSecret))
 		if err == nil {
 			plainPassword = decoded
+		}
+	}
+
+	// 3b. Fetch and Decode ArgoCD Admin Password
+	argoPassword := "<unretrievable>"
+	argoSecretName := "argocd-initial-admin-secret" // Default fallback
+	if out, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "-n", ns, "-o", "name"); err == nil {
+		for _, line := range strings.Split(out, "\n") {
+			if strings.Contains(line, "initial-admin-secret") {
+				argoSecretName = strings.TrimPrefix(strings.TrimSpace(line), "secret/")
+				break
+			}
+		}
+	}
+	argoSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", argoSecretName, "-n", ns, "-o", "jsonpath={.data.password}")
+	if err == nil && argoSecret != "" {
+		decoded, err := DecodeBase64(strings.TrimSpace(argoSecret))
+		if err == nil {
+			argoPassword = decoded
 		}
 	}
 
@@ -91,7 +114,50 @@ func PrintStatus() error {
 	fmt.Printf("    %-25s %s\n", "Loki Logging:", lokiStatus)
 	fmt.Printf("    %-25s %s\n", "Tempo Tracing:", tempoStatus)
 	fmt.Printf("    %-25s %s\n", "OTel Collector:", otelStatus)
+	fmt.Printf("    %-25s %s\n", "ArgoCD Delivery:", argoStatus)
 	fmt.Printf("    %-25s %s\n", "Custom Webhook Handler:", webhookStatus)
+	fmt.Println()
+
+	// 5. GitOps Status
+	gitOpsMode := "Local Helm"
+	appCount := 0
+	syncedCount := 0
+	healthyCount := 0
+
+	hasGitOpsServer := false
+	if gitServerOut, _, err := utils.ExecCommand("", "kubectl", "get", "deployment", "stackpulse-git-server", "-n", ns, "--no-headers"); err == nil && gitServerOut != "" {
+		hasGitOpsServer = true
+	}
+
+	if config.GlobalConfig.Observability.ArgoCD {
+		if hasGitOpsServer {
+			gitOpsMode = "Local GitOps"
+		} else {
+			gitOpsMode = "ArgoCD Managed"
+		}
+
+		appsOut, _, err := utils.ExecCommand("", "kubectl", "get", "applications", "-n", ns, "--no-headers")
+		if err == nil && appsOut != "" {
+			lines := strings.Split(strings.TrimSpace(appsOut), "\n")
+			appCount = len(lines)
+			for _, line := range lines {
+				if strings.Contains(line, "Synced") {
+					syncedCount++
+				}
+				if strings.Contains(line, "Healthy") {
+					healthyCount++
+				}
+			}
+		}
+	}
+
+	fmt.Println("📦  GitOps Overview:")
+	fmt.Printf("    %-25s %s\n", "Mode:", utils.ColorCyan+gitOpsMode+utils.ColorReset)
+	if config.GlobalConfig.Observability.ArgoCD {
+		fmt.Printf("    %-25s %d\n", "Applications:", appCount)
+		fmt.Printf("    %-25s %d/%d\n", "Synced:", syncedCount, appCount)
+		fmt.Printf("    %-25s %d/%d\n", "Healthy:", healthyCount, appCount)
+	}
 	fmt.Println()
 
 	if config.GlobalConfig.Observability.Prometheus {
@@ -111,12 +177,33 @@ func PrintStatus() error {
 			}
 		}
 
+		// If we are on a cloud VM, the ingress IP might be the private subnet IP.
+		// Attempt to resolve the public IP for correct external browser access.
+		var detectedPublicIP string
+		if parsedIP := net.ParseIP(instanceIP); parsedIP != nil && parsedIP.IsPrivate() {
+			detectedPublicIP = utils.GetPublicIP()
+			if utils.IsCloudVM() && detectedPublicIP != "" {
+				instanceIP = detectedPublicIP
+			}
+		}
+
 		fmt.Println("📊  Access Telemetry Dashboards via Ingress:")
 		fmt.Printf("    🔗  Grafana Dashboard:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/grafana/", instanceIP)+utils.ColorReset)
 		fmt.Printf("    🔗  Prometheus Server:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/prometheus/", instanceIP)+utils.ColorReset)
 		fmt.Printf("    🔗  Alertmanager Panel:  %s\n", utils.ColorBold+fmt.Sprintf("http://%s/alertmanager/", instanceIP)+utils.ColorReset)
+		if config.GlobalConfig.Observability.ArgoCD {
+			fmt.Printf("    🔗  ArgoCD Dashboard:    %s\n", utils.ColorBold+fmt.Sprintf("http://%s/argocd", instanceIP)+utils.ColorReset)
+		}
+
+		if !utils.IsCloudVM() && detectedPublicIP != "" && detectedPublicIP != instanceIP {
+			fmt.Printf("    %s (External access public IP: %s)\n", utils.PrefixInfo, utils.ColorBold+detectedPublicIP+utils.ColorReset)
+		}
+
 		fmt.Printf("    🔑  Username:            admin\n")
-		fmt.Printf("    🔑  Password:            %s\n", utils.ColorGreen+plainPassword+utils.ColorReset)
+		fmt.Printf("    🔑  Grafana Password:    %s\n", utils.ColorGreen+plainPassword+utils.ColorReset)
+		if config.GlobalConfig.Observability.ArgoCD {
+			fmt.Printf("    🔑  ArgoCD Password:     %s\n", utils.ColorGreen+argoPassword+utils.ColorReset)
+		}
 		fmt.Println()
 	}
 

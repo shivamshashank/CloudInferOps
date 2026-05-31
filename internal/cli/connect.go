@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"net"
 	"os/exec"
 	"strings"
 	"time"
@@ -51,6 +52,15 @@ decrypts Grafana admin credentials, and automatically opens your default web bro
 			ingressIP = utils.GetLocalIP()
 		}
 
+		// If we are on a cloud VM, the ingress IP might be the private subnet IP.
+		if parsedIP := net.ParseIP(ingressIP); parsedIP != nil && parsedIP.IsPrivate() {
+			if utils.IsCloudVM() {
+				if publicIP := utils.GetPublicIP(); publicIP != "" {
+					ingressIP = publicIP
+				}
+			}
+		}
+
 		// 4. Fetch and decode Grafana admin password
 		plainPassword := "<unretrievable>"
 		pwdSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "stackpulse-prometheus-grafana", "-n", ns, "-o", "jsonpath={.data.admin-password}")
@@ -61,16 +71,41 @@ decrypts Grafana admin credentials, and automatically opens your default web bro
 			}
 		}
 
+		// 4b. Fetch and decode ArgoCD admin password
+		argoPassword := "<unretrievable>"
+		argoSecretName := "argocd-initial-admin-secret"
+		if out, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "-n", ns, "-o", "name"); err == nil {
+			for _, line := range strings.Split(out, "\n") {
+				if strings.Contains(line, "initial-admin-secret") {
+					argoSecretName = strings.TrimPrefix(strings.TrimSpace(line), "secret/")
+					break
+				}
+			}
+		}
+		argoSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", argoSecretName, "-n", ns, "-o", "jsonpath={.data.password}")
+		if err == nil && argoSecret != "" {
+			decoded, err := observability.DecodeBase64(strings.TrimSpace(argoSecret))
+			if err == nil {
+				argoPassword = decoded
+			}
+		}
+
 		// 5. Output beautiful visual details card
 		fmt.Println()
 		fmt.Println("-----------------------------------------------------------------")
 		fmt.Printf("🚀  %sTelemetry Stack Access Details Ready!%s\n", utils.ColorBold, utils.ColorReset)
 		fmt.Println("-----------------------------------------------------------------")
 		fmt.Printf("🌐  Grafana Dashboard:  %s\n", utils.ColorBold+fmt.Sprintf("http://%s/grafana", ingressIP)+utils.ColorReset)
+		if config.GlobalConfig.Observability.ArgoCD {
+			fmt.Printf("🌐  ArgoCD Dashboard:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/argocd", ingressIP)+utils.ColorReset)
+		}
 		fmt.Printf("🌐  Prometheus Server:  %s\n", utils.ColorBold+fmt.Sprintf("http://%s/prometheus", ingressIP)+utils.ColorReset)
 		fmt.Printf("🌐  Alertmanager Panel: %s\n", utils.ColorBold+fmt.Sprintf("http://%s/alertmanager", ingressIP)+utils.ColorReset)
 		fmt.Printf("👤  Username:           admin\n")
-		fmt.Printf("🔑  Plain Password:     %s\n", utils.ColorGreen+plainPassword+utils.ColorReset)
+		fmt.Printf("🔑  Grafana Password:   %s\n", utils.ColorGreen+plainPassword+utils.ColorReset)
+		if config.GlobalConfig.Observability.ArgoCD {
+			fmt.Printf("🔑  ArgoCD Password:    %s\n", utils.ColorGreen+argoPassword+utils.ColorReset)
+		}
 		fmt.Println("-----------------------------------------------------------------")
 
 		// 6. Launch browser to Grafana

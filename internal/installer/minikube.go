@@ -3,6 +3,7 @@ package installer
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -40,6 +41,16 @@ func DownloadMinikubeBinary() error {
 func InstallMinikube() error {
 	fmt.Printf("%sInitializing Minikube cluster setup...\n", utils.PrefixInfo)
 
+	realHome, err := utils.GetRealHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get real home directory: %w", err)
+	}
+	targetKubeconfig := filepath.Join(realHome, ".kube", "config")
+
+	// Export KUBECONFIG and MINIKUBE_HOME so minikube provisions in the correct user directory
+	_ = os.Setenv("KUBECONFIG", targetKubeconfig)
+	_ = os.Setenv("MINIKUBE_HOME", realHome)
+
 	// Build minikube start command — use Docker driver and --force for root compatibility
 	minikubeArgs := []string{"start", "--driver=docker"}
 	if os.Getuid() == 0 {
@@ -52,21 +63,29 @@ func InstallMinikube() error {
 		return fmt.Errorf("failed to execute 'minikube start': %w (stderr: %s)", err, stderr)
 	}
 
+	// Fix file ownership if created under sudo
+	if os.Getuid() == 0 {
+		if sudoUser := os.Getenv("SUDO_USER"); sudoUser != "" {
+			_, _, _ = utils.ExecCommand("", "chown", sudoUser, targetKubeconfig)
+			_, _, _ = utils.ExecCommand("", "chown", "-R", sudoUser, filepath.Join(realHome, ".minikube"))
+		}
+	}
+
 	fmt.Printf("%sMinikube cluster started successfully.\n", utils.PrefixOK)
 
 	// Wait for Kubernetes node scheduler readiness
-	fmt.Printf("%sWaiting for Kubernetes nodes to become ready...\n", utils.PrefixInfo)
+	stopSpinner := utils.StartSpinner("Waiting for Kubernetes nodes to become ready...")
 
 	success := false
-	for i := 0; i < 12; i++ {
-		_, stderr, err = utils.ExecCommand("", "kubectl", "wait", "--for=condition=Ready", "node", "--all", "--timeout=10s")
+	for i := 0; i < 60; i++ {
+		_, _, err = utils.ExecCommand("", "kubectl", "wait", "--for=condition=Ready", "node", "--all", "--timeout=10s")
 		if err == nil {
 			success = true
 			break
 		}
-		fmt.Printf("%sNodes are initializing, retrying in 5 seconds... (%s)\n", utils.PrefixInfo, stderr)
 		time.Sleep(5 * time.Second)
 	}
+	stopSpinner()
 
 	if !success {
 		return fmt.Errorf("minikube nodes failed to become ready in time. Please check your minikube status")
