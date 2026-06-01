@@ -232,65 +232,6 @@ func CheckIngressController() CheckResult {
 	}
 }
 
-// CheckCloudCredentials scans local and env credentials for AWS, GCP, and Azure
-func CheckCloudCredentials() CheckResult {
-	detected := []string{}
-	home, err := utils.GetRealHomeDir()
-
-	// 1. AWS
-	hasAWS := false
-	if os.Getenv("AWS_ACCESS_KEY_ID") != "" {
-		hasAWS = true
-	} else if err == nil {
-		if _, statErr := os.Stat(filepath.Join(home, ".aws", "credentials")); statErr == nil {
-			hasAWS = true
-		}
-	}
-	if hasAWS {
-		detected = append(detected, "AWS")
-	}
-
-	// 2. GCP
-	hasGCP := false
-	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") != "" {
-		hasGCP = true
-	} else if err == nil {
-		if _, statErr := os.Stat(filepath.Join(home, ".config", "gcloud", "application_default_credentials.json")); statErr == nil {
-			hasGCP = true
-		}
-	}
-	if hasGCP {
-		detected = append(detected, "GCP")
-	}
-
-	// 3. Azure
-	hasAzure := false
-	if os.Getenv("AZURE_TENANT_ID") != "" || os.Getenv("AZURE_CLIENT_ID") != "" {
-		hasAzure = true
-	} else if err == nil {
-		if _, statErr := os.Stat(filepath.Join(home, ".azure")); statErr == nil {
-			hasAzure = true
-		}
-	}
-	if hasAzure {
-		detected = append(detected, "Azure")
-	}
-
-	if len(detected) == 0 {
-		return CheckResult{
-			Name:    "Cloud Credentials",
-			Status:  StatusInfo,
-			Message: "Cloud Credentials: None detected (running in local/bare-metal mode)",
-		}
-	}
-
-	return CheckResult{
-		Name:    "Cloud Credentials",
-		Status:  StatusOK,
-		Message: fmt.Sprintf("Cloud Integrations active: %s", strings.Join(detected, ", ")),
-	}
-}
-
 func preferredKubeconfig() string {
 	if kubeconfig := strings.TrimSpace(os.Getenv("KUBECONFIG")); kubeconfig != "" {
 		return kubeconfig

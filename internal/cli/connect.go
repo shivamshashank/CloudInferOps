@@ -54,10 +54,8 @@ decrypts Grafana admin credentials, and automatically opens your default web bro
 
 		// If we are on a cloud VM, the ingress IP might be the private subnet IP.
 		if parsedIP := net.ParseIP(ingressIP); parsedIP != nil && parsedIP.IsPrivate() {
-			if utils.IsCloudVM() {
-				if publicIP := utils.GetPublicIP(); publicIP != "" {
-					ingressIP = publicIP
-				}
+			if publicIP := utils.GetPublicIP(); publicIP != "" {
+				ingressIP = publicIP
 			}
 		}
 

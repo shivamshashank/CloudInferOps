@@ -65,7 +65,6 @@ func RunDoctor() *DoctorReport {
 	// System checks
 	report.Results = append(report.Results, CheckOS())
 	report.Results = append(report.Results, CheckInternet())
-	report.Results = append(report.Results, CheckCloudCredentials())
 
 	// Tool checks
 	report.Results = append(report.Results, CheckTool("kubectl", false))

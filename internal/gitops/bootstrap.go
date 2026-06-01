@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -180,11 +181,9 @@ func BootstrapGitOps(dryRun bool) error {
 		}
 
 		if parsedIP := net.ParseIP(instanceIP); parsedIP != nil && parsedIP.IsPrivate() {
-			if utils.IsCloudVM() {
-				detectedPublicIP := utils.GetPublicIP()
-				if detectedPublicIP != "" {
-					instanceIP = detectedPublicIP
-				}
+			detectedPublicIP := utils.GetPublicIP()
+			if detectedPublicIP != "" {
+				instanceIP = detectedPublicIP
 			}
 		}
 	}
@@ -648,6 +647,7 @@ func waitForArgoCDApps(ns string, dryRun bool) {
 			}
 
 			if len(pendingApps) > 0 {
+				sort.Strings(pendingApps)
 				currentPending := strings.Join(pendingApps, ", ")
 				if currentPending != lastPendingApps {
 					stopSpinner()
