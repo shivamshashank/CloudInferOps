@@ -77,6 +77,7 @@ if echo "$*" | grep -q "argocd-initial-admin-secret"; then
     echo "YXJnb3Bhc3M=" # "argopass" in base64
     exit 0
 fi
+echo "mocked-k8s-response"
 exit 0
 `
 	if err := os.WriteFile(mockKubectlPath, []byte(mockKubectlContent), 0755); err != nil {
@@ -103,6 +104,7 @@ func TestConnectCommand_BrowserExecution(t *testing.T) {
 
 	mockKubectlPath := filepath.Join(mockBinDir, "kubectl")
 	if err := os.WriteFile(mockKubectlPath, []byte(`#!/bin/sh
+echo "mock-context"
 exit 0
 `), 0755); err != nil {
 		t.Fatal(err)

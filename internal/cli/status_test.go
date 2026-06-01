@@ -17,6 +17,7 @@ func TestStatusCommand(t *testing.T) {
 
 	mockKubectlPath := filepath.Join(mockBinDir, "kubectl")
 	mockKubectlContent := `#!/bin/sh
+echo "mock-context"
 exit 0
 `
 	if err := os.WriteFile(mockKubectlPath, []byte(mockKubectlContent), 0755); err != nil {
