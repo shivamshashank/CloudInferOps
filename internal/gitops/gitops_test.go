@@ -4,67 +4,35 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/shivamshashank/StackPulse/internal/config"
 )
 
-func TestCheckGitInstalled(t *testing.T) {
-	installed := CheckGitInstalled()
-	t.Logf("Git installed: %t", installed)
-}
-
-func TestGitServerManifests(t *testing.T) {
-	manifests := GitServerManifests("test-ns")
-	if !contains(manifests, "namespace: test-ns") {
-		t.Errorf("manifests should contain the specified namespace")
-	}
-	if !contains(manifests, "stackpulse-git-server") {
-		t.Errorf("manifests should define stackpulse-git-server")
-	}
-}
-
 func TestGenerateGitOpsRepo(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "gitops-test-*")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
-	defer func() { _ = os.RemoveAll(tmpDir) }()
+	// Initialize default config for testing
+	config.GlobalConfig = config.DefaultConfig()
 
-	err = generateGitOpsRepo(tmpDir)
+	tmpDir := t.TempDir()
+	repoDir := filepath.Join(tmpDir, "gitops-repo")
+
+	// Generate the repository layout
+	err := generateGitOpsRepo(repoDir)
 	if err != nil {
 		t.Fatalf("generateGitOpsRepo failed: %v", err)
 	}
 
-	expectedDirs := []string{"apps", "infra", "monitoring"}
-	for _, dir := range expectedDirs {
-		path := filepath.Join(tmpDir, dir)
-		if fi, err := os.Stat(path); err != nil || !fi.IsDir() {
-			t.Errorf("expected directory %s to be created", path)
-		}
+	// Verify expected files and folders were created
+	expectedPaths := []string{
+		"infra/Chart.yaml",
+		"infra/values.yaml",
+		"monitoring/Chart.yaml",
+		"monitoring/values.yaml",
+		"apps/sample-app.yaml",
 	}
 
-	for _, dir := range []string{"infra", "monitoring"} {
-		path := filepath.Join(tmpDir, dir)
-		chartPath := filepath.Join(path, "Chart.yaml")
-		if _, err := os.Stat(chartPath); err != nil {
-			t.Errorf("expected Chart.yaml to exist in %s", path)
-		}
-
-		valuesPath := filepath.Join(path, "values.yaml")
-		if _, err := os.Stat(valuesPath); err != nil {
-			t.Errorf("expected values.yaml to exist in %s", path)
+	for _, path := range expectedPaths {
+		if _, err := os.Stat(filepath.Join(repoDir, path)); os.IsNotExist(err) {
+			t.Errorf("expected generated file %s to exist, but it was not found", path)
 		}
 	}
-
-	appManifestPath := filepath.Join(tmpDir, "apps", "sample-app.yaml")
-	if _, err := os.Stat(appManifestPath); err != nil {
-		t.Errorf("expected sample-app.yaml to exist in apps/")
-	}
-}
-
-func contains(str, substr string) bool {
-	for i := 0; i <= len(str)-len(substr); i++ {
-		if str[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

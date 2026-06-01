@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"os/user"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -209,30 +210,43 @@ func GetRealHomeDir() (string, error) {
 // It also listens for SIGINT/SIGTERM to gracefully handle Ctrl+C.
 func StartSpinner(message string) func() {
 	done := make(chan struct{})
+	ack := make(chan struct{})
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
 		frames := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 		i := 0
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+
+		// Print first frame immediately
+		fmt.Printf("\r\033[K%s%s %s", PrefixInfo, message, frames[0])
+		i++
+
 		for {
 			select {
 			case <-done:
 				fmt.Print("\r\033[K") // Clear line when done
 				signal.Stop(sigChan)
+				close(ack)
 				return
 			case <-sigChan:
 				fmt.Print("\r\033[K") // Clear line on Ctrl+C
 				fmt.Printf("%sOperation cancelled by user (Ctrl+C).\n", PrefixWarn)
 				os.Exit(130) // Standard exit code for SIGINT
-			default:
+			case <-ticker.C:
 				fmt.Printf("\r\033[K%s%s %s", PrefixInfo, message, frames[i%len(frames)])
 				i++
-				time.Sleep(100 * time.Millisecond)
 			}
 		}
 	}()
+
+	var once sync.Once
 	return func() {
-		close(done)
+		once.Do(func() {
+			close(done)
+			<-ack // Wait for goroutine to clear the line before returning
+		})
 	}
 }

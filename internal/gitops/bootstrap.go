@@ -60,17 +60,22 @@ func BootstrapGitOps(dryRun bool) error {
 
 	// Wait for ingress controller
 	if !dryRun {
-		fmt.Printf("%sWaiting for NGINX Ingress Controller to become ready...\n", utils.PrefixInfo)
+		stopSpinner := utils.StartSpinner("Waiting for NGINX Ingress Controller to become ready...")
+		ready := false
 		for i := 0; i < 30; i++ {
 			_, _, waitErr := utils.ExecCommand("", "kubectl", "wait", "--namespace", ns,
 				"--for=condition=Ready", "pod",
 				"-l", "app.kubernetes.io/component=controller,app.kubernetes.io/instance=stackpulse-ingress-nginx",
 				"--timeout=10s")
 			if waitErr == nil {
-				fmt.Printf("%sNGINX Ingress Controller is ready.\n", utils.PrefixOK)
+				ready = true
 				break
 			}
 			time.Sleep(1 * time.Second)
+		}
+		stopSpinner()
+		if ready {
+			fmt.Printf("%sNGINX Ingress Controller is ready.\n", utils.PrefixOK)
 		}
 	}
 
@@ -85,13 +90,31 @@ func BootstrapGitOps(dryRun bool) error {
 
 	// Wait for ArgoCD CRDs to initialize
 	if !dryRun {
-		fmt.Printf("%sWaiting for ArgoCD CRDs to initialize...\n", utils.PrefixInfo)
+		stopSpinner := utils.StartSpinner("Waiting for ArgoCD CRDs to initialize...")
 		for i := 0; i < 30; i++ {
 			if _, _, err := utils.ExecCommand("", "kubectl", "get", "crd", "applications.argoproj.io"); err == nil {
 				time.Sleep(3 * time.Second) // Let controller settle
 				break
 			}
 			time.Sleep(2 * time.Second)
+		}
+		stopSpinner()
+
+		stopSpinner2 := utils.StartSpinner("Waiting for ArgoCD Repo Server to become ready...")
+		repoReady := false
+		for i := 0; i < 30; i++ {
+			_, _, waitErr := utils.ExecCommand("", "kubectl", "wait", "--namespace", ns,
+				"--for=condition=Ready", "pod",
+				"-l", "app.kubernetes.io/name=argocd-repo-server",
+				"--timeout=10s")
+			if waitErr == nil {
+				repoReady = true
+				break
+			}
+		}
+		stopSpinner2()
+		if repoReady {
+			fmt.Printf("%sArgoCD Repo Server is ready.\n", utils.PrefixOK)
 		}
 	}
 
@@ -143,6 +166,9 @@ func BootstrapGitOps(dryRun bool) error {
 		return err
 	}
 
+	// 10. Wait for everything to become healthy
+	waitForArgoCDApps(ns, dryRun)
+
 	// Output success instructions
 	instanceIP := "127.0.0.1"
 	if !dryRun {
@@ -174,10 +200,8 @@ func BootstrapGitOps(dryRun bool) error {
 	fmt.Printf("📊  Alertmanager Panel:  %s\n", utils.ColorBold+fmt.Sprintf("http://%s/alertmanager/", instanceIP)+utils.ColorReset)
 	fmt.Println("\n    👤  Default credentials:   Username: admin")
 	fmt.Printf("                               Password: Use 'sudo stackpulse status' to decrypt\n")
-	fmt.Printf("\n    %s Note: ArgoCD is currently bootstrapping the Prometheus, Loki, Tempo, and OTel pods.\n", utils.PrefixInfo)
-	fmt.Println("         It will take 1-2 minutes for the ArgoCD repo-server to pull the Helm dependencies,")
-	fmt.Println("         reconcile their states, and initialize all container pods.")
-	fmt.Printf("         Check progress using: %s\n", utils.ColorBold+"kubectl get pods -n "+ns+utils.ColorReset)
+	fmt.Println("\n    ⏳  Note: It may take 5-6 minutes for all services and pods to fully start.")
+	fmt.Printf("           Run %s to monitor the live progress.\n", utils.ColorCyan+"sudo stackpulse status"+utils.ColorReset)
 	fmt.Println("-----------------------------------------------------------------")
 
 	return nil
@@ -464,6 +488,31 @@ spec:
       selfHeal: true
     syncOptions:
       - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/template/metadata/annotations/checksum~1secret
+        - /spec/template/metadata/annotations/checksum~1config
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /spec/template/metadata/annotations/checksum~1secret
+        - /spec/template/metadata/annotations/checksum~1config
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jsonPointers:
+        - /webhooks/0/clientConfig/caBundle
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jsonPointers:
+        - /webhooks/0/clientConfig/caBundle
 `, app.name, ns, app.path, ns)
 
 		if dryRun {
@@ -563,4 +612,52 @@ func fetchIngressIP(ns string) (string, error) {
 		time.Sleep(2 * time.Second)
 	}
 	return "", fmt.Errorf("ingress IP not resolved yet")
+}
+
+func waitForArgoCDApps(ns string, dryRun bool) {
+	if dryRun {
+		return
+	}
+	stopSpinner := utils.StartSpinner("Waiting for ArgoCD applications to become Healthy and Synced (this may take up to 2 minutes)...")
+	var lastPendingApps string
+
+	for i := 0; i < 24; i++ { // Wait up to 2 minutes
+		out, _, err := utils.ExecCommand("", "kubectl", "get", "applications", "-n", ns, "-o", "jsonpath={range .items[*]}{.metadata.name}={.status.sync.status},{.status.health.status}\n{end}")
+		if err == nil && out != "" {
+			var pendingApps []string
+			validAppsCount := 0
+			lines := strings.Split(strings.TrimSpace(out), "\n")
+
+			for _, line := range lines {
+				if line == "" {
+					continue
+				}
+				parts := strings.SplitN(line, "=", 2)
+				if len(parts) == 2 {
+					validAppsCount++
+					name, status := parts[0], parts[1]
+					if status != "Synced,Healthy" {
+						pendingApps = append(pendingApps, name)
+					}
+				}
+			}
+			if validAppsCount > 0 && len(pendingApps) == 0 {
+				stopSpinner()
+				fmt.Printf("%sAll ArgoCD applications are successfully Synced and Healthy!\n", utils.PrefixOK)
+				return
+			}
+
+			if len(pendingApps) > 0 {
+				currentPending := strings.Join(pendingApps, ", ")
+				if currentPending != lastPendingApps {
+					stopSpinner()
+					stopSpinner = utils.StartSpinner(fmt.Sprintf("Waiting for ArgoCD applications (pending: %s)...", currentPending))
+					lastPendingApps = currentPending
+				}
+			}
+		}
+		time.Sleep(5 * time.Second)
+	}
+	stopSpinner()
+	fmt.Printf("%sTimeout waiting for applications to become healthy. Check progress using 'stackpulse status'.\n", utils.PrefixWarn)
 }
