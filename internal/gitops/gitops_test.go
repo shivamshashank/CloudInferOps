@@ -33,13 +33,16 @@ func TestGenerateGitOpsRepo(t *testing.T) {
 		t.Fatalf("generateGitOpsRepo failed: %v", err)
 	}
 
-	expectedDirs := []string{"prometheus", "loki", "tempo", "otel"}
+	expectedDirs := []string{"apps", "infra", "monitoring"}
 	for _, dir := range expectedDirs {
 		path := filepath.Join(tmpDir, dir)
 		if fi, err := os.Stat(path); err != nil || !fi.IsDir() {
 			t.Errorf("expected directory %s to be created", path)
 		}
+	}
 
+	for _, dir := range []string{"infra", "monitoring"} {
+		path := filepath.Join(tmpDir, dir)
 		chartPath := filepath.Join(path, "Chart.yaml")
 		if _, err := os.Stat(chartPath); err != nil {
 			t.Errorf("expected Chart.yaml to exist in %s", path)
@@ -49,6 +52,11 @@ func TestGenerateGitOpsRepo(t *testing.T) {
 		if _, err := os.Stat(valuesPath); err != nil {
 			t.Errorf("expected values.yaml to exist in %s", path)
 		}
+	}
+
+	appManifestPath := filepath.Join(tmpDir, "apps", "sample-app.yaml")
+	if _, err := os.Stat(appManifestPath); err != nil {
+		t.Errorf("expected sample-app.yaml to exist in apps/")
 	}
 }
 

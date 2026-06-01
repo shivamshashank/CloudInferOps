@@ -65,6 +65,7 @@ func RunDoctor() *DoctorReport {
 	// System checks
 	report.Results = append(report.Results, CheckOS())
 	report.Results = append(report.Results, CheckInternet())
+	report.Results = append(report.Results, CheckCloudCredentials())
 
 	// Tool checks
 	report.Results = append(report.Results, CheckTool("kubectl", false))
@@ -73,11 +74,17 @@ func RunDoctor() *DoctorReport {
 	// Hardware checks
 	report.Results = append(report.Results, CheckMemory())
 	report.Results = append(report.Results, CheckCPU())
+	report.Results = append(report.Results, CheckDisk())
 
 	// K8s specific checks
 	k8sResults, hasK8s := CheckK8sCluster()
 	report.Results = append(report.Results, k8sResults...)
 	report.HasK8s = hasK8s
+
+	if hasK8s {
+		report.Results = append(report.Results, CheckK8sVersion())
+		report.Results = append(report.Results, CheckIngressController())
+	}
 
 	// Determine if we have fatal errors
 	for _, res := range report.Results {

@@ -134,3 +134,15 @@ exit 1
 		t.Error("expected cluster to not be detected when kubectl command fails")
 	}
 }
+
+func TestCheckCloudCredentials(t *testing.T) {
+	res := CheckCloudCredentials()
+	if res.Name != "Cloud Credentials" {
+		t.Errorf("Expected name 'Cloud Credentials', got '%s'", res.Name)
+	}
+}
+
+func TestCheckK8sVersionAndIngress(t *testing.T) {
+	_ = CheckK8sVersion()
+	_ = CheckIngressController()
+}

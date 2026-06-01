@@ -2,12 +2,15 @@ package gitops
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/shivamshashank/StackPulse/internal/config"
 	"github.com/shivamshashank/StackPulse/internal/helm"
+	"github.com/shivamshashank/StackPulse/internal/observability"
 	"github.com/shivamshashank/StackPulse/internal/utils"
 )
 
@@ -149,6 +152,15 @@ func BootstrapGitOps(dryRun bool) error {
 		} else {
 			instanceIP = utils.GetLocalIP()
 		}
+
+		if parsedIP := net.ParseIP(instanceIP); parsedIP != nil && parsedIP.IsPrivate() {
+			if utils.IsCloudVM() {
+				detectedPublicIP := utils.GetPublicIP()
+				if detectedPublicIP != "" {
+					instanceIP = detectedPublicIP
+				}
+			}
+		}
 	}
 
 	fmt.Println()
@@ -177,24 +189,111 @@ func generateGitOpsRepo(repoDir string) error {
 		return err
 	}
 
-	// Create directories
-	dirs := []string{"prometheus", "loki", "tempo", "otel"}
+	// Create aligned directory layout: apps/, infra/, monitoring/
+	dirs := []string{
+		"infra",
+		"monitoring",
+		"apps",
+	}
 	for _, dir := range dirs {
 		if err := os.MkdirAll(filepath.Join(repoDir, dir), 0755); err != nil {
 			return err
 		}
 	}
 
-	// 1. Prometheus Chart & values
-	promChart := `apiVersion: v2
-name: prometheus-gitops
+	// 1. Infra Component Chart
+	infraChart := `apiVersion: v2
+name: stackpulse-infra
 version: 1.0.0
 dependencies:
-  - name: kube-prometheus-stack
+  - name: ingress-nginx
+    version: "4.10.0"
+    repository: https://kubernetes.github.io/ingress-nginx
+`
+	if config.GlobalConfig.Observability.Thanos {
+		infraChart += `  - name: thanos
+    version: "12.5.1"
+    repository: https://charts.bitnami.com/bitnami
+`
+	}
+
+	infraValues := `ingress-nginx:
+  controller:
+    watchIngressWithoutClass: true
+`
+	if config.GlobalConfig.Observability.Thanos {
+		infraValues += `thanos:
+  existingObjstoreSecret: stackpulse-thanos-objstore
+`
+	}
+
+	if err := os.WriteFile(filepath.Join(repoDir, "infra", "Chart.yaml"), []byte(infraChart), 0644); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(repoDir, "infra", "values.yaml"), []byte(infraValues), 0644); err != nil {
+		return err
+	}
+
+	// 2. Monitoring Component Chart (umbrella SRE stack)
+	ns := config.GlobalConfig.Namespace
+	if ns == "" {
+		ns = "observability"
+	}
+
+	monitoringChart := `apiVersion: v2
+name: stackpulse-monitoring
+version: 1.0.0
+dependencies:
+`
+	if config.GlobalConfig.Observability.Prometheus {
+		monitoringChart += `  - name: kube-prometheus-stack
     version: "61.3.0"
     repository: https://prometheus-community.github.io/helm-charts
 `
-	promValues := `kube-prometheus-stack:
+	}
+	if config.GlobalConfig.Observability.Loki {
+		monitoringChart += `  - name: loki-stack
+    version: "2.10.2"
+    repository: https://grafana.github.io/helm-charts
+`
+	}
+	if config.GlobalConfig.Observability.Tempo {
+		monitoringChart += `  - name: tempo
+    version: "1.10.1"
+    repository: https://grafana.github.io/helm-charts
+`
+	}
+	if config.GlobalConfig.Observability.OpenTelemetry {
+		monitoringChart += `  - name: opentelemetry-collector
+    version: "0.93.0"
+    repository: https://open-telemetry.github.io/opentelemetry-helm-charts
+`
+	}
+	if config.GlobalConfig.Observability.Pyroscope {
+		monitoringChart += `  - name: pyroscope
+    version: "1.5.0"
+    repository: https://grafana.github.io/helm-charts
+`
+	}
+	if config.GlobalConfig.Observability.VictoriaMetrics {
+		monitoringChart += `  - name: victoria-metrics-k8s-stack
+    version: "0.24.0"
+    repository: https://victoriametrics.github.io/helm-charts
+`
+	}
+
+	// Build values YAML for monitoring dependencies
+	var monValues strings.Builder
+	if config.GlobalConfig.Observability.Prometheus {
+		monValues.WriteString(`kube-prometheus-stack:
+  kubeControllerManager:
+    enabled: false
+  kubeEtcd:
+    enabled: false
+  kubeScheduler:
+    enabled: false
+  kubeProxy:
+    enabled: false
   grafana:
     ingress:
       enabled: false
@@ -203,6 +302,10 @@ dependencies:
         root_url: "%(protocol)s://%(domain)s/grafana/"
         serve_from_sub_path: true
     sidecar:
+      dashboards:
+        enabled: true
+        label: grafana_dashboard
+        searchNamespace: ALL
       datasources:
         enabled: true
         defaultDatasourceEnabled: true
@@ -229,70 +332,101 @@ dependencies:
     alertmanagerSpec:
       routePrefix: /alertmanager
       externalUrl: http://localhost/alertmanager
-`
-	if err := os.WriteFile(filepath.Join(repoDir, "prometheus", "Chart.yaml"), []byte(promChart), 0644); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(repoDir, "prometheus", "values.yaml"), []byte(promValues), 0644); err != nil {
-		return err
+  kube-state-metrics:
+`)
+		if config.GlobalConfig.Observability.KubeStateMetrics {
+			monValues.WriteString("    enabled: true\n")
+		} else {
+			monValues.WriteString("    enabled: false\n")
+		}
 	}
 
-	// 2. Loki Chart & values
-	lokiChart := `apiVersion: v2
-name: loki-gitops
-version: 1.0.0
-dependencies:
-  - name: loki-stack
-    version: "2.10.2"
-    repository: https://grafana.github.io/helm-charts
-`
-	lokiValues := `loki-stack:
+	if config.GlobalConfig.Observability.Loki {
+		monValues.WriteString(`loki-stack:
   loki:
     isDefault: false
-`
-	if err := os.WriteFile(filepath.Join(repoDir, "loki", "Chart.yaml"), []byte(lokiChart), 0644); err != nil {
-		return err
+`)
 	}
-	if err := os.WriteFile(filepath.Join(repoDir, "loki", "values.yaml"), []byte(lokiValues), 0644); err != nil {
-		return err
+	if config.GlobalConfig.Observability.Tempo {
+		monValues.WriteString(`tempo: {}
+`)
 	}
-
-	// 3. Tempo Chart & values
-	tempoChart := `apiVersion: v2
-name: tempo-gitops
-version: 1.0.0
-dependencies:
-  - name: tempo
-    version: "1.10.1"
-    repository: https://grafana.github.io/helm-charts
-`
-	tempoValues := `tempo: {}
-`
-	if err := os.WriteFile(filepath.Join(repoDir, "tempo", "Chart.yaml"), []byte(tempoChart), 0644); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(repoDir, "tempo", "values.yaml"), []byte(tempoValues), 0644); err != nil {
-		return err
-	}
-
-	// 4. OTel Chart & values
-	otelChart := `apiVersion: v2
-name: otel-gitops
-version: 1.0.0
-dependencies:
-  - name: opentelemetry-collector
-    version: "0.93.0"
-    repository: https://open-telemetry.github.io/opentelemetry-helm-charts
-`
-	otelValues := `opentelemetry-collector:
+	if config.GlobalConfig.Observability.OpenTelemetry {
+		monValues.WriteString(`opentelemetry-collector:
   mode: deployment
   image:
     repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
-`
-	if err := os.WriteFile(filepath.Join(repoDir, "otel", "Chart.yaml"), []byte(otelChart), 0644); err != nil {
+`)
+	}
+	if config.GlobalConfig.Observability.Pyroscope {
+		monValues.WriteString(`pyroscope: {}
+`)
+	}
+	if config.GlobalConfig.Observability.VictoriaMetrics {
+		monValues.WriteString(`victoria-metrics-k8s-stack:
+  vmsingle:
+    enabled: true
+  vmcluster:
+    enabled: false
+`)
+	}
+
+	if err := os.WriteFile(filepath.Join(repoDir, "monitoring", "Chart.yaml"), []byte(monitoringChart), 0644); err != nil {
 		return err
 	}
-	if err := os.WriteFile(filepath.Join(repoDir, "otel", "values.yaml"), []byte(otelValues), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(repoDir, "monitoring", "values.yaml"), []byte(monValues.String()), 0644); err != nil {
+		return err
+	}
+
+	// 2.5 Provision alert rules pack directly inside GitOps monitoring templates!
+	if config.GlobalConfig.Observability.Prometheus {
+		templatesDir := filepath.Join(repoDir, "monitoring", "templates")
+		if err := os.MkdirAll(templatesDir, 0755); err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(filepath.Join(templatesDir, "stackpulse-alerts.yaml"), []byte(observability.GetAlertRulesManifest(ns)), 0644); err != nil {
+			return err
+		}
+	}
+
+	// 3. User Applications Deployment Component (apps/)
+	sampleAppYAML := `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stackpulse-sample-app
+  namespace: default
+  labels:
+    app: sample-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sample-app
+  template:
+    metadata:
+      labels:
+        app: sample-app
+    spec:
+      containers:
+      - name: web
+        image: nginxdemos/hello:plain-text
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stackpulse-sample-app
+  namespace: default
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: sample-app
+`
+	if err := os.WriteFile(filepath.Join(repoDir, "apps", "sample-app.yaml"), []byte(sampleAppYAML), 0644); err != nil {
 		return err
 	}
 
@@ -304,10 +438,9 @@ func deployArgoCDApplications(ns string, dryRun bool) error {
 		name string
 		path string
 	}{
-		{"stackpulse-prometheus", "prometheus"},
-		{"stackpulse-loki", "loki"},
-		{"stackpulse-tempo", "tempo"},
-		{"stackpulse-otel", "otel"},
+		{"stackpulse-infra", "infra"},
+		{"stackpulse-monitoring", "monitoring"},
+		{"stackpulse-apps", "apps"},
 	}
 
 	for _, app := range apps {

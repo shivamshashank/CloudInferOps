@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/shivamshashank/StackPulse/internal/config"
 	"github.com/shivamshashank/StackPulse/internal/utils"
 	"github.com/spf13/cobra"
 )
@@ -25,6 +26,9 @@ var uninstallObservabilityCmd = &cobra.Command{
 	Use:   "observability",
 	Short: "Remove the observability stack",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := config.InitConfig(false); err != nil {
+			config.GlobalConfig = config.DefaultConfig()
+		}
 		if !forceUninstall && !promptConfirm("This will remove the StackPulse observability stack. Continue? [y/N]: ") {
 			fmt.Printf("%sUninstall cancelled.\n", utils.PrefixWarn)
 			return nil
@@ -33,25 +37,65 @@ var uninstallObservabilityCmd = &cobra.Command{
 	},
 }
 
-var uninstallAllCmd = &cobra.Command{
-	Use:   "all",
-	Short: "Remove observability stack and tear down local clusters",
+var uninstallWebhookHandlerCmd = &cobra.Command{
+	Use:   "webhook-handler",
+	Short: "Remove the custom Go webhook incident gateway",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if !forceUninstall && !promptConfirm("This will remove the observability stack AND delete any local StackPulse clusters (k3s, minikube, kind). Continue? [y/N]: ") {
+		if err := config.InitConfig(false); err != nil {
+			config.GlobalConfig = config.DefaultConfig()
+		}
+		if !forceUninstall && !promptConfirm("This will remove the StackPulse webhook handler. Continue? [y/N]: ") {
 			fmt.Printf("%sUninstall cancelled.\n", utils.PrefixWarn)
 			return nil
 		}
-		// 1. Try to uninstall observability cleanly first
-		_ = performUninstallObservability(uninstallDryRun)
+		return performUninstallWebhookHandler(uninstallDryRun)
+	},
+}
 
-		// 2. Tear down clusters
-		_ = performUninstallClusters(uninstallDryRun)
+var uninstallAllCmd = &cobra.Command{
+	Use:   "all",
+	Short: "Interactive wizard to remove observability stack, local clusters, and configs",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := config.InitConfig(false); err != nil {
+			config.GlobalConfig = config.DefaultConfig()
+		}
 
-		// 3. Remove downloaded binaries
-		_ = performUninstallBinaries(uninstallDryRun)
+		if forceUninstall {
+			_ = performUninstallObservability(uninstallDryRun)
+			_ = performUninstallClusters(uninstallDryRun)
+			_ = performUninstallBinaries(uninstallDryRun)
+			return performUninstallConfig(uninstallDryRun)
+		}
 
-		// 4. Remove configuration
-		return performUninstallConfig(uninstallDryRun)
+		fmt.Printf("\n%s🧹 StackPulse Interactive Uninstall%s\n", utils.ColorBold, utils.ColorReset)
+		fmt.Println("-----------------------------------------------------------------")
+
+		if promptConfirm("1. Remove the Observability Stack (Prometheus, Grafana, etc.)? [y/N]: ") {
+			_ = performUninstallObservability(uninstallDryRun)
+		} else {
+			fmt.Printf("%sSkipping observability stack removal.\n", utils.PrefixInfo)
+		}
+
+		if promptConfirm("2. Tear down local StackPulse clusters (k3s, minikube, kind)? [y/N]: ") {
+			_ = performUninstallClusters(uninstallDryRun)
+		} else {
+			fmt.Printf("%sSkipping local clusters tear down.\n", utils.PrefixInfo)
+		}
+
+		if promptConfirm("3. Remove downloaded helper binaries (kubectl, kind, minikube)? [y/N]: ") {
+			_ = performUninstallBinaries(uninstallDryRun)
+		} else {
+			fmt.Printf("%sSkipping binary removal.\n", utils.PrefixInfo)
+		}
+
+		if promptConfirm("4. Delete StackPulse configuration (~/.stackpulse)? [y/N]: ") {
+			_ = performUninstallConfig(uninstallDryRun)
+		} else {
+			fmt.Printf("%sSkipping configuration removal.\n", utils.PrefixInfo)
+		}
+
+		fmt.Printf("\n%sUninstall process finished.\n", utils.PrefixOK)
+		return nil
 	},
 }
 
@@ -60,6 +104,7 @@ func init() {
 	uninstallCmd.PersistentFlags().BoolVarP(&forceUninstall, "force", "f", false, "Skip confirmation prompts")
 
 	uninstallCmd.AddCommand(uninstallObservabilityCmd)
+	uninstallCmd.AddCommand(uninstallWebhookHandlerCmd)
 	uninstallCmd.AddCommand(uninstallAllCmd)
 	RootCmd.AddCommand(uninstallCmd)
 }
@@ -80,13 +125,18 @@ func performUninstallObservability(dryRun bool) error {
 		return nil
 	}
 
+	ns := config.GlobalConfig.Namespace
+	if ns == "" {
+		ns = "observability"
+	}
+
 	if dryRun {
-		fmt.Printf("%s[DRY-RUN] kubectl delete namespace observability --ignore-not-found=true\n", utils.PrefixInfo)
+		fmt.Printf("%s[DRY-RUN] kubectl delete namespace %s --ignore-not-found=true\n", utils.PrefixInfo, ns)
 		return nil
 	}
 
 	// Delete the namespace to clear all Helm releases, ConfigMaps, Secrets, and Deployments inside it
-	stopSpinner := utils.StartSpinner("Deleting observability namespace (this may take a few minutes)...")
+	stopSpinner := utils.StartSpinner(fmt.Sprintf("Deleting %s namespace (this may take a few minutes)...", ns))
 
 	// Provide kubeEnv fallback in case it's run via sudo
 	realHome, _ := utils.GetRealHomeDir()
@@ -94,14 +144,47 @@ func performUninstallObservability(dryRun bool) error {
 		"KUBECONFIG": filepath.Join(realHome, ".kube", "config"),
 	}
 
-	_, stderr, err := utils.ExecCommandEnv("", kubeEnv, "kubectl", "delete", "namespace", "observability", "--ignore-not-found=true")
+	_, stderr, err := utils.ExecCommandEnv("", kubeEnv, "kubectl", "delete", "namespace", ns, "--ignore-not-found=true")
 	stopSpinner()
 
 	if err != nil {
-		return fmt.Errorf("failed to delete observability namespace: %w (stderr: %s)", err, stderr)
+		return fmt.Errorf("failed to delete %s namespace: %w (stderr: %s)", ns, err, stderr)
 	}
 
 	fmt.Printf("%sObservability stack uninstalled successfully.\n", utils.PrefixOK)
+	return nil
+}
+
+func performUninstallWebhookHandler(dryRun bool) error {
+	fmt.Printf("%sUninstalling webhook handler...\n", utils.PrefixInfo)
+
+	if _, err := exec.LookPath("kubectl"); err != nil {
+		fmt.Printf("%s'kubectl' not found, assuming webhook handler is already removed.\n", utils.PrefixWarn)
+		return nil
+	}
+
+	ns := config.GlobalConfig.Namespace
+	if ns == "" {
+		ns = "observability"
+	}
+
+	if dryRun {
+		fmt.Printf("%s[DRY-RUN] helm uninstall stackpulse-webhook-handler -n %s\n", utils.PrefixInfo, ns)
+		fmt.Printf("%s[DRY-RUN] kubectl delete deployment,svc stackpulse-webhook-handler -n %s --ignore-not-found=true\n", utils.PrefixInfo, ns)
+		return nil
+	}
+
+	stopSpinner := utils.StartSpinner("Deleting webhook handler...")
+	realHome, _ := utils.GetRealHomeDir()
+	kubeEnv := map[string]string{
+		"KUBECONFIG": filepath.Join(realHome, ".kube", "config"),
+	}
+
+	_, _, _ = utils.ExecCommandEnv("", kubeEnv, "helm", "uninstall", "stackpulse-webhook-handler", "-n", ns)
+	_, _, _ = utils.ExecCommandEnv("", kubeEnv, "kubectl", "delete", "deployment,svc", "stackpulse-webhook-handler", "-n", ns, "--ignore-not-found=true")
+	stopSpinner()
+
+	fmt.Printf("%sWebhook handler uninstalled successfully.\n", utils.PrefixOK)
 	return nil
 }
 

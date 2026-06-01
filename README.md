@@ -7,7 +7,7 @@
 **StackPulse** is a Go-based DevOps/SRE CLI that detects your environment,
 validates Kubernetes readiness, installs lightweight Kubernetes when needed, and
 deploys a production-style observability stack with metrics, logs, traces,
-dashboards, alerts, and incident webhooks.
+dashboards, and alerts.
 
 <br />
 
@@ -95,27 +95,28 @@ sudo stackpulse status
 
 ### 📊 Full Observability Stack
 
-| Layer              | Component                |
-| ------------------ | ------------------------ |
-| Metrics            | Prometheus               |
-| Dashboards         | Grafana                  |
-| Logs               | Loki                     |
-| Traces             | Tempo                    |
-| Continuous Delivery| ArgoCD                   |
-| Telemetry Pipeline | OpenTelemetry Collector  |
-| Alerts             | Alertmanager             |
-| Node Metrics       | Node Exporter            |
-| Kubernetes Metrics | kube-state-metrics       |
-| Log Collection     | Grafana Alloy / Promtail |
-| Incident Routing   | Slack, PagerDuty         |
-| Custom Handler     | Go webhook handler       |
+| Layer               | Component                |
+| ------------------- | ------------------------ |
+| Metrics             | Prometheus               |
+| Dashboards          | Grafana                  |
+| Logs                | Loki                     |
+| Traces              | Tempo                    |
+| Continuous Delivery | ArgoCD                   |
+| Telemetry Pipeline  | OpenTelemetry Collector  |
+| Alerts              | Alertmanager             |
+| Node Metrics        | Node Exporter            |
+| Kubernetes Metrics  | kube-state-metrics       |
+| Log Collection      | Grafana Alloy / Promtail |
+| Endpoint Monitors   | Blackbox Exporter        |
+| Continuous Profiler | Pyroscope                |
+| HA Long-Retention   | Thanos (Optional HA)     |
+| Incident Routing    | Slack, PagerDuty         |
 
 ### 🚨 Incident & Alerting
 
 - Slack alert integration
 - PagerDuty alert integration
 - Alertmanager webhook support
-- Custom Go alert webhook handler
 - Test alert command
 - Prebuilt SRE alert rules
 
@@ -232,25 +233,30 @@ sudo stackpulse status
 Example:
 
 ```text
-StackPulse Status
+🩺  StackPulse Status Dashboard
+-----------------------------------------------------------------
+🌐  Kubernetes Context:   kind-stackpulse
+📦  Namespace:            observability
 
-Cluster: ready
-Namespace: observability
+📋  System Components Checklist:
+    Prometheus Server:        🟢  Running
+    Grafana Dashboard:        🟢  Running
+    Loki Logging:             🟢  Running
+    Tempo Tracing:            🟢  Running
+    OTel Collector:           🟢  Running
+    ArgoCD Delivery:          🟢  Running
 
-Prometheus: running
-Grafana: running
-Loki: running
-Tempo: running
-ArgoCD Delivery: running
-Alertmanager: running
-OpenTelemetry Collector: running
-Webhook Handler: running
+📦  GitOps Overview:
+    Mode:                     ArgoCD Managed
+    Applications:             4
+    Synced:                   4/4
+    Healthy:                  4/4
 
-Grafana:
-kubectl port-forward svc/stackpulse-grafana 3000:80 -n observability
-
-ArgoCD:
-kubectl port-forward svc/stackpulse-argocd-server 8080:80 -n observability
+📊  Access Telemetry Dashboards via Ingress:
+    🔗  Grafana Dashboard:   http://127.0.0.1/grafana/
+    🔗  Prometheus Server:   http://127.0.0.1/prometheus/
+    🔗  Alertmanager Panel:  http://127.0.0.1/alertmanager/
+    🔗  ArgoCD Dashboard:    http://127.0.0.1/argocd
 ```
 
 ---
@@ -291,12 +297,12 @@ kubectl port-forward svc/stackpulse-argocd-server 8080:80 -n observability
 ┌───────▼────────┐              ┌────────▼────────┐              ┌────────▼───────┐
 │ Node Exporter  │              │      Loki       │              │ Slack/PagerDuty│
 │ kube-state     │              │      Logs       │              │ Integrations   │
-└────────────────┘              └────────┬────────┘              └────────┬───────┘
-                                         │                                │
-                              ┌──────────▼──────────┐          ┌──────────▼──────────┐
-                              │       Tempo         │          │ Go Webhook Handler  │
-                              │       Traces        │          │ Incident Processing │
-                              └──────────┬──────────┘          └─────────────────────┘
+└────────────────┘              └────────┬────────┘              └────────────────┘
+                                         │
+                              ┌──────────▼──────────┐
+                              │       Tempo         │
+                              │       Traces        │
+                              └──────────┬──────────┘
                                          │
                               ┌──────────▼──────────┐
                               │ OpenTelemetry       │
@@ -322,11 +328,20 @@ sudo stackpulse status
 ```bash
 sudo stackpulse deploy observability
 sudo stackpulse deploy observability --dry-run
+sudo stackpulse deploy observability --ha
 sudo stackpulse dashboards import
 sudo stackpulse logs
 sudo stackpulse logs --component grafana
 sudo stackpulse logs --component prometheus
 sudo stackpulse logs --component loki
+```
+
+### GitOps & Continuous Delivery
+
+```bash
+sudo stackpulse gitops bootstrap
+sudo stackpulse gitops bootstrap --dry-run
+sudo stackpulse gitops status
 ```
 
 ### Alerts
@@ -379,6 +394,12 @@ observability:
   nodeExporter: true
   kubeStateMetrics: true
   logCollector: alloy
+  blackboxExporter: true
+  blackboxTargets:
+    - https://api.github.com
+    - https://github.com
+  pyroscope: true
+  thanos: false
 
 alerts:
   slack:
@@ -558,8 +579,8 @@ golangci-lint run
 Create a new release by pushing a tag:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.3
+git push origin v0.1.3
 ```
 
 The release workflow builds binaries for:

@@ -71,6 +71,11 @@ case "$*" in
     echo "stackpulse-tempo-123 1/1 Running 0 1d"
     echo "stackpulse-otel-123 1/1 Running 0 1d"
     echo "stackpulse-webhook-handler-123 1/1 Running 0 1d"
+    echo "stackpulse-victoria-metrics-0 1/1 Running 0 1d"
+    echo "stackpulse-pyroscope-0 1/1 Running 0 1d"
+    echo "stackpulse-thanos-store-0 1/1 Running 0 1d"
+    echo "stackpulse-blackbox-exporter-123 1/1 Running 0 1d"
+    echo "stackpulse-alertmanager-0 1/1 Running 0 1d"
     exit 0
     ;;
   *"get secret stackpulse-prometheus-grafana"*)
@@ -97,6 +102,11 @@ esac
 	// Configure mock settings
 	config.GlobalConfig = config.DefaultConfig()
 	config.GlobalConfig.Observability.Prometheus = true
+	config.GlobalConfig.Observability.VictoriaMetrics = true
+	config.GlobalConfig.Observability.Alertmanager = true
+	config.GlobalConfig.Observability.BlackboxExporter = true
+	config.GlobalConfig.Observability.Pyroscope = true
+	config.GlobalConfig.Observability.Thanos = true
 	config.GlobalConfig.Alerts.Slack.Enabled = true
 
 	// Capture output or just ensure it completes without error
