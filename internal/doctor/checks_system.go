@@ -7,14 +7,17 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
+
+	"github.com/shivamshashank/StackPulse/internal/utils"
 )
 
 var procMeminfoPath = "/proc/meminfo"
 
 // CheckOS validates OS and architecture compatibility
 func CheckOS() CheckResult {
-	supportedOS := map[string]bool{"linux": true}
+	supportedOS := map[string]bool{"linux": true, "darwin": true}
 	supportedArch := map[string]bool{"amd64": true, "arm64": true}
 
 	goos := runtime.GOOS
@@ -26,7 +29,7 @@ func CheckOS() CheckResult {
 		return CheckResult{
 			Name:    "OS Support",
 			Status:  StatusError,
-			Message: msg + " (Unsupported OS/Arch. Only Linux and amd64/arm64 are supported)",
+			Message: msg + " (Unsupported OS/Arch. Only Linux, macOS and amd64/arm64 are supported)",
 		}
 	}
 
@@ -96,6 +99,8 @@ func CheckMemory() CheckResult {
 	switch runtime.GOOS {
 	case "linux":
 		totalBytes, err = getLinuxMemory()
+	case "darwin":
+		totalBytes, err = getDarwinMemory()
 	default:
 		err = fmt.Errorf("unsupported OS")
 	}
@@ -126,6 +131,38 @@ func CheckMemory() CheckResult {
 	}
 }
 
+// CheckDisk detects free space on the root partition and warns if below 10GB
+func CheckDisk() CheckResult {
+	var stat syscall.Statfs_t
+	err := syscall.Statfs("/", &stat)
+	if err != nil {
+		return CheckResult{
+			Name:    "Disk Space",
+			Status:  StatusWarn,
+			Message: fmt.Sprintf("Minimum disk space: Unknown (%v) - 10GB+ recommended", err),
+		}
+	}
+
+	// Bavail is the number of blocks available to non-superuser. Bsize is block size.
+	freeBytes := stat.Bavail * uint64(stat.Bsize)
+	freeGB := float64(freeBytes) / (1024 * 1024 * 1024)
+	msg := fmt.Sprintf("Minimum disk space: %.2fGB free (10GB+ recommended)", freeGB)
+
+	if freeGB < 10.0 {
+		return CheckResult{
+			Name:    "Disk Space",
+			Status:  StatusWarn,
+			Message: msg + " - Disk space is critically low, installations might fail",
+		}
+	}
+
+	return CheckResult{
+		Name:    "Disk Space",
+		Status:  StatusOK,
+		Message: msg,
+	}
+}
+
 func getLinuxMemory() (uint64, error) {
 	data, err := os.ReadFile(procMeminfoPath)
 	if err != nil {
@@ -146,4 +183,17 @@ func getLinuxMemory() (uint64, error) {
 		}
 	}
 	return 0, fmt.Errorf("MemTotal field not found in /proc/meminfo")
+}
+
+func getDarwinMemory() (uint64, error) {
+	out, _, err := utils.ExecCommand("", "sysctl", "-n", "hw.memsize")
+	if err != nil {
+		return 0, err
+	}
+	var val uint64
+	_, err = fmt.Sscanf(strings.TrimSpace(out), "%d", &val)
+	if err != nil {
+		return 0, err
+	}
+	return val, nil
 }

@@ -32,8 +32,12 @@ func PrintStatus() error {
 	lokiStatus := "⚪  Not Deployed"
 	tempoStatus := "⚪  Not Deployed"
 	otelStatus := "⚪  Not Deployed"
-	webhookStatus := "⚪  Not Deployed"
 	argoStatus := "⚪  Not Deployed"
+	vmStatus := "⚪  Not Deployed"
+	pyroscopeStatus := "⚪  Not Deployed"
+	thanosStatus := "⚪  Not Deployed"
+	blackboxStatus := "⚪  Not Deployed"
+	alertmanagerStatus := "⚪  Not Deployed"
 
 	if hasPods {
 		lines := strings.Split(strings.TrimSpace(podsOut), "\n")
@@ -63,10 +67,18 @@ func PrintStatus() error {
 				tempoStatus = statusStr
 			} else if strings.Contains(podName, "opentelemetry") || strings.Contains(podName, "otel") {
 				otelStatus = statusStr
-			} else if strings.Contains(podName, "webhook-handler") {
-				webhookStatus = statusStr
 			} else if strings.Contains(podName, "argocd") {
 				argoStatus = statusStr
+			} else if strings.Contains(podName, "victoria-metrics") || strings.Contains(podName, "vmsingle") || strings.Contains(podName, "vmcluster") {
+				vmStatus = statusStr
+			} else if strings.Contains(podName, "pyroscope") {
+				pyroscopeStatus = statusStr
+			} else if strings.Contains(podName, "thanos") {
+				thanosStatus = statusStr
+			} else if strings.Contains(podName, "blackbox-exporter") {
+				blackboxStatus = statusStr
+			} else if strings.Contains(podName, "alertmanager") {
+				alertmanagerStatus = statusStr
 			}
 		}
 	}
@@ -110,12 +122,26 @@ func PrintStatus() error {
 
 	fmt.Println("📋  System Components Checklist:")
 	fmt.Printf("    %-25s %s\n", "Prometheus Server:", prometheusStatus)
+	if config.GlobalConfig.Observability.VictoriaMetrics || vmStatus != "⚪  Not Deployed" {
+		fmt.Printf("    %-25s %s\n", "VictoriaMetrics:", vmStatus)
+	}
 	fmt.Printf("    %-25s %s\n", "Grafana Dashboard:", grafanaStatus)
 	fmt.Printf("    %-25s %s\n", "Loki Logging:", lokiStatus)
 	fmt.Printf("    %-25s %s\n", "Tempo Tracing:", tempoStatus)
 	fmt.Printf("    %-25s %s\n", "OTel Collector:", otelStatus)
+	if config.GlobalConfig.Observability.Alertmanager || alertmanagerStatus != "⚪  Not Deployed" {
+		fmt.Printf("    %-25s %s\n", "Alertmanager:", alertmanagerStatus)
+	}
+	if config.GlobalConfig.Observability.BlackboxExporter || blackboxStatus != "⚪  Not Deployed" {
+		fmt.Printf("    %-25s %s\n", "Blackbox Exporter:", blackboxStatus)
+	}
+	if config.GlobalConfig.Observability.Pyroscope || pyroscopeStatus != "⚪  Not Deployed" {
+		fmt.Printf("    %-25s %s\n", "Pyroscope Profiling:", pyroscopeStatus)
+	}
+	if config.GlobalConfig.Observability.Thanos || thanosStatus != "⚪  Not Deployed" {
+		fmt.Printf("    %-25s %s\n", "Thanos Storage:", thanosStatus)
+	}
 	fmt.Printf("    %-25s %s\n", "ArgoCD Delivery:", argoStatus)
-	fmt.Printf("    %-25s %s\n", "Custom Webhook Handler:", webhookStatus)
 	fmt.Println()
 
 	// 5. GitOps Status
@@ -181,9 +207,11 @@ func PrintStatus() error {
 		// Attempt to resolve the public IP for correct external browser access.
 		var detectedPublicIP string
 		if parsedIP := net.ParseIP(instanceIP); parsedIP != nil && parsedIP.IsPrivate() {
-			detectedPublicIP = utils.GetPublicIP()
-			if utils.IsCloudVM() && detectedPublicIP != "" {
-				instanceIP = detectedPublicIP
+			if utils.IsCloudVM() {
+				detectedPublicIP = utils.GetPublicIP()
+				if detectedPublicIP != "" {
+					instanceIP = detectedPublicIP
+				}
 			}
 		}
 
@@ -195,23 +223,12 @@ func PrintStatus() error {
 			fmt.Printf("    🔗  ArgoCD Dashboard:    %s\n", utils.ColorBold+fmt.Sprintf("http://%s/argocd", instanceIP)+utils.ColorReset)
 		}
 
-		if !utils.IsCloudVM() && detectedPublicIP != "" && detectedPublicIP != instanceIP {
-			fmt.Printf("    %s (External access public IP: %s)\n", utils.PrefixInfo, utils.ColorBold+detectedPublicIP+utils.ColorReset)
-		}
-
 		fmt.Printf("    🔑  Username:            admin\n")
 		fmt.Printf("    🔑  Grafana Password:    %s\n", utils.ColorGreen+plainPassword+utils.ColorReset)
 		if config.GlobalConfig.Observability.ArgoCD {
 			fmt.Printf("    🔑  ArgoCD Password:     %s\n", utils.ColorGreen+argoPassword+utils.ColorReset)
 		}
 		fmt.Println()
-	}
-
-	if config.GlobalConfig.Alerts.Slack.Enabled || config.GlobalConfig.Alerts.PagerDuty.Enabled {
-		fmt.Println("📡  Custom Webhook Incident REST APIs:")
-		fmt.Printf("    🔗  Liveness Probe:      GET  http://stackpulse-webhook-handler.%s.svc.cluster.local/health\n", ns)
-		fmt.Printf("    🔗  Alertmanager Router: POST http://stackpulse-webhook-handler.%s.svc.cluster.local/webhook/alertmanager\n", ns)
-		fmt.Printf("    🔗  Incident Logs API:   GET  http://stackpulse-webhook-handler.%s.svc.cluster.local/incidents\n", ns)
 	}
 
 	fmt.Println("-----------------------------------------------------------------")

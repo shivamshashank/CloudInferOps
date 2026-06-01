@@ -63,7 +63,7 @@ echo -e "${INFO}Fetching latest StackPulse version..."
 LATEST_TAG=$(curl -s "https://api.github.com/repos/shivamshashank/StackPulse/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || true)
 
 if [ -z "${LATEST_TAG}" ]; then
-    VERSION="v0.1.0"
+    VERSION="v0.1.3"
     echo -e "${WARN}Failed to fetch latest version from GitHub API. Falling back to default: ${VERSION}"
 else
     VERSION="${LATEST_TAG}"

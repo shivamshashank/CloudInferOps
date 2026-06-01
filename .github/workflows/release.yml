@@ -22,7 +22,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.x'
+          go-version: "1.23.x"
           cache: true
 
       - name: Determine Next Semantic Version
@@ -31,7 +31,7 @@ jobs:
           git fetch --tags --force
           LATEST_TAG=$(git tag -l "v*" | sort -V | tail -n1 || true)
           if [ -z "$LATEST_TAG" ]; then
-            NEXT_TAG="v0.1.0"
+            NEXT_TAG="v0.1.3"
           else
             VERSION_PART=${LATEST_TAG#v}
             # Parse version parts
@@ -52,25 +52,25 @@ jobs:
       - name: Compile Cross-Platform Binaries
         run: |
           mkdir -p dist
-          
+
           # Extract dynamic build metadata
           COMMIT_SHA=$(git rev-parse --short HEAD)
           BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           PKG="github.com/shivamshashank/StackPulse/internal/cli"
           LDFLAGS="-s -w -X ${PKG}.Version=${{ env.NEXT_TAG }} -X ${PKG}.Commit=${COMMIT_SHA} -X ${PKG}.BuildDate=${BUILD_DATE}"
-          
+
           # Linux AMD64
           echo "Compiling Linux AMD64 binary..."
           env GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/stackpulse-linux-amd64 cmd/stackpulse/main.go
-          
+
           # Linux ARM64
           echo "Compiling Linux ARM64 binary..."
           env GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/stackpulse-linux-arm64 cmd/stackpulse/main.go
-          
+
           # macOS AMD64
           echo "Compiling macOS AMD64 binary..."
           env GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/stackpulse-darwin-amd64 cmd/stackpulse/main.go
-          
+
           # macOS ARM64
           echo "Compiling macOS ARM64 binary..."
           env GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/stackpulse-darwin-arm64 cmd/stackpulse/main.go
@@ -82,16 +82,16 @@ jobs:
           name: Release ${{ env.NEXT_TAG }}
           body: |
             ## 🚀 StackPulse Release ${{ env.NEXT_TAG }}
-            
+
             Automated production release generated after merging to `main`.
-            
+
             ### 📦 Supported Platform Downloads
-            
+
             - **Linux (x86_64 / amd64)**: `stackpulse-linux-amd64`
             - **Linux (arm64 / aarch64)**: `stackpulse-linux-arm64`
             - **macOS (Intel / amd64)**: `stackpulse-darwin-amd64`
             - **macOS (Apple Silicon / arm64)**: `stackpulse-darwin-arm64`
-            
+
             ---
             *Built with Go 1.23*
           draft: false

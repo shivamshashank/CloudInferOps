@@ -17,7 +17,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var deployDryRun bool
+var (
+	deployDryRun bool
+	deployHA     bool
+)
 
 // deployCmd represents the parent deploy command
 var deployCmd = &cobra.Command{
@@ -138,6 +141,10 @@ var observabilityCmd = &cobra.Command{
 			config.GlobalConfig = config.DefaultConfig()
 		}
 
+		if deployHA {
+			config.GlobalConfig.Observability.Thanos = true
+		}
+
 		// 3. Trigger observability stack orchestrator
 		if err := observability.DeployObservability(deployDryRun); err != nil {
 			return err
@@ -177,6 +184,7 @@ var webhookHandlerCmd = &cobra.Command{
 
 func init() {
 	observabilityCmd.Flags().BoolVar(&deployDryRun, "dry-run", false, "Print Helm commands and manifest applications without executing them")
+	observabilityCmd.Flags().BoolVar(&deployHA, "ha", false, "Enable high-availability Thanos cluster deployment")
 	webhookHandlerCmd.Flags().BoolVar(&deployDryRun, "dry-run", false, "Print manifests without executing them")
 	deployCmd.AddCommand(observabilityCmd)
 	deployCmd.AddCommand(webhookHandlerCmd)

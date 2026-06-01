@@ -58,7 +58,7 @@ func DeployObservability(dryRun bool) error {
 		reposAdded = true
 	}
 
-	if config.GlobalConfig.Observability.Grafana || config.GlobalConfig.Observability.Loki || config.GlobalConfig.Observability.Tempo {
+	if config.GlobalConfig.Observability.Grafana || config.GlobalConfig.Observability.Loki || config.GlobalConfig.Observability.Tempo || config.GlobalConfig.Observability.Pyroscope {
 		if err := helm.AddRepo("grafana", "https://grafana.github.io/helm-charts", dryRun); err != nil {
 			return err
 		}
@@ -74,6 +74,20 @@ func DeployObservability(dryRun bool) error {
 
 	if config.GlobalConfig.Observability.ArgoCD {
 		if err := helm.AddRepo("argo", "https://argoproj.github.io/argo-helm", dryRun); err != nil {
+			return err
+		}
+		reposAdded = true
+	}
+
+	if config.GlobalConfig.Observability.Thanos {
+		if err := helm.AddRepo("bitnami", "https://charts.bitnami.com/bitnami", dryRun); err != nil {
+			return err
+		}
+		reposAdded = true
+	}
+
+	if config.GlobalConfig.Observability.VictoriaMetrics {
+		if err := helm.AddRepo("vm", "https://victoriametrics.github.io/helm-charts", dryRun); err != nil {
 			return err
 		}
 		reposAdded = true
@@ -98,19 +112,23 @@ func DeployObservability(dryRun bool) error {
 
 	// Wait for ingress controller pod to become ready before deploying apps that create Ingress resources
 	if !dryRun {
-		fmt.Printf("%sWaiting for NGINX Ingress Controller to become ready...\n", utils.PrefixInfo)
+		stopSpinner := utils.StartSpinner("Waiting for NGINX Ingress Controller to become ready...")
+		ready := false
 		for i := 0; i < 30; i++ {
 			_, _, waitErr := utils.ExecCommand("", "kubectl", "wait", "--namespace", ns,
 				"--for=condition=Ready", "pod",
 				"-l", "app.kubernetes.io/component=controller,app.kubernetes.io/instance=stackpulse-ingress-nginx",
 				"--timeout=10s")
 			if waitErr == nil {
-				fmt.Printf("%sNGINX Ingress Controller is ready.\n", utils.PrefixOK)
+				ready = true
 				break
 			}
-			if i == 29 {
-				fmt.Printf("%sIngress Controller not ready yet, continuing deployment anyway...\n", utils.PrefixWarn)
-			}
+		}
+		stopSpinner()
+		if ready {
+			fmt.Printf("%sNGINX Ingress Controller is ready.\n", utils.PrefixOK)
+		} else {
+			fmt.Printf("%sIngress Controller not ready yet, continuing deployment anyway...\n", utils.PrefixWarn)
 		}
 	}
 
@@ -125,7 +143,7 @@ func DeployObservability(dryRun bool) error {
 		}
 		// Wait for ArgoCD Application CRDs to initialize before we apply applications
 		if !dryRun {
-			fmt.Printf("%sWaiting for ArgoCD CRDs to initialize...\n", utils.PrefixInfo)
+			stopSpinner := utils.StartSpinner("Waiting for ArgoCD CRDs to initialize...")
 			for i := 0; i < 30; i++ {
 				if _, _, err := utils.ExecCommand("", "kubectl", "get", "crd", "applications.argoproj.io"); err == nil {
 					time.Sleep(3 * time.Second) // Let controller settle
@@ -133,46 +151,150 @@ func DeployObservability(dryRun bool) error {
 				}
 				time.Sleep(2 * time.Second)
 			}
+			stopSpinner()
+
+			stopSpinner2 := utils.StartSpinner("Waiting for ArgoCD Repo Server to become ready...")
+			repoReady := false
+			for i := 0; i < 30; i++ {
+				_, _, waitErr := utils.ExecCommand("", "kubectl", "wait", "--namespace", ns,
+					"--for=condition=Ready", "pod",
+					"-l", "app.kubernetes.io/name=argocd-repo-server",
+					"--timeout=10s")
+				if waitErr == nil {
+					repoReady = true
+					break
+				}
+			}
+			stopSpinner2()
+			if repoReady {
+				fmt.Printf("%sArgoCD Repo Server is ready.\n", utils.PrefixOK)
+			}
 		}
 	}
 
 	// A. Prometheus & Grafana & Alertmanager Stack
 	if config.GlobalConfig.Observability.Prometheus {
-		// Production-grade defaults: configure native NGINX Ingress with path-based routing under any host IP
-		flags := []string{
-			// StackPulse creates one explicit Ingress below; keep chart-generated Ingresses disabled.
-			"--set", "grafana.ingress.enabled=false",
-			"--set", "prometheus.ingress.enabled=false",
-			"--set", "alertmanager.ingress.enabled=false",
+		// Production-grade dynamic values construction to bypass cli string escaping constraints
+		var valuesYAML strings.Builder
+		valuesYAML.WriteString("grafana:\n")
+		valuesYAML.WriteString("  ingress:\n")
+		valuesYAML.WriteString("    enabled: false\n")
+		valuesYAML.WriteString("  grafana.ini:\n")
+		valuesYAML.WriteString("    server:\n")
+		valuesYAML.WriteString("      root_url: \"%(protocol)s://%(domain)s/grafana/\"\n")
+		valuesYAML.WriteString("      serve_from_sub_path: true\n")
+		valuesYAML.WriteString("  sidecar:\n")
+		valuesYAML.WriteString("    dashboards:\n")
+		valuesYAML.WriteString("      enabled: true\n")
+		valuesYAML.WriteString("      label: grafana_dashboard\n")
+		valuesYAML.WriteString("      searchNamespace: ALL\n")
+		valuesYAML.WriteString("    datasources:\n")
+		valuesYAML.WriteString("      enabled: true\n")
+		valuesYAML.WriteString("      defaultDatasourceEnabled: true\n")
+		valuesYAML.WriteString("      isDefaultDatasource: true\n")
+		valuesYAML.WriteString("      name: Prometheus\n")
+		valuesYAML.WriteString("      uid: prometheus\n")
+		fmt.Fprintf(&valuesYAML, "      url: http://stackpulse-prometheus-kube-prometheus.%s:9090/prometheus\n", ns)
+		valuesYAML.WriteString("      alertmanager:\n")
+		valuesYAML.WriteString("        enabled: true\n")
+		valuesYAML.WriteString("        name: Alertmanager\n")
+		valuesYAML.WriteString("        uid: alertmanager\n")
+		fmt.Fprintf(&valuesYAML, "        url: http://stackpulse-prometheus-kube-alertmanager.%s:9093/alertmanager\n", ns)
 
-			// Sub-path config for the apps behind /grafana, /prometheus, and /alertmanager.
-			"--set-string", "grafana.grafana\\.ini.server.root_url=%(protocol)s://%(domain)s/grafana/",
-			"--set", "grafana.grafana\\.ini.server.serve_from_sub_path=true",
-
-			// Force a stable Grafana datasource. The bundled dashboards query uid "prometheus".
-			"--set", "grafana.sidecar.datasources.enabled=true",
-			"--set", "grafana.sidecar.datasources.defaultDatasourceEnabled=true",
-			"--set", "grafana.sidecar.datasources.isDefaultDatasource=true",
-			"--set", "grafana.sidecar.datasources.name=Prometheus",
-			"--set", "grafana.sidecar.datasources.uid=prometheus",
-			"--set", "grafana.sidecar.datasources.url=http://stackpulse-prometheus-kube-prometheus.observability:9090/prometheus",
-			"--set", "grafana.sidecar.datasources.alertmanager.enabled=true",
-			"--set", "grafana.sidecar.datasources.alertmanager.name=Alertmanager",
-			"--set", "grafana.sidecar.datasources.alertmanager.uid=alertmanager",
-			"--set", "grafana.sidecar.datasources.alertmanager.url=http://stackpulse-prometheus-kube-alertmanager.observability:9093/alertmanager",
-
-			// The stock dashboards filter by cluster="default"; ensure single-node installs emit that label.
-			"--set", "prometheus.prometheusSpec.externalLabels.cluster=default",
-			"--set", "prometheus.prometheusSpec.routePrefix=/prometheus",
-			"--set", "prometheus.prometheusSpec.externalUrl=http://localhost/prometheus",
-			"--set", "alertmanager.alertmanagerSpec.routePrefix=/alertmanager",
-			"--set", "alertmanager.alertmanagerSpec.externalUrl=http://localhost/alertmanager",
+		// Build additional Grafana data sources dynamically
+		valuesYAML.WriteString("  additionalDataSources:\n")
+		if config.GlobalConfig.Observability.Loki {
+			valuesYAML.WriteString("    - name: Loki\n")
+			valuesYAML.WriteString("      type: loki\n")
+			valuesYAML.WriteString("      access: proxy\n")
+			fmt.Fprintf(&valuesYAML, "      url: http://stackpulse-loki.%s:3100\n", ns)
+			valuesYAML.WriteString("      uid: loki\n")
 		}
+		if config.GlobalConfig.Observability.Tempo {
+			valuesYAML.WriteString("    - name: Tempo\n")
+			valuesYAML.WriteString("      type: tempo\n")
+			valuesYAML.WriteString("      access: proxy\n")
+			fmt.Fprintf(&valuesYAML, "      url: http://stackpulse-tempo.%s:3100\n", ns)
+			valuesYAML.WriteString("      uid: tempo\n")
+		}
+		if config.GlobalConfig.Observability.Pyroscope {
+			valuesYAML.WriteString("    - name: Pyroscope\n")
+			valuesYAML.WriteString("      type: pyroscope\n")
+			valuesYAML.WriteString("      access: proxy\n")
+			fmt.Fprintf(&valuesYAML, "      url: http://stackpulse-pyroscope.%s:4040\n", ns)
+			valuesYAML.WriteString("      uid: pyroscope\n")
+		}
+
+		valuesYAML.WriteString("kubeControllerManager:\n")
+		valuesYAML.WriteString("  enabled: false\n")
+		valuesYAML.WriteString("kubeEtcd:\n")
+		valuesYAML.WriteString("  enabled: false\n")
+		valuesYAML.WriteString("kubeScheduler:\n")
+		valuesYAML.WriteString("  enabled: false\n")
+		valuesYAML.WriteString("kubeProxy:\n")
+		valuesYAML.WriteString("  enabled: false\n")
+
+		valuesYAML.WriteString("prometheus:\n")
+		valuesYAML.WriteString("  ingress:\n")
+		valuesYAML.WriteString("    enabled: false\n")
+		valuesYAML.WriteString("  prometheusSpec:\n")
+		valuesYAML.WriteString("    externalLabels:\n")
+		valuesYAML.WriteString("      cluster: default\n")
+		valuesYAML.WriteString("    routePrefix: /prometheus\n")
+		valuesYAML.WriteString("    externalUrl: http://localhost/prometheus\n")
+
+		if config.GlobalConfig.Observability.Thanos {
+			valuesYAML.WriteString("    thanos:\n")
+			valuesYAML.WriteString("      version: v0.31.0\n")
+		}
+
+		// Configure Blackbox exporter scraping targets under Prometheus
+		if config.GlobalConfig.Observability.BlackboxExporter && len(config.GlobalConfig.Observability.BlackboxTargets) > 0 {
+			valuesYAML.WriteString("    additionalScrapeConfigs:\n")
+			valuesYAML.WriteString("      - job_name: 'blackbox'\n")
+			valuesYAML.WriteString("        metrics_path: /probe\n")
+			valuesYAML.WriteString("        params:\n")
+			valuesYAML.WriteString("          module: [http_2xx]\n")
+			valuesYAML.WriteString("        static_configs:\n")
+			valuesYAML.WriteString("          - targets:\n")
+			for _, target := range config.GlobalConfig.Observability.BlackboxTargets {
+				fmt.Fprintf(&valuesYAML, "            - '%s'\n", target)
+			}
+			valuesYAML.WriteString("        relabel_configs:\n")
+			valuesYAML.WriteString("          - source_labels: [__address__]\n")
+			valuesYAML.WriteString("            target_label: __param_target\n")
+			valuesYAML.WriteString("          - source_labels: [__param_target]\n")
+			valuesYAML.WriteString("            target_label: instance\n")
+			valuesYAML.WriteString("          - target_label: __address__\n")
+			fmt.Fprintf(&valuesYAML, "            replacement: stackpulse-blackbox-prometheus-blackbox-exporter.%s:9115\n", ns)
+		}
+
+		valuesYAML.WriteString("kube-state-metrics:\n")
+		if config.GlobalConfig.Observability.KubeStateMetrics {
+			valuesYAML.WriteString("  enabled: true\n")
+		} else {
+			valuesYAML.WriteString("  enabled: false\n")
+		}
+
+		valuesYAML.WriteString("alertmanager:\n")
+		valuesYAML.WriteString("  ingress:\n")
+		valuesYAML.WriteString("    enabled: false\n")
+		valuesYAML.WriteString("  alertmanagerSpec:\n")
+		valuesYAML.WriteString("    routePrefix: /alertmanager\n")
+		valuesYAML.WriteString("    externalUrl: http://localhost/alertmanager\n")
+
 		if config.GlobalConfig.Observability.ArgoCD {
-			if err := deployViaArgoCD("stackpulse-prometheus", "https://prometheus-community.github.io/helm-charts", "kube-prometheus-stack", ns, flags, dryRun); err != nil {
+			if err := deployViaArgoCD("stackpulse-prometheus", "https://prometheus-community.github.io/helm-charts", "kube-prometheus-stack", ns, nil, valuesYAML.String(), dryRun); err != nil {
 				return err
 			}
 		} else {
+			tmpValuesPath := filepath.Join(os.TempDir(), "stackpulse-prometheus-values.yaml")
+			if err := os.WriteFile(tmpValuesPath, []byte(valuesYAML.String()), 0600); err != nil {
+				return fmt.Errorf("failed to write temporary prometheus values file: %w", err)
+			}
+			defer func() { _ = os.Remove(tmpValuesPath) }()
+
+			flags := []string{"-f", tmpValuesPath}
 			if err := helm.InstallRelease("stackpulse-prometheus", "prometheus-community/kube-prometheus-stack", ns, flags, dryRun); err != nil {
 				return err
 			}
@@ -180,17 +302,23 @@ func DeployObservability(dryRun bool) error {
 		if err := applyObservabilityIngress(ns, dryRun); err != nil {
 			return err
 		}
+
+		// Trigger Auto-Provisioning of Dashboards & SRE Alert Packs
+		if err := ProvisionDashboards(ns, dryRun); err != nil {
+			fmt.Printf("%sWarning: failed to provision dashboards: %v\n", utils.PrefixWarn, err)
+		}
+		if err := ProvisionAlertRules(ns, dryRun); err != nil {
+			fmt.Printf("%sWarning: failed to provision alert rules: %v\n", utils.PrefixWarn, err)
+		}
 	}
 
 	// B. Loki Log Collector Stack
 	if config.GlobalConfig.Observability.Loki {
 		flags := []string{
-			// The loki-stack chart uses loki.isDefault to control the datasource ConfigMap's isDefault field.
-			// Must be false so it doesn't conflict with the Prometheus datasource marked as default.
 			"--set", "loki.isDefault=false",
 		}
 		if config.GlobalConfig.Observability.ArgoCD {
-			if err := deployViaArgoCD("stackpulse-loki", "https://grafana.github.io/helm-charts", "loki-stack", ns, flags, dryRun); err != nil {
+			if err := deployViaArgoCD("stackpulse-loki", "https://grafana.github.io/helm-charts", "loki-stack", ns, flags, "", dryRun); err != nil {
 				return err
 			}
 		} else {
@@ -203,7 +331,7 @@ func DeployObservability(dryRun bool) error {
 	// C. Tempo Distributed Tracing
 	if config.GlobalConfig.Observability.Tempo {
 		if config.GlobalConfig.Observability.ArgoCD {
-			if err := deployViaArgoCD("stackpulse-tempo", "https://grafana.github.io/helm-charts", "tempo", ns, nil, dryRun); err != nil {
+			if err := deployViaArgoCD("stackpulse-tempo", "https://grafana.github.io/helm-charts", "tempo", ns, nil, "", dryRun); err != nil {
 				return err
 			}
 		} else {
@@ -220,7 +348,7 @@ func DeployObservability(dryRun bool) error {
 			"--set", "image.repository=ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s",
 		}
 		if config.GlobalConfig.Observability.ArgoCD {
-			if err := deployViaArgoCD("stackpulse-otel", "https://open-telemetry.github.io/opentelemetry-helm-charts", "opentelemetry-collector", ns, flags, dryRun); err != nil {
+			if err := deployViaArgoCD("stackpulse-otel", "https://open-telemetry.github.io/opentelemetry-helm-charts", "opentelemetry-collector", ns, flags, "", dryRun); err != nil {
 				return err
 			}
 		} else {
@@ -228,6 +356,73 @@ func DeployObservability(dryRun bool) error {
 				return err
 			}
 		}
+	}
+
+	// A1. Blackbox Exporter Deployment
+	if config.GlobalConfig.Observability.BlackboxExporter {
+		if config.GlobalConfig.Observability.ArgoCD {
+			if err := deployViaArgoCD("stackpulse-blackbox", "https://prometheus-community.github.io/helm-charts", "prometheus-blackbox-exporter", ns, nil, "", dryRun); err != nil {
+				return err
+			}
+		} else {
+			if err := helm.InstallRelease("stackpulse-blackbox", "prometheus-community/prometheus-blackbox-exporter", ns, nil, dryRun); err != nil {
+				return err
+			}
+		}
+	}
+
+	// A2. Pyroscope Profiler Deployment
+	if config.GlobalConfig.Observability.Pyroscope {
+		if config.GlobalConfig.Observability.ArgoCD {
+			if err := deployViaArgoCD("stackpulse-pyroscope", "https://grafana.github.io/helm-charts", "pyroscope", ns, nil, "", dryRun); err != nil {
+				return err
+			}
+		} else {
+			if err := helm.InstallRelease("stackpulse-pyroscope", "grafana/pyroscope", ns, nil, dryRun); err != nil {
+				return err
+			}
+		}
+	}
+
+	// A3. Thanos HA optional Deployment
+	if config.GlobalConfig.Observability.Thanos {
+		if err := createThanosSecret(ns, dryRun); err != nil {
+			return fmt.Errorf("failed to create Thanos objstore secret: %w", err)
+		}
+		thanosFlags := []string{
+			"--set", "existingObjstoreSecret=stackpulse-thanos-objstore",
+		}
+		if config.GlobalConfig.Observability.ArgoCD {
+			if err := deployViaArgoCD("stackpulse-thanos", "https://charts.bitnami.com/bitnami", "thanos", ns, thanosFlags, "", dryRun); err != nil {
+				return err
+			}
+		} else {
+			if err := helm.InstallRelease("stackpulse-thanos", "bitnami/thanos", ns, thanosFlags, dryRun); err != nil {
+				return err
+			}
+		}
+	}
+
+	// A4. VictoriaMetrics optional Deployment
+	if config.GlobalConfig.Observability.VictoriaMetrics {
+		vmFlags := []string{
+			"--set", "vmsingle.enabled=true",
+			"--set", "vmcluster.enabled=false",
+		}
+		if config.GlobalConfig.Observability.ArgoCD {
+			if err := deployViaArgoCD("stackpulse-vm", "https://victoriametrics.github.io/helm-charts", "victoria-metrics-k8s-stack", ns, vmFlags, "", dryRun); err != nil {
+				return err
+			}
+		} else {
+			if err := helm.InstallRelease("stackpulse-vm", "vm/victoria-metrics-k8s-stack", ns, vmFlags, dryRun); err != nil {
+				return err
+			}
+		}
+	}
+
+	// 3.5 Wait for ArgoCD applications to be Healthy if using GitOps
+	if config.GlobalConfig.Observability.ArgoCD {
+		waitForArgoCDApps(ns, dryRun)
 	}
 
 	// 4. Resolve Dynamic Ingress IP
@@ -245,9 +440,11 @@ func DeployObservability(dryRun bool) error {
 		// If we are on a cloud VM, the ingress IP might be the private subnet IP.
 		// Attempt to resolve the public IP for correct external browser access.
 		if parsedIP := net.ParseIP(instanceIP); parsedIP != nil && parsedIP.IsPrivate() {
-			detectedPublicIP = utils.GetPublicIP()
-			if utils.IsCloudVM() && detectedPublicIP != "" {
-				instanceIP = detectedPublicIP
+			if utils.IsCloudVM() {
+				detectedPublicIP = utils.GetPublicIP()
+				if detectedPublicIP != "" {
+					instanceIP = detectedPublicIP
+				}
 			}
 		}
 	}
@@ -277,10 +474,6 @@ func DeployObservability(dryRun bool) error {
 			fmt.Printf("    🔗  ArgoCD Dashboard:      %s\n", utils.ColorBold+fmt.Sprintf("http://%s/argocd", instanceIP)+utils.ColorReset)
 		}
 
-		if !utils.IsCloudVM() && detectedPublicIP != "" && detectedPublicIP != instanceIP {
-			fmt.Printf("    %s (External access public IP: %s)\n", utils.PrefixInfo, utils.ColorBold+detectedPublicIP+utils.ColorReset)
-		}
-
 		fmt.Println("\n    👤  Default credentials:   Username: admin")
 		fmt.Printf("                               Password command: %s\n", utils.ColorCyan+fmt.Sprintf("kubectl get secret --namespace %s stackpulse-prometheus-grafana -o jsonpath=\"{.data.admin-password}\" | base64 --decode ; echo", ns)+utils.ColorReset)
 		if config.GlobalConfig.Observability.ArgoCD {
@@ -288,8 +481,40 @@ func DeployObservability(dryRun bool) error {
 		}
 	}
 
+	fmt.Println("\n    ⏳  Note: It may take 5-6 minutes for all services and pods to fully start.")
+	fmt.Printf("           Run %s to monitor the live progress.\n", utils.ColorCyan+"sudo stackpulse status"+utils.ColorReset)
+
 	fmt.Println("-----------------------------------------------------------------")
 	return nil
+}
+
+func createThanosSecret(ns string, dryRun bool) error {
+	secretYAML := fmt.Sprintf(`apiVersion: v1
+kind: Secret
+metadata:
+  name: stackpulse-thanos-objstore
+  namespace: %s
+type: Opaque
+stringData:
+  thanos.yaml: |
+    type: FILESYSTEM
+    config:
+      directory: /var/thanos
+`, ns)
+
+	if dryRun {
+		fmt.Printf("%s[DRY-RUN] Would create Thanos storage config secret\n", utils.PrefixInfo)
+		return nil
+	}
+
+	tmpPath := filepath.Join(os.TempDir(), "stackpulse-thanos-objstore.yaml")
+	if err := os.WriteFile(tmpPath, []byte(secretYAML), 0600); err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(tmpPath) }()
+
+	_, _, err := utils.ExecCommand("", "kubectl", "apply", "-f", tmpPath)
+	return err
 }
 
 func applyObservabilityIngress(ns string, dryRun bool) error {
@@ -439,7 +664,7 @@ func findServiceByPort(ns, nameHint string, port int, fallback string) (string, 
 	return fallback, nil
 }
 
-func deployViaArgoCD(name, repoURL, chart, ns string, flags []string, dryRun bool) error {
+func deployViaArgoCD(name, repoURL, chart, ns string, flags []string, valuesStr string, dryRun bool) error {
 	helmParameters := ""
 	for i := 0; i < len(flags); i++ {
 		if flags[i] == "--set" && i+1 < len(flags) {
@@ -464,6 +689,8 @@ func deployViaArgoCD(name, repoURL, chart, ns string, flags []string, dryRun boo
 	helmBlock := ""
 	if helmParameters != "" {
 		helmBlock = fmt.Sprintf("\n    helm:\n      parameters:%s", helmParameters)
+	} else if valuesStr != "" {
+		helmBlock = fmt.Sprintf("\n    helm:\n      values: |\n%s", indentString(valuesStr, 8))
 	}
 
 	manifest := fmt.Sprintf(`apiVersion: argoproj.io/v1alpha1
@@ -492,6 +719,25 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 3m
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/template/metadata/annotations/checksum~1secret
+        - /spec/template/metadata/annotations/checksum~1config
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /spec/template/metadata/annotations/checksum~1secret
+        - /spec/template/metadata/annotations/checksum~1config
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jsonPointers:
+        - /webhooks/0/clientConfig/caBundle
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jsonPointers:
+        - /webhooks/0/clientConfig/caBundle
 `, name, ns, repoURL, chart, helmBlock, ns)
 
 	if dryRun {
@@ -511,4 +757,52 @@ spec:
 	}
 	fmt.Printf("%sGitOps Application %s created successfully.\n", utils.PrefixOK, name)
 	return nil
+}
+
+func waitForArgoCDApps(ns string, dryRun bool) {
+	if dryRun {
+		return
+	}
+	stopSpinner := utils.StartSpinner("Waiting for ArgoCD applications to become Healthy and Synced (this may take up to 2 minutes)...")
+	var lastPendingApps string
+
+	for i := 0; i < 24; i++ { // Wait up to 2 minutes
+		out, _, err := utils.ExecCommand("", "kubectl", "get", "applications", "-n", ns, "-o", "jsonpath={range .items[*]}{.metadata.name}={.status.sync.status},{.status.health.status}\n{end}")
+		if err == nil && out != "" {
+			var pendingApps []string
+			validAppsCount := 0
+			lines := strings.Split(strings.TrimSpace(out), "\n")
+
+			for _, line := range lines {
+				if line == "" {
+					continue
+				}
+				parts := strings.SplitN(line, "=", 2)
+				if len(parts) == 2 {
+					validAppsCount++
+					name, status := parts[0], parts[1]
+					if status != "Synced,Healthy" {
+						pendingApps = append(pendingApps, name)
+					}
+				}
+			}
+			if validAppsCount > 0 && len(pendingApps) == 0 {
+				stopSpinner()
+				fmt.Printf("%sAll ArgoCD applications are successfully Synced and Healthy!\n", utils.PrefixOK)
+				return
+			}
+
+			if len(pendingApps) > 0 {
+				currentPending := strings.Join(pendingApps, ", ")
+				if currentPending != lastPendingApps {
+					stopSpinner()
+					stopSpinner = utils.StartSpinner(fmt.Sprintf("Waiting for ArgoCD applications (pending: %s)...", currentPending))
+					lastPendingApps = currentPending
+				}
+			}
+		}
+		time.Sleep(5 * time.Second)
+	}
+	stopSpinner()
+	fmt.Printf("%sTimeout waiting for applications to become healthy. Check progress using 'stackpulse status'.\n", utils.PrefixWarn)
 }

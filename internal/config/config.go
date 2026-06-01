@@ -24,16 +24,21 @@ type K8sConfig struct {
 }
 
 type ObsConfig struct {
-	Prometheus       bool   `mapstructure:"prometheus"`
-	Grafana          bool   `mapstructure:"grafana"`
-	Loki             bool   `mapstructure:"loki"`
-	Tempo            bool   `mapstructure:"tempo"`
-	ArgoCD           bool   `mapstructure:"argoCD"`
-	Alertmanager     bool   `mapstructure:"alertmanager"`
-	OpenTelemetry    bool   `mapstructure:"opentelemetry"`
-	NodeExporter     bool   `mapstructure:"nodeExporter"`
-	KubeStateMetrics bool   `mapstructure:"kubeStateMetrics"`
-	LogCollector     string `mapstructure:"logCollector"`
+	Prometheus       bool     `mapstructure:"prometheus"`
+	Grafana          bool     `mapstructure:"grafana"`
+	Loki             bool     `mapstructure:"loki"`
+	Tempo            bool     `mapstructure:"tempo"`
+	ArgoCD           bool     `mapstructure:"argoCD"`
+	Alertmanager     bool     `mapstructure:"alertmanager"`
+	OpenTelemetry    bool     `mapstructure:"opentelemetry"`
+	NodeExporter     bool     `mapstructure:"nodeExporter"`
+	KubeStateMetrics bool     `mapstructure:"kubeStateMetrics"`
+	LogCollector     string   `mapstructure:"logCollector"`
+	BlackboxExporter bool     `mapstructure:"blackboxExporter"`
+	BlackboxTargets  []string `mapstructure:"blackboxTargets"`
+	Pyroscope        bool     `mapstructure:"pyroscope"`
+	Thanos           bool     `mapstructure:"thanos"`
+	VictoriaMetrics  bool     `mapstructure:"victoriaMetrics"`
 }
 
 type AlertsConfig struct {
@@ -52,6 +57,7 @@ type PagerDutyConfig struct {
 }
 
 // GlobalConfig holds the loaded configuration instance
+// var GlobalConfig Config
 var GlobalConfig Config
 
 // DefaultConfig returns a pre-populated default Config struct
@@ -73,6 +79,11 @@ func DefaultConfig() Config {
 			NodeExporter:     true,
 			KubeStateMetrics: true,
 			LogCollector:     "alloy",
+			BlackboxExporter: true,
+			BlackboxTargets:  []string{"https://api.github.com", "https://github.com"},
+			Pyroscope:        true,
+			Thanos:           false,
+			VictoriaMetrics:  false,
 		},
 		Alerts: AlertsConfig{
 			Slack: SlackConfig{
@@ -150,6 +161,11 @@ func InitConfig(createIfMissing bool) error {
 			viper.Set("observability.nodeExporter", defaults.Observability.NodeExporter)
 			viper.Set("observability.kubeStateMetrics", defaults.Observability.KubeStateMetrics)
 			viper.Set("observability.logCollector", defaults.Observability.LogCollector)
+			viper.Set("observability.blackboxExporter", defaults.Observability.BlackboxExporter)
+			viper.Set("observability.blackboxTargets", defaults.Observability.BlackboxTargets)
+			viper.Set("observability.pyroscope", defaults.Observability.Pyroscope)
+			viper.Set("observability.thanos", defaults.Observability.Thanos)
+			viper.Set("observability.victoriaMetrics", defaults.Observability.VictoriaMetrics)
 			viper.Set("alerts.slack.enabled", defaults.Alerts.Slack.Enabled)
 			viper.Set("alerts.slack.webhookUrlSecret", defaults.Alerts.Slack.WebhookUrlSecret)
 			viper.Set("alerts.pagerduty.enabled", defaults.Alerts.PagerDuty.Enabled)
@@ -200,6 +216,11 @@ func SaveConfig() error {
 	viper.Set("observability.nodeExporter", GlobalConfig.Observability.NodeExporter)
 	viper.Set("observability.kubeStateMetrics", GlobalConfig.Observability.KubeStateMetrics)
 	viper.Set("observability.logCollector", GlobalConfig.Observability.LogCollector)
+	viper.Set("observability.blackboxExporter", GlobalConfig.Observability.BlackboxExporter)
+	viper.Set("observability.blackboxTargets", GlobalConfig.Observability.BlackboxTargets)
+	viper.Set("observability.pyroscope", GlobalConfig.Observability.Pyroscope)
+	viper.Set("observability.thanos", GlobalConfig.Observability.Thanos)
+	viper.Set("observability.victoriaMetrics", GlobalConfig.Observability.VictoriaMetrics)
 	viper.Set("alerts.slack.enabled", GlobalConfig.Alerts.Slack.Enabled)
 	viper.Set("alerts.slack.webhookUrlSecret", GlobalConfig.Alerts.Slack.WebhookUrlSecret)
 	viper.Set("alerts.pagerduty.enabled", GlobalConfig.Alerts.PagerDuty.Enabled)

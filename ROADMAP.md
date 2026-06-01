@@ -2,7 +2,8 @@
 
 ## Project Goal
 
-StackPulse is a Go-based DevOps/SRE CLI that allows a user to download a binary and deploy a complete observability stack on their own setup.
+StackPulse is a Go-based DevOps/SRE CLI that allows a user to download a binary
+and deploy a complete observability stack on their own setup.
 
 The user should be able to run StackPulse on:
 
@@ -11,7 +12,8 @@ The user should be able to run StackPulse on:
 - GCP VM
 - Azure VM
 - Existing Kubernetes cluster
-- Local Kubernetes environments such as k3s, kind, minikube, or Docker Desktop Kubernetes
+- Local Kubernetes environments such as k3s, kind, minikube, or Docker Desktop
+  Kubernetes
 
 The MVP should focus on this flow:
 
@@ -47,7 +49,6 @@ stackpulse status
 - Grafana dashboards
 - Slack alert integration
 - Basic PagerDuty integration
-- Go-based alert webhook handler
 - Health/status checks
 - Uninstall command
 - GitHub Actions CI/CD
@@ -86,8 +87,6 @@ stackpulse/
 │   ├── webhook/
 │   ├── gitops/
 │   └── utils/
-├── charts/
-│   └── webhook-handler/
 ├── configs/
 │   ├── prometheus/
 │   ├── grafana/
@@ -106,9 +105,7 @@ stackpulse/
 ├── .github/
 │   └── workflows/
 │       ├── ci.yml
-│       ├── release.yml
-│       └── docker.yml
-├── Dockerfile.webhook
+│       └── release.yml
 ├── go.mod
 ├── go.sum
 ├── README.md
@@ -127,7 +124,6 @@ stackpulse version
 stackpulse init
 stackpulse doctor
 stackpulse deploy observability
-stackpulse deploy webhook-handler
 stackpulse status
 stackpulse alerts configure --slack
 stackpulse alerts configure --pagerduty
@@ -170,7 +166,7 @@ stackpulse doctor
 Prints:
 
 ```text
-StackPulse version: v0.1.0
+StackPulse version: v0.1.3
 Commit: abc123
 Build date: 2026-05-28
 ```
@@ -248,7 +244,7 @@ The installer should:
 ```text
 Detecting OS...
 Detected linux/amd64
-Downloading StackPulse v0.1.0...
+Downloading StackPulse v0.1.3...
 Installing to /usr/local/bin/stackpulse...
 Installation complete.
 Run: stackpulse doctor
@@ -326,11 +322,13 @@ StackPulse Doctor
 
 ## Goal
 
-If Kubernetes is not found during deployment, the CLI should prompt to install a local cluster (`k3s`, `minikube`, or `kind`) automatically.
+If Kubernetes is not found during deployment, the CLI should prompt to install a
+local cluster (`k3s`, `minikube`, or `kind`) automatically.
 
 ## Integration Flow
 
 During `stackpulse deploy observability`:
+
 1. Check if Kubernetes cluster is reachable.
 2. If unreachable, prompt choice:
    - kind (Docker-based)
@@ -394,18 +392,18 @@ stackpulse deploy observability
 
 The MVP stack should include:
 
-| Component | Purpose |
-|---|---|
-| Prometheus | Metrics collection |
-| Grafana | Dashboards and visualisation |
-| Loki | Log aggregation |
-| Tempo | Distributed tracing |
-| ArgoCD | Continuous delivery and GitOps |
-| Alertmanager | Alert routing |
-| OpenTelemetry Collector | Telemetry pipeline |
-| Node Exporter | Linux node metrics |
-| kube-state-metrics | Kubernetes object metrics |
-| Grafana Alloy or Promtail | Log collection |
+| Component                 | Purpose                        |
+| ------------------------- | ------------------------------ |
+| Prometheus                | Metrics collection             |
+| Grafana                   | Dashboards and visualisation   |
+| Loki                      | Log aggregation                |
+| Tempo                     | Distributed tracing            |
+| ArgoCD                    | Continuous delivery and GitOps |
+| Alertmanager              | Alert routing                  |
+| OpenTelemetry Collector   | Telemetry pipeline             |
+| Node Exporter             | Linux node metrics             |
+| kube-state-metrics        | Kubernetes object metrics      |
+| Grafana Alloy or Promtail | Log collection                 |
 
 ## Deployment Order
 
@@ -562,54 +560,7 @@ Sending test alert...
 
 ---
 
-# Phase 9: Custom Go Webhook Handler
-
-## Goal
-
-Make StackPulse unique, not just a Helm wrapper.
-
-## Component
-
-Build a small Go service:
-
-```text
-stackpulse-webhook-handler
-```
-
-## Features
-
-- Receives Alertmanager webhook
-- Parses alert payload
-- Formats incident message
-- Sends to Slack
-- Sends to PagerDuty
-- Stores recent incidents in memory or SQLite
-- Exposes health endpoint
-- Exposes incident list endpoint
-
-## Endpoints
-
-```text
-GET /health
-POST /webhook/alertmanager
-GET /incidents
-```
-
-## Deploy Command
-
-```bash
-stackpulse deploy webhook-handler
-```
-
-## Docker Image
-
-```text
-ghcr.io/shivamshashank/stackpulse-webhook-handler:latest
-```
-
----
-
-# Phase 10: Status Command
+# Phase 9: Status Command
 
 ## Goal
 
@@ -633,7 +584,6 @@ Show status for:
 - Tempo
 - Alertmanager
 - OpenTelemetry Collector
-- Webhook handler
 - Alerts
 - Dashboards
 
@@ -652,7 +602,6 @@ Tempo: running
 ArgoCD Delivery: running
 Alertmanager: running
 OpenTelemetry Collector: running
-Webhook Handler: running
 
 Access Grafana:
 kubectl port-forward svc/stackpulse-grafana 3000:80 -n observability
@@ -660,7 +609,7 @@ kubectl port-forward svc/stackpulse-grafana 3000:80 -n observability
 
 ---
 
-# Phase 11: Logs Command
+# Phase 10: Logs Command
 
 ## Goal
 
@@ -681,7 +630,7 @@ Fetch logs from observability namespace pods.
 
 ---
 
-# Phase 12: Uninstall
+# Phase 11: Uninstall
 
 ## Goal
 
@@ -702,7 +651,6 @@ Remove:
 - Observability namespace
 - Alert secrets
 - Dashboards configmaps
-- Webhook handler
 
 ## Safety Prompt
 
@@ -713,7 +661,7 @@ Continue? [y/N]
 
 ---
 
-# Phase 13: GitOps and CI/CD
+# Phase 12: GitOps and CI/CD
 
 ## Goal
 
@@ -760,8 +708,8 @@ File:
 Runs when a tag is pushed:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.3
+git push origin v0.1.3
 ```
 
 Builds binaries for:
@@ -773,23 +721,9 @@ Builds binaries for:
 
 Uploads binaries to GitHub Releases.
 
-### 3. Docker Workflow
-
-File:
-
-```text
-.github/workflows/docker.yml
-```
-
-Builds and pushes webhook handler image to GitHub Container Registry:
-
-```text
-ghcr.io/shivamshashank/stackpulse-webhook-handler
-```
-
 ---
 
-# Phase 14: Test Cases
+# Phase 13: Test Cases
 
 ## Goal
 
@@ -834,7 +768,7 @@ stackpulse status
 
 ---
 
-# Phase 15: Dry Run Mode
+# Phase 14: Dry Run Mode
 
 ## Goal
 
@@ -853,7 +787,7 @@ Print what would happen without changing the system.
 
 ---
 
-# Phase 16: Documentation
+# Phase 15: Documentation
 
 ## README Must Include
 
@@ -894,9 +828,9 @@ stackpulse status
 
 ---
 
-# Phase 17: MVP Release Checklist
+# Phase 16: MVP Release Checklist
 
-## Before v0.1.0
+## Before v0.1.3
 
 - [ ] CLI command structure complete
 - [ ] `version` command works
@@ -916,7 +850,6 @@ stackpulse status
 - [ ] Dashboards imported
 - [ ] Slack alert test works
 - [ ] PagerDuty alert test works
-- [ ] Webhook handler deployed
 - [ ] `status` command works
 - [ ] `logs` command works
 - [ ] `uninstall` command works
@@ -956,7 +889,6 @@ stackpulse status
 ## Week 4
 
 - Slack/PagerDuty integration
-- Webhook handler
 - Dashboards
 - Logs command
 - Uninstall command
@@ -965,7 +897,6 @@ stackpulse status
 
 - Tests
 - Release workflow
-- Docker workflow
 - README
 - Screenshots
 - LinkedIn demo post
@@ -976,12 +907,21 @@ stackpulse status
 
 Use this wording in README:
 
-> StackPulse is a Go-based DevOps/SRE CLI that turns any Kubernetes-compatible environment into a full observability platform. It can detect an existing Kubernetes cluster, install k3s when needed, and deploy Prometheus, Grafana, Loki, Tempo, Alertmanager, OpenTelemetry Collector, dashboards, and alert integrations with a simple command-line workflow.
+> StackPulse is a Go-based DevOps/SRE CLI that turns any Kubernetes-compatible
+> environment into a full observability platform. It can detect an existing
+> Kubernetes cluster, install k3s when needed, and deploy Prometheus, Grafana,
+> Loki, Tempo, Alertmanager, OpenTelemetry Collector, dashboards, and alerts
+> with a simple command-line workflow.
 
 Use this wording in CV:
 
-> Built StackPulse, a Go-based DevOps/SRE CLI that detects or installs Kubernetes with k3s and deploys a production-style observability stack including Prometheus, Grafana, Loki, Tempo, OpenTelemetry Collector, Alertmanager, Slack/PagerDuty alerts, dashboards, and a custom Go webhook handler.
+> Built StackPulse, a Go-based DevOps/SRE CLI that detects or installs
+> Kubernetes with k3s and deploys a production-style observability stack
+> including Prometheus, Grafana, Loki, Tempo, OpenTelemetry Collector,
+> Alertmanager, Slack/PagerDuty alerts, and dashboards.
 
 Use this wording for LinkedIn:
 
-> I built StackPulse — a Go CLI that turns a Linux VM or Kubernetes cluster into a full observability platform with Prometheus, Grafana, Loki, Tempo, OpenTelemetry, dashboards, and alerting in one command.
+> I built StackPulse — a Go CLI that turns a Linux VM or Kubernetes cluster into
+> a full observability platform with Prometheus, Grafana, Loki, Tempo,
+> OpenTelemetry, dashboards, and alerting in one command.

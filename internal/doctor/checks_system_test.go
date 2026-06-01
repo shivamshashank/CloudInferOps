@@ -69,3 +69,10 @@ func TestGetLinuxMemory(t *testing.T) {
 		t.Error("expected error for missing MemTotal, got nil")
 	}
 }
+
+func TestCheckDisk(t *testing.T) {
+	res := CheckDisk()
+	if res.Name != "Disk Space" {
+		t.Errorf("Expected CheckResult Name 'Disk Space', got '%s'", res.Name)
+	}
+}
