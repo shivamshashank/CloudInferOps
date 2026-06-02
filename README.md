@@ -2,7 +2,7 @@
 
 # 🚀 StackPulse
 
-### One-command observability platform for Kubernetes, Linux VMs, and cloud instances.
+### StackPulse — One Command Kubernetes Observability Platform
 
 **StackPulse** is a Go-based DevOps/SRE CLI that detects your environment,
 validates Kubernetes readiness, installs lightweight Kubernetes when needed, and
@@ -50,6 +50,13 @@ dashboards, and alerts.
 
 ---
 
+## 🎥 Demo Video
+
+[![StackPulse Demo](https://img.youtube.com/vi/YOUR_VIDEO_ID_HERE/0.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID_HERE)
+*Click the image above to watch the StackPulse demo video in action.*
+
+---
+
 ## 📌 What is StackPulse?
 
 StackPulse turns any Kubernetes-compatible environment into a complete
@@ -67,7 +74,7 @@ It works on:
 StackPulse follows a simple workflow:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/shivamshashank/StackPulse/main/scripts/install.sh | bash
+sudo curl -sSL https://raw.githubusercontent.com/shivamshashank/StackPulse/main/scripts/install.sh | sudo bash
 sudo stackpulse doctor
 sudo stackpulse deploy observability
 sudo stackpulse status
@@ -139,7 +146,7 @@ sudo stackpulse status
 ### 1. Install StackPulse
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/shivamshashank/StackPulse/main/scripts/install.sh | bash
+sudo curl -sSL https://raw.githubusercontent.com/shivamshashank/StackPulse/main/scripts/install.sh | sudo bash
 ```
 
 Verify installation:
@@ -496,7 +503,7 @@ sudo stackpulse deploy webhook-handler
 ### Run All Tests
 
 ```bash
-go test ./...
+sudo go test ./...
 ```
 
 ### Run Tests with Coverage
@@ -634,7 +641,7 @@ _(For ARM64 processors, replace `stackpulse-linux-amd64` with
 ### Go Install
 
 ```bash
-go install github.com/shivamshashank/StackPulse/cmd/stackpulse@latest
+sudo go install github.com/shivamshashank/StackPulse/cmd/stackpulse@latest
 ```
 
 ### GitHub Releases
@@ -752,31 +759,11 @@ sudo stackpulse uninstall all
 
 ## 📸 Screenshots
 
-> Add screenshots after deployment.
-
-### Grafana Kubernetes Overview
-
-```text
-docs/images/grafana-kubernetes-overview.png
-```
-
-### Loki Logs
-
-```text
-docs/images/loki-logs.png
-```
-
-### Tempo Traces
-
-```text
-docs/images/tempo-traces.png
-```
-
-### Slack Alert
-
-```text
-docs/images/slack-alert.png
-```
+| StackPulse Status | ArgoCD | Prometheus |
+| :---: | :---: | :---: |
+| ![StackPulse Status](docs/images/stackpulse-status.png) | ![ArgoCD](docs/images/argocd.png) | ![Prometheus](docs/images/prometheus.png) |
+| **Grafana** | **Node Exporter** | **Alertmanager** |
+| ![Grafana](docs/images/grafana-dashboard.png) | ![Node Exporter](docs/images/node-exporter.png) | ![Alertmanager](docs/images/alertmanager.png) |
 
 ---
 
@@ -839,10 +826,10 @@ StackPulse/
 Contributions are welcome.
 
 ```bash
-git clone https://github.com/shivamshashank/StackPulse.git
+sudo git clone https://github.com/shivamshashank/StackPulse.git
 cd StackPulse
-go mod tidy
-go test ./...
+sudo go mod tidy
+sudo go test ./...
 ```
 
 Create a branch:

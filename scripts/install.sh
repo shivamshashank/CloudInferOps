@@ -128,4 +128,6 @@ INSTALLED_VER=$("${INSTALL_PATH}" version | grep "version:" | awk '{print $NF}' 
 
 echo -e "\n${READY}${BOLD}Successfully installed StackPulse!${RESET}"
 echo -e "  🚀 Installed version: ${INSTALLED_VER}"
-echo -e "  🩺 Run '${BOLD}stackpulse doctor${RESET}' to test your system environment."
+echo -e "  🩺 Run '${BOLD}sudo stackpulse doctor${RESET}' to test your system environment."
+echo -e "  📦 Run '${BOLD}sudo stackpulse deploy observability${RESET}' to deploy the stack."
+echo -e "  📊 Run '${BOLD}sudo stackpulse status${RESET}' to check the dashboard links."

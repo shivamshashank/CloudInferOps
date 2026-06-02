@@ -207,11 +207,9 @@ func PrintStatus() error {
 		// Attempt to resolve the public IP for correct external browser access.
 		var detectedPublicIP string
 		if parsedIP := net.ParseIP(instanceIP); parsedIP != nil && parsedIP.IsPrivate() {
-			if utils.IsCloudVM() {
-				detectedPublicIP = utils.GetPublicIP()
-				if detectedPublicIP != "" {
-					instanceIP = detectedPublicIP
-				}
+			detectedPublicIP = utils.GetPublicIP()
+			if detectedPublicIP != "" {
+				instanceIP = detectedPublicIP
 			}
 		}
 

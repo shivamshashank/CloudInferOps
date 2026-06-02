@@ -131,7 +131,7 @@ func CheckMemory() CheckResult {
 	}
 }
 
-// CheckDisk detects free space on the root partition and warns if below 10GB
+// CheckDisk detects free space on the root partition and warns if below 12GB
 func CheckDisk() CheckResult {
 	var stat syscall.Statfs_t
 	err := syscall.Statfs("/", &stat)
@@ -139,16 +139,16 @@ func CheckDisk() CheckResult {
 		return CheckResult{
 			Name:    "Disk Space",
 			Status:  StatusWarn,
-			Message: fmt.Sprintf("Minimum disk space: Unknown (%v) - 10GB+ recommended", err),
+			Message: fmt.Sprintf("Minimum disk space: Unknown (%v) - 12GB+ recommended", err),
 		}
 	}
 
 	// Bavail is the number of blocks available to non-superuser. Bsize is block size.
 	freeBytes := stat.Bavail * uint64(stat.Bsize)
 	freeGB := float64(freeBytes) / (1024 * 1024 * 1024)
-	msg := fmt.Sprintf("Minimum disk space: %.2fGB free (10GB+ recommended)", freeGB)
+	msg := fmt.Sprintf("Minimum disk space: %.2fGB free (12GB+ recommended)", freeGB)
 
-	if freeGB < 10.0 {
+	if freeGB < 12.0 {
 		return CheckResult{
 			Name:    "Disk Space",
 			Status:  StatusWarn,

@@ -117,7 +117,11 @@ func GetPublicIP() string {
 		"https://ifconfig.me/ip",
 		"https://icanhazip.com",
 		"http://169.254.169.254/latest/meta-data/public-ipv4", // AWS EC2 / OpenStack metadata fallback
-		"http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip", // GCP metadata fallback
+		"http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip",                    // GCP metadata fallback
+		"http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/publicIpAddress?api-version=2021-02-01&format=text", // Azure metadata fallback
+		"http://169.254.169.254/metadata/v1/interfaces/public/0/ipv4/address",                                                              // DigitalOcean metadata fallback
+		"http://169.254.169.254/v1/interfaces/0/ipv4/address",                                                                              // Vultr metadata fallback
+		"http://169.254.169.254/hetzner/v1/metadata/public-ipv4",                                                                           // Hetzner metadata fallback
 	}
 
 	for _, provider := range providers {
@@ -128,6 +132,7 @@ func GetPublicIP() string {
 		// Masquerade as curl to bypass basic bot blockers on public IP APIs
 		req.Header.Set("User-Agent", "curl/7.68.0")
 		req.Header.Set("Metadata-Flavor", "Google") // Required by GCP metadata endpoint
+		req.Header.Set("Metadata", "true")          // Required by Azure metadata endpoint
 
 		resp, err := client.Do(req)
 		if err == nil {
