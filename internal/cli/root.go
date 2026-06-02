@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/shivamshashank/StackPulse/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +28,18 @@ dashboards, alerts, and incident webhooks.`,
 		if os.Geteuid() != 0 {
 			return fmt.Errorf("StackPulse requires root privileges. Please run with sudo")
 		}
+
+		// Initialize config (without forcing creation)
+		_ = config.InitConfig(false)
+
+		// Setup default/configured Kubeconfig path environment variable early so all subprocesses (kubectl, helm, etc.) inherit it
+		if config.GlobalConfig.Kubernetes.Kubeconfig != "" {
+			_ = os.Setenv("KUBECONFIG", config.GlobalConfig.Kubernetes.Kubeconfig)
+		} else {
+			defaultKubeconfig := config.ExpandPath("~/.kube/config")
+			_ = os.Setenv("KUBECONFIG", defaultKubeconfig)
+		}
+
 		return nil
 	},
 }

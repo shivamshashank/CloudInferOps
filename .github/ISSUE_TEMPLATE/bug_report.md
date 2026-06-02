@@ -32,7 +32,7 @@ Please paste the output of running `stackpulse doctor` (or
 
 ## 💻 Environment Details
 
-- **StackPulse Version:** (e.g., `stackpulse version` or `v0.1.3`)
+- **StackPulse Version:** (e.g., `stackpulse version` or `v1.0.0`)
 - **OS & CPU Architecture:** (e.g., Ubuntu 22.04 amd64, macOS arm64)
 - **Kubernetes Distribution:** (e.g., k3s, kind, minikube, EKS, GKE, none)
 - **Local config (`~/.stackpulse/config.yaml`):** (If relevant, please remove

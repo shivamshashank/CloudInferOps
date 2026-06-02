@@ -52,8 +52,7 @@ dashboards, and alerts.
 
 ## 🎥 Demo Video
 
-[![StackPulse Demo](https://img.youtube.com/vi/YOUR_VIDEO_ID_HERE/0.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID_HERE)
-*Click the image above to watch the StackPulse demo video in action.*
+<video src="https://github.com/user-attachments/assets/22ba59aa-b98c-4e16-908c-57d9b9e3bd89" controls="controls" autoplay="autoplay" loop="loop" muted="muted" width="100%"></video>
 
 ---
 
@@ -586,8 +585,8 @@ golangci-lint run
 Create a new release by pushing a tag:
 
 ```bash
-git tag v0.1.3
-git push origin v0.1.3
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
 The release workflow builds binaries for:
@@ -759,11 +758,11 @@ sudo stackpulse uninstall all
 
 ## 📸 Screenshots
 
-| StackPulse Status | ArgoCD | Prometheus |
-| :---: | :---: | :---: |
-| ![StackPulse Status](docs/images/stackpulse-status.png) | ![ArgoCD](docs/images/argocd.png) | ![Prometheus](docs/images/prometheus.png) |
-| **Grafana** | **Node Exporter** | **Alertmanager** |
-| ![Grafana](docs/images/grafana-dashboard.png) | ![Node Exporter](docs/images/node-exporter.png) | ![Alertmanager](docs/images/alertmanager.png) |
+|                    StackPulse Status                    |                     ArgoCD                      |                  Prometheus                   |
+| :-----------------------------------------------------: | :---------------------------------------------: | :-------------------------------------------: |
+| ![StackPulse Status](docs/images/stackpulse-status.png) |        ![ArgoCD](docs/images/argocd.png)        |   ![Prometheus](docs/images/prometheus.png)   |
+|                       **Grafana**                       |                **Node Exporter**                |               **Alertmanager**                |
+|      ![Grafana](docs/images/grafana-dashboard.png)      | ![Node Exporter](docs/images/node-exporter.png) | ![Alertmanager](docs/images/alertmanager.png) |
 
 ---
 
