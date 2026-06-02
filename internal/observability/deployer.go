@@ -762,7 +762,7 @@ func waitForArgoCDApps(ns string, dryRun bool) {
 	if dryRun {
 		return
 	}
-	stopSpinner := utils.StartSpinner("Waiting for ArgoCD applications to become Healthy and Synced (this may take up to 2 minutes)...")
+	updateSpinner, stopSpinner := utils.StartDynamicSpinner("Waiting for ArgoCD applications to become Healthy and Synced (this may take up to 2 minutes)...")
 	var lastPendingApps string
 
 	for i := 0; i < 24; i++ { // Wait up to 2 minutes
@@ -795,8 +795,7 @@ func waitForArgoCDApps(ns string, dryRun bool) {
 				sort.Strings(pendingApps)
 				currentPending := strings.Join(pendingApps, ", ")
 				if currentPending != lastPendingApps {
-					stopSpinner()
-					stopSpinner = utils.StartSpinner(fmt.Sprintf("Waiting for ArgoCD applications (pending: %s)...", currentPending))
+					updateSpinner(fmt.Sprintf("Waiting for ArgoCD applications (pending: %s)...", currentPending))
 					lastPendingApps = currentPending
 				}
 			}

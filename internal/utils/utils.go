@@ -255,3 +255,56 @@ func StartSpinner(message string) func() {
 		})
 	}
 }
+
+// StartDynamicSpinner starts a background CLI spinner that allows its message to be updated.
+// It returns a function to update the message and a function to stop the spinner.
+func StartDynamicSpinner(initialMessage string) (func(string), func()) {
+	done := make(chan struct{})
+	ack := make(chan struct{})
+	msgChan := make(chan string)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		frames := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+		i := 0
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+
+		message := initialMessage
+		fmt.Printf("\r\033[K%s%s %s", PrefixInfo, message, frames[0])
+		i++
+
+		for {
+			select {
+			case <-done:
+				fmt.Print("\r\033[K") // Clear line when done
+				signal.Stop(sigChan)
+				close(ack)
+				return
+			case newMsg := <-msgChan:
+				message = newMsg
+			case <-sigChan:
+				fmt.Print("\r\033[K") // Clear line on Ctrl+C
+				fmt.Printf("%sOperation cancelled by user (Ctrl+C).\n", PrefixWarn)
+				os.Exit(130) // Standard exit code for SIGINT
+			case <-ticker.C:
+				fmt.Printf("\r\033[K%s%s %s", PrefixInfo, message, frames[i%len(frames)])
+				i++
+			}
+		}
+	}()
+
+	updateFunc := func(newMessage string) {
+		msgChan <- newMessage
+	}
+
+	var once sync.Once
+	stopFunc := func() {
+		once.Do(func() {
+			close(done)
+			<-ack
+		})
+	}
+	return updateFunc, stopFunc
+}
