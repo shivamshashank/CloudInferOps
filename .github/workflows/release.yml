@@ -31,13 +31,17 @@ jobs:
           git fetch --tags --force
           LATEST_TAG=$(git tag -l "v*" | sort -V | tail -n1 || true)
           if [ -z "$LATEST_TAG" ]; then
-            NEXT_TAG="v0.1.3"
+            NEXT_TAG="v1.0.0"
           else
             VERSION_PART=${LATEST_TAG#v}
             # Parse version parts
             IFS='.' read -r major minor patch <<< "$VERSION_PART"
-            next_patch=$((patch + 1))
-            NEXT_TAG="v${major}.${minor}.${next_patch}"
+            if [ "$major" -eq 0 ]; then
+              NEXT_TAG="v1.0.0"
+            else
+              next_patch=$((patch + 1))
+              NEXT_TAG="v${major}.${minor}.${next_patch}"
+            fi
           fi
           echo "NEXT_TAG=${NEXT_TAG}" >> $GITHUB_ENV
           echo "Calculated next tag: ${NEXT_TAG}"
