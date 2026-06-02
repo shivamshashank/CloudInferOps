@@ -52,8 +52,7 @@ dashboards, and alerts.
 
 ## 🎥 Demo Video
 
-[![StackPulse Demo](https://img.youtube.com/vi/YOUR_VIDEO_ID_HERE/0.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID_HERE)
-*Click the image above to watch the StackPulse demo video in action.*
+<video src="https://github.com/user-attachments/assets/22ba59aa-b98c-4e16-908c-57d9b9e3bd89" controls="controls" autoplay="autoplay" loop="loop" muted="muted" width="100%"></video>
 
 ---
 
@@ -759,11 +758,11 @@ sudo stackpulse uninstall all
 
 ## 📸 Screenshots
 
-| StackPulse Status | ArgoCD | Prometheus |
-| :---: | :---: | :---: |
-| ![StackPulse Status](docs/images/stackpulse-status.png) | ![ArgoCD](docs/images/argocd.png) | ![Prometheus](docs/images/prometheus.png) |
-| **Grafana** | **Node Exporter** | **Alertmanager** |
-| ![Grafana](docs/images/grafana-dashboard.png) | ![Node Exporter](docs/images/node-exporter.png) | ![Alertmanager](docs/images/alertmanager.png) |
+|                    StackPulse Status                    |                     ArgoCD                      |                  Prometheus                   |
+| :-----------------------------------------------------: | :---------------------------------------------: | :-------------------------------------------: |
+| ![StackPulse Status](docs/images/stackpulse-status.png) |        ![ArgoCD](docs/images/argocd.png)        |   ![Prometheus](docs/images/prometheus.png)   |
+|                       **Grafana**                       |                **Node Exporter**                |               **Alertmanager**                |
+|      ![Grafana](docs/images/grafana-dashboard.png)      | ![Node Exporter](docs/images/node-exporter.png) | ![Alertmanager](docs/images/alertmanager.png) |
 
 ---
 
