@@ -329,6 +329,27 @@ sudo stackpulse doctor
 sudo stackpulse status
 ```
 
+### Reliability Diagnostics
+
+```bash
+sudo stackpulse diagnose pod POD_NAME --namespace default
+sudo stackpulse diagnose deployment DEPLOYMENT --namespace default
+sudo stackpulse diagnose service SERVICE --namespace default
+sudo stackpulse diagnose cluster
+sudo stackpulse score
+sudo stackpulse score --json
+sudo stackpulse security scan
+sudo stackpulse security report
+```
+
+The diagnosis engine prints likely issues with Kubernetes evidence and
+recommendations. The reliability score evaluates pod health, deployment
+readiness, restart frequency, probe coverage, resource requests and limits, SLO
+coverage, public service exposure, privileged containers, and mutable image
+tags. The security scanner checks privileged containers, missing resource
+limits, mutable image tags, public service exposure, and optional Trivy and
+kube-score findings when those tools are installed.
+
 ### Observability
 
 ```bash
