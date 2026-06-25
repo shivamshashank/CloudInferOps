@@ -1,319 +1,384 @@
 <div align="center">
 
-# 🚀 StackPulse
+# ☁️🤖 CloudInferOps
 
-### StackPulse — One Command Kubernetes Observability Platform
+### Multi-Cloud AI Inference Operations CLI
 
-**StackPulse** is a Go-based DevOps/SRE CLI that detects your environment,
-validates Kubernetes readiness, installs lightweight Kubernetes when needed, and
-deploys a production-style observability stack with metrics, logs, traces,
-dashboards, and alerts.
+**CloudInferOps** is a production-grade Go and Python platform for deploying,
+monitoring, benchmarking, and operating LLM inference workloads on Kubernetes
+across local, VM, and cloud environments.
+
+It combines a Go-based infrastructure control plane with a Python FastAPI
+inference gateway, giving platform engineers a single CLI to bootstrap
+Kubernetes, deploy AI inference services, install observability, run benchmarks,
+manage GitOps, and inspect reliability signals.
 
 <br />
 
-[![CI](https://img.shields.io/github/actions/workflow/status/shivamshashank/StackPulse/ci.yml?branch=main&label=CI&logo=githubactions&style=flat-square)](https://github.com/shivamshashank/StackPulse/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/actions/workflow/status/shivamshashank/StackPulse/release.yml?branch=main&label=Release&logo=githubactions&style=flat-square)](https://github.com/shivamshashank/StackPulse/actions/workflows/release.yml)
-[![Codecov](https://img.shields.io/codecov/c/github/shivamshashank/StackPulse?logo=codecov&style=flat-square)](https://codecov.io/gh/shivamshashank/StackPulse)
-[![Go Report Card](https://goreportcard.com/badge/github.com/shivamshashank/StackPulse?https://img.shields.io/badge/go%20report-A+-brightgreen.svg?style=flat)](https://goreportcard.com/report/github.com/shivamshashank/StackPulse)
-[![GitHub release](https://img.shields.io/github/v/release/shivamshashank/StackPulse?style=flat-square)](https://github.com/shivamshashank/StackPulse/releases)
-[![GitHub stars](https://img.shields.io/github/stars/shivamshashank/StackPulse?style=flat-square)](https://github.com/shivamshashank/StackPulse/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/shivamshashank/StackPulse?style=flat-square)](https://github.com/shivamshashank/StackPulse/network/members)
-[![License](https://img.shields.io/github/license/shivamshashank/StackPulse?style=flat-square)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/shivamshashank/cloud-infer-ops/ci.yml?branch=main&label=CI&logo=githubactions&style=flat-square)](https://github.com/shivamshashank/cloud-infer-ops/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/shivamshashank/cloud-infer-ops?style=flat-square)](https://github.com/shivamshashank/cloud-infer-ops/releases)
+[![License](https://img.shields.io/github/license/shivamshashank/cloud-infer-ops?style=flat-square)](LICENSE)
+[![Go Report](https://goreportcard.com/badge/github.com/shivamshashank/cloud-infer-ops)](https://goreportcard.com/report/github.com/shivamshashank/cloud-infer-ops)
 
 <br />
 
 ![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Helm](https://img.shields.io/badge/Helm-0F1689?style=for-the-badge&logo=helm&logoColor=white)
+![ArgoCD](https://img.shields.io/badge/ArgoCD-EF7B4D?style=for-the-badge&logo=argo&logoColor=white)
 ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)
 ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white)
-![Loki](https://img.shields.io/badge/Loki-F46800?style=for-the-badge&logo=grafana&logoColor=white)
-![Tempo](https://img.shields.io/badge/Tempo-F46800?style=for-the-badge&logo=grafana&logoColor=white)
-![ArgoCD](https://img.shields.io/badge/ArgoCD-EF7B4D?style=for-the-badge&logo=argo&logoColor=white)
 ![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-000000?style=for-the-badge&logo=opentelemetry&logoColor=white)
-![Alertmanager](https://img.shields.io/badge/Alertmanager-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)
-![Slack](https://img.shields.io/badge/Slack-4A154B?style=for-the-badge&logo=slack&logoColor=white)
-![PagerDuty](https://img.shields.io/badge/PagerDuty-06AC38?style=for-the-badge&logo=pagerduty&logoColor=white)
-![AWS](https://img.shields.io/badge/AWS_EC2-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)
-![GCP](https://img.shields.io/badge/GCP_VM-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)
-![Azure](https://img.shields.io/badge/Azure_VM-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-Local%20LLM-black?style=for-the-badge)
+![vLLM](https://img.shields.io/badge/vLLM-GPU%20Inference-blue?style=for-the-badge)
 
 <br />
 
-[Quick Start](#-quick-start) • [Features](#-features) •
-[Architecture](#-architecture) • [Commands](#-cli-commands) •
-[Testing](#-testing) • [CI/CD](#-cicd--gitops) • [Author](#-author)
+[Overview](#-overview) • [Architecture](#-architecture) •
+[Quick Start](#-quick-start) • [CLI](#-cli-commands) •
+[Observability](#-ai-observability) • [Benchmarking](#-benchmarking) •
+[Benefits](#-benefits)
 
 </div>
 
 ---
 
-## 🎥 Demo Video
+## 📌 Overview
 
-<video src="https://github.com/user-attachments/assets/22ba59aa-b98c-4e16-908c-57d9b9e3bd89" controls="controls" autoplay="autoplay" loop="loop" muted="muted" width="100%"></video>
+CloudInferOps turns a Kubernetes-compatible environment into a complete AI
+inference operations platform.
 
----
+With one CLI, you can:
 
-## 📌 What is StackPulse?
+- Detect whether the machine is ready for Kubernetes and AI workloads.
+- Bootstrap a local Kubernetes cluster with kind, minikube, or k3s when needed.
+- Deploy a production-style observability stack.
+- Deploy an LLM inference gateway backed by Ollama or vLLM.
+- Expose OpenAI-compatible chat completion APIs.
+- Route requests across models and providers.
+- Measure AI-specific signals such as TTFT, tokens/sec, model usage, and P95
+  latency.
+- Run benchmark workloads and generate latency, throughput, and cost reports.
+- Manage GitOps delivery through ArgoCD.
+- Send alerts and incidents to Slack, PagerDuty, and webhook consumers.
+- Inspect the full platform from a single status command.
 
-StackPulse turns any Kubernetes-compatible environment into a complete
-observability platform.
-
-It works on:
-
-- 💻 Local Linux machines
-- ☁️ AWS EC2 instances
-- ☁️ GCP Compute Engine VMs
-- ☁️ Azure VMs
-- ☸️ Existing Kubernetes clusters
-- 🧪 Local clusters such as k3s, kind, minikube, and Docker Desktop Kubernetes
-
-StackPulse follows a simple workflow:
-
-```bash
-sudo curl -sSL https://raw.githubusercontent.com/shivamshashank/StackPulse/main/scripts/install.sh | sudo bash
-sudo stackpulse doctor
-sudo stackpulse deploy observability
-sudo stackpulse status
-```
+CloudInferOps is designed for AI infrastructure engineers, MLOps engineers,
+platform engineers, SREs, and backend engineers who need a realistic way to
+deploy and operate LLM systems rather than only call an external API.
 
 ---
 
-## ✨ Features
+## 🎯 What Problem It Solves
 
-### 🧠 Smart Environment Detection
+Running LLMs in production is not just model serving. Teams also need:
 
-- Detects OS and CPU architecture
-- Detects `kubectl`
-- Detects Kubernetes cluster availability
-- Detects Helm
-- Checks memory, CPU, ports, storage class, and namespace permissions
-- Warns about existing observability stack conflicts
+- Kubernetes deployment and lifecycle management.
+- Reliable routing between models and inference backends.
+- AI-aware observability beyond generic HTTP metrics.
+- Benchmarking before choosing models and infrastructure.
+- Autoscaling and failure visibility.
+- GitOps workflows for repeatable platform deployment.
+- Cost and performance signals for engineering decisions.
 
-### ☸️ Kubernetes First
-
-- Uses existing Kubernetes cluster if available
-- Installs k3s when Kubernetes is missing
-- Supports local and cloud VM environments
-- Works consistently across local Linux, AWS EC2, GCP VM, and Azure VM
-
-### 📊 Full Observability Stack
-
-| Layer               | Component                |
-| ------------------- | ------------------------ |
-| Metrics             | Prometheus               |
-| Dashboards          | Grafana                  |
-| Logs                | Loki                     |
-| Traces              | Tempo                    |
-| Continuous Delivery | ArgoCD                   |
-| Telemetry Pipeline  | OpenTelemetry Collector  |
-| Alerts              | Alertmanager             |
-| Node Metrics        | Node Exporter            |
-| Kubernetes Metrics  | kube-state-metrics       |
-| Log Collection      | Grafana Alloy / Promtail |
-| Endpoint Monitors   | Blackbox Exporter        |
-| Continuous Profiler | Pyroscope                |
-| HA Long-Retention   | Thanos (Optional HA)     |
-| Incident Routing    | Slack, PagerDuty         |
-
-### 🚨 Incident & Alerting
-
-- Slack alert integration
-- PagerDuty alert integration
-- Alertmanager webhook support
-- Test alert command
-- Prebuilt SRE alert rules
-
-### 📈 Dashboards Included
-
-- Kubernetes cluster overview
-- Node CPU, memory, disk
-- Pod health
-- Container metrics
-- Namespace usage
-- Loki logs dashboard
-- Tempo traces dashboard
-- Alertmanager overview
-- Resource usage dashboard
-
----
-
-## ⚡ Quick Start
-
-### 1. Install StackPulse
-
-```bash
-sudo curl -sSL https://raw.githubusercontent.com/shivamshashank/StackPulse/main/scripts/install.sh | sudo bash
-```
-
-Verify installation:
-
-```bash
-stackpulse version
-```
-
----
-
-### 2. Check Your System
-
-> [!IMPORTANT]
-> **Sudo Privileges Required** StackPulse requires administrative/root
-> privileges (`sudo`) to manage system observability resources, check system
-> metrics, and set up networking or local clusters.
-
-```bash
-sudo stackpulse doctor
-```
-
-Example output:
+CloudInferOps brings these concerns into one project:
 
 ```text
-StackPulse Doctor
-
-[OK] OS: linux/amd64
-[OK] Internet connection
-[OK] kubectl found
-[WARN] Kubernetes cluster not detected
-[OK] Helm found
-[OK] Minimum memory: 4GB+
-[OK] Minimum CPU: 2 cores+
-
-[INFO] Run: sudo stackpulse deploy observability
-```
-
-If Kubernetes already exists:
-
-```text
-[OK] Kubernetes cluster detected
-[OK] Current context: kind-dev
-[OK] Nodes ready: 1
-[OK] Helm found
-[OK] StorageClass found
-
-[READY] Run: sudo stackpulse deploy observability
+Deploy LLMs. Observe tokens. Benchmark latency. Operate AI workloads on Kubernetes.
 ```
 
 ---
 
-### 3. Deploy Observability Stack & Auto-bootstrap Kubernetes
+## ✨ Core Features
 
-To deploy the observability stack, simply run:
+### ☁️ Multi-Cloud And Local Kubernetes
 
-```bash
-sudo stackpulse deploy observability
-```
+- Existing Kubernetes cluster support.
+- Local cluster bootstrap with kind, minikube, or k3s.
+- Linux VM support for AWS EC2, GCP Compute Engine, and Azure VM style
+  deployments.
+- AWS EKS-ready deployment structure.
+- Environment-aware checks for CPU, memory, disk, ports, tools, ingress, and
+  storage.
 
-> [!TIP]
-> **No Kubernetes? No problem!** If StackPulse does not detect an existing
-> Kubernetes cluster, it will automatically ask to install and bootstrap a
-> lightweight local Kubernetes cluster (supporting `kind`, `minikube`, or `k3s`)
-> on-the-fly, then automatically deploy the observability stack onto it. If you
-> already have a cluster running, it will deploy directly onto your active
-> context.
+### 🤖 LLM Inference Platform
 
-StackPulse deploys:
+- FastAPI inference gateway.
+- OpenAI-compatible `/v1/chat/completions` endpoint.
+- Ollama provider for local CPU-friendly demos.
+- vLLM provider path for GPU-backed production inference.
+- Model routing layer for chat, coding, reasoning, and fallback workloads.
+- Streaming and non-streaming response support.
+- Provider timeouts, retries, and backend health checks.
 
-- Prometheus
-- Grafana
-- Loki
-- Tempo
-- ArgoCD
-- Alertmanager
-- OpenTelemetry Collector
-- Node Exporter
-- kube-state-metrics
-- Grafana Alloy / Promtail
-- Dashboards
-- Alert rules
+### 📊 AI Observability
+
+- Prometheus metrics for inference requests, errors, latency, tokens, and model
+  usage.
+- Grafana dashboards for LLM health and performance.
+- OpenTelemetry tracing across gateway, router, and inference backend.
+- Loki logs and Tempo traces.
+- Alertmanager rules for high latency, high error rate, low throughput, and
+  backend downtime.
+
+### 📈 Benchmarking
+
+- CLI-driven benchmark runner.
+- P50, P95, and P99 latency reports.
+- Time to first token measurement.
+- Tokens/sec and requests/sec.
+- Error rate and backend availability.
+- Estimated cost/request reporting.
+- JSON, Markdown, and HTML report outputs.
+
+### 🔁 GitOps And Platform Operations
+
+- ArgoCD bootstrap.
+- GitOps-managed platform, observability, and inference workloads.
+- Application sync and health status.
+- Helm-based deployment engine.
+- Dry-run support for safe review before applying resources.
+
+### 🚨 Reliability And Incident Workflows
+
+- Slack and PagerDuty integration.
+- Alertmanager webhook handler.
+- Recent incident API.
+- SLO-focused alerts.
+- Kubernetes readiness and liveness probes.
+- Failure and recovery demo support.
+
+### 🔐 Security And Readiness
+
+- Kubernetes manifest checks.
+- Privileged container detection.
+- Resource request and limit validation.
+- `latest` image tag warnings.
+- Public ingress exposure checks.
+- Optional Trivy and kube-score integrations.
 
 ---
 
-### 5. Check Status
+## 🧱 Tech Stack
 
-```bash
-sudo stackpulse status
-```
-
-Example:
-
-```text
-🩺  StackPulse Status Dashboard
------------------------------------------------------------------
-🌐  Kubernetes Context:   kind-stackpulse
-📦  Namespace:            observability
-
-📋  System Components Checklist:
-    Prometheus Server:        🟢  Running
-    Grafana Dashboard:        🟢  Running
-    Loki Logging:             🟢  Running
-    Tempo Tracing:            🟢  Running
-    OTel Collector:           🟢  Running
-    ArgoCD Delivery:          🟢  Running
-
-📦  GitOps Overview:
-    Mode:                     ArgoCD Managed
-    Applications:             4
-    Synced:                   4/4
-    Healthy:                  4/4
-
-📊  Access Telemetry Dashboards via Ingress:
-    🔗  Grafana Dashboard:   http://127.0.0.1/grafana/
-    🔗  Prometheus Server:   http://127.0.0.1/prometheus/
-    🔗  Alertmanager Panel:  http://127.0.0.1/alertmanager/
-    🔗  ArgoCD Dashboard:    http://127.0.0.1/argocd
-```
+| Layer             | Technologies                                                      |
+| ----------------- | ----------------------------------------------------------------- |
+| CLI Control Plane | Go, Cobra, Viper                                                  |
+| Inference Gateway | Python, FastAPI, Pydantic, Uvicorn                                |
+| LLM Providers     | Ollama, vLLM, OpenAI-compatible APIs                              |
+| Containers        | Docker                                                            |
+| Orchestration     | Kubernetes, kind, minikube, k3s                                   |
+| Deployment        | Helm, Kubernetes manifests                                        |
+| GitOps            | ArgoCD                                                            |
+| Metrics           | Prometheus, kube-state-metrics, Node Exporter                     |
+| Dashboards        | Grafana                                                           |
+| Logs              | Loki, Grafana Alloy / Promtail                                    |
+| Traces            | Tempo, OpenTelemetry Collector                                    |
+| Alerts            | Alertmanager, Slack, PagerDuty                                    |
+| Benchmarking      | Go CLI runner, Python load scenarios, JSON/Markdown/HTML reports  |
+| CI/CD             | GitHub Actions, Docker image builds, release binaries             |
+| Cloud Targets     | Local Kubernetes, Linux VMs, AWS EC2/k3s, AWS EKS-ready structure |
 
 ---
 
 ## 🏗️ Architecture
 
 ```text
-                           ┌──────────────────────────┐
-                           │      StackPulse CLI      │
-                           │        Go Binary         │
-                           └─────────────┬────────────┘
-                                         │
-                 ┌───────────────────────┼───────────────────────┐
-                 │                       │                       │
-          ┌──────▼──────┐        ┌───────▼───────┐        ┌──────▼──────┐
-          │   Doctor    │        │ Kubernetes    │        │    Helm     │
-          │   Checks    │        │  Detection    │        │ Deployment  │
-          └──────┬──────┘        └───────┬───────┘        └──────┬──────┘
-                 │                       │                       │
-                 │              ┌────────▼────────┐              │
-                 │              │ Existing K8s or │              │
-                 │              │ k3s Installer   │              │
-                 │              └────────┬────────┘              │
-                 │                       │                       │
-                 └───────────────────────▼───────────────────────┘
-                                         │
-                              ┌──────────▼──────────┐
-                              │   observability ns  │
-                              └──────────┬──────────┘
-                                         │
-        ┌────────────────────────────────┼────────────────────────────────┐
-        │                                │                                │
-┌───────▼────────┐              ┌────────▼────────┐              ┌────────▼───────┐
-│   Prometheus   │              │     Grafana     │              │ Alertmanager   │
-│    Metrics     │              │   Dashboards    │              │    Alerts      │
-└───────┬────────┘              └────────┬────────┘              └────────┬───────┘
-        │                                │                                │
-┌───────▼────────┐              ┌────────▼────────┐              ┌────────▼───────┐
-│ Node Exporter  │              │      Loki       │              │ Slack/PagerDuty│
-│ kube-state     │              │      Logs       │              │ Integrations   │
-└────────────────┘              └────────┬────────┘              └────────────────┘
-                                         │
-                              ┌──────────▼──────────┐
-                              │       Tempo         │
-                              │       Traces        │
-                              └──────────┬──────────┘
-                                         │
-                              ┌──────────▼──────────┐
-                              │ OpenTelemetry       │
-                              │ Collector           │
-                              └─────────────────────┘
+                            ┌────────────────────────────┐
+                            │      cloudinferops CLI     │
+                            │        Go Control Plane    │
+                            └──────────────┬─────────────┘
+                                           │
+        ┌──────────────────────────────────┼──────────────────────────────────┐
+        │                                  │                                  │
+┌───────▼────────┐              ┌──────────▼──────────┐            ┌──────────▼──────────┐
+│ Doctor Checks  │              │ Kubernetes Platform │            │ GitOps / ArgoCD     │
+│ OS, tools, GPU │              │ kind, k3s, EKS      │            │ Sync and health     │
+└───────┬────────┘              └──────────┬──────────┘            └──────────┬──────────┘
+        │                                  │                                  │
+        └──────────────────────────────────▼──────────────────────────────────┘
+                                           │
+                                ┌──────────▼──────────┐
+                                │  Kubernetes Cluster │
+                                └──────────┬──────────┘
+                                           │
+      ┌────────────────────────────────────┼────────────────────────────────────┐
+      │                                    │                                    │
+┌─────▼─────┐                    ┌─────────▼─────────┐                  ┌───────▼───────┐
+│ Platform  │                    │ Inference Gateway │                  │ Observability │
+│ Services  │                    │ Python FastAPI    │                  │ Stack         │
+└─────┬─────┘                    └─────────┬─────────┘                  └───────┬───────┘
+      │                                    │                                    │
+      │                         ┌──────────▼──────────┐                         │
+      │                         │     Model Router    │                         │
+      │                         └──────────┬──────────┘                         │
+      │                                    │                                    │
+      │                  ┌─────────────────┴─────────────────┐                  │
+      │                  │                                   │                  │
+┌─────▼──────┐   ┌───────▼────────┐                 ┌────────▼───────┐   ┌──────▼──────┐
+│ Ingress    │   │ Ollama Backend │                 │ vLLM Backend   │   │ Prometheus  │
+│ Controller │   │ Local LLMs     │                 │ GPU Inference  │   │ Grafana     │
+└────────────┘   └────────────────┘                 └────────────────┘   │ Loki Tempo  │
+                                                                         │ Alertmanager│
+                                                                         └─────────────┘
+```
+
+---
+
+## 🔄 End-To-End Request Flow
+
+```text
+User or application
+  -> POST /v1/chat/completions
+  -> FastAPI inference gateway
+  -> request validation
+  -> model router
+  -> Ollama or vLLM provider
+  -> streamed or JSON response
+  -> Prometheus metrics emitted
+  -> OpenTelemetry trace exported
+  -> logs collected by Loki
+  -> Grafana dashboards updated
+  -> Alertmanager triggers incidents if SLOs fail
+```
+
+---
+
+## ⚡ Quick Start
+
+### 1. Install CloudInferOps
+
+```bash
+curl -sSL https://raw.githubusercontent.com/shivamshashank/cloud-infer-ops/main/scripts/install.sh | bash
+```
+
+Verify installation:
+
+```bash
+cloudinferops version
+```
+
+### 2. Check Environment Readiness
+
+```bash
+sudo cloudinferops doctor
+```
+
+Example:
+
+```text
+CloudInferOps Doctor
+
+[OK] OS: linux/amd64
+[OK] Internet connection
+[OK] Docker found
+[OK] kubectl found
+[OK] Helm found
+[OK] Kubernetes cluster detected
+[OK] StorageClass found
+[INFO] GPU not detected; Ollama local inference path available
+
+[READY] Run: sudo cloudinferops deploy platform
+```
+
+### 3. Deploy Platform Observability
+
+```bash
+sudo cloudinferops deploy platform
+```
+
+This deploys:
+
+- NGINX ingress controller.
+- Prometheus.
+- Grafana.
+- Loki.
+- Tempo.
+- OpenTelemetry Collector.
+- Alertmanager.
+- ArgoCD.
+- Node Exporter.
+- kube-state-metrics.
+- AI and Kubernetes dashboards.
+- SLO and inference alert rules.
+
+### 4. Deploy LLM Inference
+
+Local Ollama path:
+
+```bash
+sudo cloudinferops deploy inference --provider ollama --model llama3
+```
+
+GPU vLLM path:
+
+```bash
+sudo cloudinferops deploy inference --provider vllm --model mistral --gpu
+```
+
+### 5. Send A Chat Request
+
+```bash
+curl -X POST http://cloudinferops.local/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "llama3",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Explain Kubernetes in simple terms."
+      }
+    ]
+  }'
+```
+
+### 6. Check Platform Status
+
+```bash
+sudo cloudinferops status
+```
+
+Example:
+
+```text
+CloudInferOps Status
+-----------------------------------------------------------------
+Kubernetes Context:        kind-cloudinferops
+Platform Namespace:        observability
+Inference Namespace:       inference
+
+Platform Components:
+  Prometheus:              Running
+  Grafana:                 Running
+  Loki:                    Running
+  Tempo:                   Running
+  OpenTelemetry:           Running
+  Alertmanager:            Running
+  ArgoCD:                  Healthy
+
+Inference Components:
+  Gateway:                 Healthy
+  Provider:                ollama
+  Active model:            llama3
+  Average latency:         420ms
+  P95 latency:             890ms
+  Tokens/sec:              128
+  Error rate:              0.2%
+
+Dashboards:
+  Grafana:                 http://cloudinferops.local/grafana
+  Prometheus:              http://cloudinferops.local/prometheus
+  ArgoCD:                  http://cloudinferops.local/argocd
+```
+
+### 7. Run A Benchmark
+
+```bash
+cloudinferops benchmark run --model llama3 --requests 100 --concurrency 10
+cloudinferops benchmark report --latest
 ```
 
 ---
@@ -323,62 +388,97 @@ Example:
 ### General
 
 ```bash
-stackpulse version
-sudo stackpulse init
-sudo stackpulse doctor
-sudo stackpulse status
+cloudinferops version
+sudo cloudinferops init
+sudo cloudinferops doctor
+sudo cloudinferops status
+```
+
+### Platform
+
+```bash
+sudo cloudinferops deploy platform
+sudo cloudinferops deploy platform --dry-run
+sudo cloudinferops deploy platform --ha
+sudo cloudinferops connect grafana
+sudo cloudinferops connect prometheus
+sudo cloudinferops connect argocd
+```
+
+### Inference
+
+```bash
+sudo cloudinferops deploy inference --provider ollama --model llama3
+sudo cloudinferops deploy inference --provider vllm --model mistral --gpu
+sudo cloudinferops deploy inference --dry-run
+cloudinferops models list
+cloudinferops models pull llama3
+cloudinferops models health
+```
+
+### Benchmarking
+
+```bash
+cloudinferops benchmark run --model llama3 --requests 100 --concurrency 10
+cloudinferops benchmark run --scenario benchmarking/scenarios/chat.yaml
+cloudinferops benchmark report --latest
+cloudinferops benchmark report --format html
 ```
 
 ### Observability
 
 ```bash
-sudo stackpulse deploy observability
-sudo stackpulse deploy observability --dry-run
-sudo stackpulse deploy observability --ha
-sudo stackpulse dashboards import
-sudo stackpulse logs
-sudo stackpulse logs --component grafana
-sudo stackpulse logs --component prometheus
-sudo stackpulse logs --component loki
+sudo cloudinferops dashboards import
+sudo cloudinferops logs
+sudo cloudinferops logs --component gateway
+sudo cloudinferops logs --component ollama
+sudo cloudinferops logs --component prometheus
+sudo cloudinferops logs --component grafana
 ```
 
-### GitOps & Continuous Delivery
+### GitOps
 
 ```bash
-sudo stackpulse gitops bootstrap
-sudo stackpulse gitops bootstrap --dry-run
-sudo stackpulse gitops status
+sudo cloudinferops gitops bootstrap
+sudo cloudinferops gitops bootstrap --with-inference
+sudo cloudinferops gitops bootstrap --dry-run
+sudo cloudinferops gitops status
 ```
 
-### Alerts
+### Alerts And Incidents
 
 ```bash
-sudo stackpulse alerts configure --slack
-sudo stackpulse alerts configure --pagerduty
-sudo stackpulse alerts test
+sudo cloudinferops alerts configure --slack
+sudo cloudinferops alerts configure --pagerduty
+sudo cloudinferops alerts test
+sudo cloudinferops deploy webhook-handler
+cloudinferops incidents list
 ```
 
-### Webhook Handler
+### Security
 
 ```bash
-sudo stackpulse deploy webhook-handler
+sudo cloudinferops security scan
+sudo cloudinferops security scan --namespace inference
+sudo cloudinferops security report --json
 ```
 
 ### Cleanup
 
 ```bash
-sudo stackpulse uninstall observability
-sudo stackpulse uninstall all
+sudo cloudinferops uninstall inference
+sudo cloudinferops uninstall platform
+sudo cloudinferops uninstall all
 ```
 
 ---
 
 ## ⚙️ Configuration
 
-StackPulse stores local configuration at:
+CloudInferOps stores local configuration at:
 
 ```text
-~/.stackpulse/config.yaml
+~/.cloudinferops/config.yaml
 ```
 
 Example:
@@ -389,6 +489,29 @@ namespace: observability
 kubernetes:
   type: auto
   kubeconfig: ~/.kube/config
+
+inference:
+  namespace: inference
+  provider: ollama
+  model: llama3
+  gateway:
+    replicas: 2
+    image: ghcr.io/shivamshashank/cloudinferops-gateway:latest
+    servicePort: 8000
+  ollama:
+    enabled: true
+    url: http://cloudinferops-ollama.inference.svc.cluster.local:11434
+  vllm:
+    enabled: false
+    image: vllm/vllm-openai:latest
+    gpu: true
+    tensorParallelSize: 1
+  routing:
+    default: llama3
+    rules:
+      coding: deepseek-coder
+      chat: llama3
+      reasoning: mistral
 
 observability:
   prometheus: true
@@ -401,77 +524,225 @@ observability:
   kubeStateMetrics: true
   logCollector: alloy
   blackboxExporter: true
-  blackboxTargets:
-    - https://api.github.com
-    - https://github.com
   pyroscope: true
   thanos: false
+
+benchmarking:
+  defaultRequests: 100
+  defaultConcurrency: 10
+  reportFormats:
+    - json
+    - markdown
+    - html
 
 alerts:
   slack:
     enabled: false
-    webhookUrlSecret: stackpulse-slack-webhook
+    webhookUrlSecret: cloudinferops-slack-webhook
   pagerduty:
     enabled: false
-    integrationKeySecret: stackpulse-pagerduty-key
+    integrationKeySecret: cloudinferops-pagerduty-key
 ```
 
 ---
 
-## 🚨 Alert Rules
+## 🤖 Inference API
 
-StackPulse includes SRE-focused alert rules:
+### Health
 
-| Alert                      | Description                         |
-| -------------------------- | ----------------------------------- |
-| NodeDown                   | Kubernetes node is not ready        |
-| HighCPUUsage               | Node or pod CPU usage is high       |
-| HighMemoryUsage            | Node or pod memory usage is high    |
-| DiskPressure               | Node disk pressure detected         |
-| PodCrashLooping            | Pod is repeatedly crashing          |
-| PodRestartSpike            | Pod restart count increased         |
-| DeploymentUnavailable      | Deployment has unavailable replicas |
-| HighAPILatency             | API latency is above threshold      |
-| HighErrorRate              | Application error rate increased    |
-| PersistentVolumeAlmostFull | PVC usage is close to capacity      |
-
----
-
-## 🔔 Slack & PagerDuty
-
-### Configure Slack
-
-```bash
-sudo stackpulse alerts configure --slack
+```http
+GET /health
 ```
 
-### Configure PagerDuty
+Response:
 
-```bash
-sudo stackpulse alerts configure --pagerduty
+```json
+{
+  "status": "healthy",
+  "provider": "ollama",
+  "model": "llama3"
+}
 ```
 
-### Send Test Alert
+### Models
 
-```bash
-sudo stackpulse alerts test
+```http
+GET /models
 ```
 
-Expected output:
+Response:
+
+```json
+{
+  "models": [
+    {
+      "name": "llama3",
+      "provider": "ollama",
+      "status": "ready"
+    }
+  ]
+}
+```
+
+### Chat Completions
+
+```http
+POST /v1/chat/completions
+```
+
+Request:
+
+```json
+{
+  "model": "llama3",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Give me a Kubernetes readiness checklist."
+    }
+  ],
+  "stream": false
+}
+```
+
+### Metrics
+
+```http
+GET /metrics
+```
+
+Exposes:
 
 ```text
-Sending test alert...
-[OK] Alert sent to Slack
-[OK] Alert sent to PagerDuty
+cloudinferops_inference_requests_total
+cloudinferops_inference_errors_total
+cloudinferops_inference_latency_seconds
+cloudinferops_inference_tokens_total
+cloudinferops_inference_tokens_per_second
+cloudinferops_inference_ttft_seconds
+cloudinferops_inference_model_requests_total
 ```
 
 ---
 
-## 🧩 Go Webhook Handler
+## 📊 AI Observability
 
-StackPulse includes a custom Go service for incident processing.
+CloudInferOps includes dashboards for both infrastructure and AI-specific
+workload signals.
 
-### Endpoints
+### Dashboards
+
+| Dashboard           | Signals                                          |
+| ------------------- | ------------------------------------------------ |
+| LLM Overview        | Requests, errors, active models, provider health |
+| Inference Latency   | P50, P95, P99, TTFT, request duration            |
+| Token Throughput    | Tokens/sec, input tokens, output tokens          |
+| Model Usage         | Requests by model, provider, route, and status   |
+| Cost Efficiency     | Estimated cost/request, throughput per replica   |
+| Kubernetes Platform | Node, pod, namespace, and deployment health      |
+| Logs And Traces     | Loki logs and Tempo trace links                  |
+
+### Alert Rules
+
+| Alert                   | Description                                |
+| ----------------------- | ------------------------------------------ |
+| InferenceGatewayDown    | FastAPI gateway is unavailable             |
+| ModelBackendDown        | Ollama or vLLM backend is unavailable      |
+| HighInferenceErrorRate  | Error rate exceeds SLO threshold           |
+| HighInferenceLatencyP95 | P95 latency is above target                |
+| LowTokenThroughput      | Tokens/sec dropped below expected baseline |
+| HighCostPerRequest      | Estimated cost/request breached threshold  |
+| PodCrashLooping         | Kubernetes workload is repeatedly crashing |
+| DeploymentUnavailable   | Deployment has unavailable replicas        |
+
+---
+
+## 📈 Benchmarking
+
+Run a benchmark:
+
+```bash
+cloudinferops benchmark run --model llama3 --requests 100 --concurrency 10
+```
+
+Example output:
+
+```text
+CloudInferOps Benchmark Report
+-----------------------------------------------------------------
+Model:                  llama3
+Provider:               ollama
+Requests:               100
+Concurrency:            10
+Success rate:           99.0%
+P50 latency:            380ms
+P95 latency:            910ms
+P99 latency:            1.4s
+TTFT:                   210ms
+Requests/sec:           18.7
+Tokens/sec:             132.4
+Estimated cost/request: $0.0004
+
+Report written:
+  benchmarking/reports/latest.json
+  benchmarking/reports/latest.md
+  benchmarking/reports/latest.html
+```
+
+Benchmark scenarios live in:
+
+```text
+benchmarking/scenarios/
+```
+
+Reports are generated in:
+
+```text
+benchmarking/reports/
+```
+
+---
+
+## 🔁 GitOps
+
+CloudInferOps can convert the platform into ArgoCD-managed applications:
+
+```bash
+sudo cloudinferops gitops bootstrap --with-inference
+```
+
+Generated applications:
+
+```text
+cloudinferops-platform
+cloudinferops-observability
+cloudinferops-inference
+cloudinferops-apps
+```
+
+Check sync and health:
+
+```bash
+sudo cloudinferops gitops status
+```
+
+Example:
+
+```text
+APPLICATION                    SYNCED      HEALTHY
+cloudinferops-platform         Synced      Healthy
+cloudinferops-observability    Synced      Healthy
+cloudinferops-inference        Synced      Healthy
+cloudinferops-apps             Synced      Healthy
+```
+
+---
+
+## 🚨 Incident Webhook
+
+CloudInferOps includes a custom incident gateway for Alertmanager webhooks.
+
+Endpoints:
 
 ```text
 GET  /health
@@ -479,131 +750,180 @@ POST /webhook/alertmanager
 GET  /incidents
 ```
 
-### Capabilities
+Capabilities:
 
-- Receives Alertmanager webhooks
-- Parses alert payloads
-- Formats incident messages
-- Sends notifications to Slack
-- Sends incidents to PagerDuty
-- Stores recent incidents
-- Exposes health and incident APIs
+- Receives Alertmanager webhooks.
+- Parses Kubernetes and inference alerts.
+- Stores recent incidents.
+- Sends Slack notifications.
+- Sends PagerDuty events.
+- Exposes recent incidents through an API.
 
-Deploy it with:
+Deploy it:
 
 ```bash
-sudo stackpulse deploy webhook-handler
+sudo cloudinferops deploy webhook-handler
+```
+
+---
+
+## 🔐 Security
+
+Run a security scan:
+
+```bash
+sudo cloudinferops security scan
+```
+
+Scan scope:
+
+- Kubernetes manifests.
+- Running workloads.
+- Inference namespace.
+- Platform namespace.
+- Container images.
+- Resource requests and limits.
+- Public ingress exposure.
+- Privileged containers.
+- Optional Trivy vulnerability scan.
+- Optional kube-score workload checks.
+
+JSON report:
+
+```bash
+sudo cloudinferops security report --json
+```
+
+---
+
+## 🗂️ Repository Structure
+
+```text
+cloud-infer-ops/
+├── cmd/
+│   └── cloudinferops/
+├── internal/
+│   ├── alerts/
+│   ├── benchmark/
+│   ├── cli/
+│   ├── config/
+│   ├── doctor/
+│   ├── gitops/
+│   ├── helm/
+│   ├── inference/
+│   ├── installer/
+│   ├── observability/
+│   ├── platform/
+│   ├── security/
+│   ├── utils/
+│   └── webhook/
+├── api/
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── metrics.py
+│   │   ├── router.py
+│   │   ├── schemas.py
+│   │   ├── tracing.py
+│   │   └── providers/
+│   ├── tests/
+│   ├── Dockerfile
+│   └── pyproject.toml
+├── deployments/
+│   ├── helm/
+│   ├── kubernetes/
+│   └── terraform/
+├── observability/
+│   ├── alerts/
+│   ├── dashboards/
+│   └── otel/
+├── benchmarking/
+│   ├── reports/
+│   └── scenarios/
+├── docs/
+│   ├── architecture.md
+│   ├── demo-script.md
+│   ├── multi-cloud.md
+│   ├── request-flow.md
+│   └── resume.md
+├── scripts/
+├── .github/
+│   └── workflows/
+├── README.md
+├── CLOUDINFEROPS_MIGRATION_PLAN.md
+├── go.mod
+├── go.sum
+└── LICENSE
 ```
 
 ---
 
 ## 🧪 Testing
 
-### Run All Tests
+### Go Tests
 
 ```bash
-sudo go test ./...
+env GOCACHE=/private/tmp/cloudinferops-go-cache go test ./...
 ```
 
-### Run Tests with Coverage
+### Python Tests
 
 ```bash
-go test ./... -cover
+cd api
+pytest
 ```
 
-### Generate Coverage Report
-
-```bash
-go test ./... -coverprofile=coverage.out
-go tool cover -html=coverage.out
-```
-
-### Run Vet
-
-```bash
-go vet ./...
-```
-
-### Run Formatting Check
+### Lint And Formatting
 
 ```bash
 gofmt -w .
-```
-
-### Run Linter
-
-```bash
+go vet ./...
 golangci-lint run
+
+cd api
+ruff check .
+ruff format .
 ```
 
-### Integration Test with kind
+### Local Integration Test
 
 ```bash
-kind create cluster --name stackpulse-test
-sudo stackpulse doctor
-sudo stackpulse deploy observability --dry-run
-sudo stackpulse uninstall observability --dry-run
-kind delete cluster --name stackpulse-test
+kind create cluster --name cloudinferops-test
+sudo cloudinferops doctor
+sudo cloudinferops deploy platform --dry-run
+sudo cloudinferops deploy inference --provider ollama --model llama3 --dry-run
+sudo cloudinferops benchmark run --model llama3 --requests 10 --concurrency 2
+kind delete cluster --name cloudinferops-test
 ```
 
 ---
 
-## ✅ Test Coverage
+## 🔁 CI/CD
 
-| Area          | Tests                                        |
-| ------------- | -------------------------------------------- |
-| CLI commands  | `version`, `init`, `doctor`, `status`        |
-| Config        | Load, validate, default values               |
-| Doctor checks | OS, arch, kubectl, Helm, Kubernetes          |
-| Kubernetes    | Cluster detection, namespace creation        |
-| Helm          | Repo add, release detection, dry-run         |
-| Alerts        | Slack payload, PagerDuty payload, test alert |
-| Webhook       | Alertmanager payload parsing                 |
-| Status        | Component health formatting                  |
-| Uninstall     | Dry-run and confirmation flow                |
+GitHub Actions runs:
 
----
+- Go tests.
+- Go vet.
+- Go formatting checks.
+- Python tests.
+- Python linting.
+- Docker image build for the FastAPI gateway.
+- Helm/template validation.
+- Release binary builds.
 
-## 🔁 CI/CD & GitOps
-
-StackPulse uses GitHub Actions for automated testing, builds, Docker images, and
-releases.
-
-### CI Workflow
-
-Runs on every push and pull request:
-
-```yaml
-go test ./...
-go vet ./...
-gofmt -w .
-golangci-lint run
-```
-
-### Release Workflow
-
-Create a new release by pushing a tag:
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-The release workflow builds binaries for:
-
-- Linux amd64
-- Linux arm64
-- macOS amd64
-- macOS arm64
-
-Artifacts are uploaded to GitHub Releases.
-
-### Docker Workflow
-
-Builds and publishes the webhook handler image:
+Release artifacts:
 
 ```text
-ghcr.io/shivamshashank/stackpulse-webhook-handler:latest
+cloudinferops-darwin-amd64
+cloudinferops-darwin-arm64
+cloudinferops-linux-amd64
+cloudinferops-linux-arm64
+```
+
+Docker images:
+
+```text
+ghcr.io/shivamshashank/cloudinferops-gateway:latest
+ghcr.io/shivamshashank/cloudinferops-webhook-handler:latest
 ```
 
 ---
@@ -613,222 +933,116 @@ ghcr.io/shivamshashank/stackpulse-webhook-handler:latest
 ### Curl Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/shivamshashank/StackPulse/main/scripts/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/shivamshashank/cloud-infer-ops/main/scripts/install.sh | bash
 ```
 
-### Linux Manual Installation (via Curl)
-
-You can download and install the latest compiled binary manually for Linux:
+### Manual Linux Install
 
 ```bash
-# 1. Download the latest binary for your architecture (e.g., AMD64 / x86_64)
-curl -LO https://github.com/shivamshashank/StackPulse/releases/latest/download/stackpulse-linux-amd64
-
-# 2. Make the binary executable
-chmod +x stackpulse-linux-amd64
-
-# 3. Move it to your local system's bin directory to make it globally available
-sudo mv stackpulse-linux-amd64 /usr/local/bin/stackpulse
-
-# 4. Verify the installation
-stackpulse version
+curl -LO https://github.com/shivamshashank/cloud-infer-ops/releases/latest/download/cloudinferops-linux-amd64
+chmod +x cloudinferops-linux-amd64
+sudo mv cloudinferops-linux-amd64 /usr/local/bin/cloudinferops
+cloudinferops version
 ```
-
-_(For ARM64 processors, replace `stackpulse-linux-amd64` with
-`stackpulse-linux-arm64`)_
 
 ### Go Install
 
 ```bash
-sudo go install github.com/shivamshashank/StackPulse/cmd/stackpulse@latest
+go install github.com/shivamshashank/cloud-infer-ops/cmd/cloudinferops@latest
 ```
-
-### GitHub Releases
-
-Alternatively, you can manually download precompiled binaries for all supported
-platforms (Linux & macOS) directly from
-[GitHub Releases](https://github.com/shivamshashank/StackPulse/releases).
-
----
-
-## 👑 Running with Sudo / Root Privileges
-
-To install system prerequisites (such as Kubernetes clusters and core networking
-configurations) and bind services locally, you can run StackPulse fully under
-elevated privileges (`sudo` mode):
-
-```bash
-sudo stackpulse deploy observability
-sudo stackpulse status
-```
-
-> [!NOTE]
-> StackPulse is built with **smart environment-aware root fallback**. When run
-> as `sudo`, the CLI automatically detects the original invoking user
-> (`$SUDO_USER`) and correctly references their standard home directory paths
-> (such as `~/.kube/config` and `~/.stackpulse/config.yaml`), preventing
-> configuration directory pollution inside the `/root` path.
-
----
-
-## 🧪 Local Testing via Multipass (Recommended for macOS Users)
-
-Since native Linux VMs are required for k3s, macOS developers can test
-StackPulse locally using a lightweight [Multipass](https://multipass.run/)
-Ubuntu VM.
-
-Follow this step-by-step pipeline to run globally inside a local VM:
-
-### 1. Launch a Multipass VM
-
-Provision an Ubuntu instance meeting minimum system requirements (2 CPUs, 4GB
-RAM):
-
-```bash
-multipass launch --name stackpulse-vm --cpus 2 --memory 4G --disk 20G
-```
-
-### 2. Move Binary Globally inside the VM
-
-Compile the Linux AMD64 binary locally on your host machine, transfer it to the
-VM, and move it to `/usr/local/bin` to make it globally available:
-
-```bash
-# Compile for Linux (from host machine)
-env GOOS=linux GOARCH=amd64 go build -o stackpulse cmd/stackpulse/main.go
-
-# Transfer to Multipass VM
-multipass transfer stackpulse stackpulse-vm:/home/ubuntu/stackpulse
-
-# Shell into the VM
-multipass shell stackpulse-vm
-
-# Inside the VM shell: Make it executable and move to global bin path
-chmod +x /home/ubuntu/stackpulse
-sudo mv /home/ubuntu/stackpulse /usr/local/bin/stackpulse
-```
-
-### 3. Verify Global Run
-
-Now you can execute the `stackpulse` CLI globally from anywhere in the VM shell
-(just like standard system commands):
-
-```bash
-sudo stackpulse doctor
-```
-
-### 4. Deploy Observability Stack
-
-```bash
-sudo stackpulse deploy observability
-```
-
-When prompt options appear, select `2` to automatically install `k3s`
-lightweight Kubernetes or `1` for `kind`.
-
-### 5. Access Dashboards from Host Browser
-
-Once fully deployed, retrieve the service status:
-
-```bash
-sudo stackpulse status
-```
-
-StackPulse will automatically resolve the active VM interface IP. Simply open
-the generated links (e.g. `http://<VM_IP>/grafana`) directly in your host
-machine's web browser!
 
 ---
 
 ## 🧹 Uninstall
 
-Remove observability stack:
+Remove inference workloads:
 
 ```bash
-sudo stackpulse uninstall observability
+sudo cloudinferops uninstall inference
 ```
 
-Remove everything managed by StackPulse:
+Remove platform services:
 
 ```bash
-sudo stackpulse uninstall all
+sudo cloudinferops uninstall platform
+```
+
+Remove everything managed by CloudInferOps:
+
+```bash
+sudo cloudinferops uninstall all
 ```
 
 ---
 
 ## 📸 Screenshots
 
-|                    StackPulse Status                    |                     ArgoCD                      |                  Prometheus                   |
-| :-----------------------------------------------------: | :---------------------------------------------: | :-------------------------------------------: |
-| ![StackPulse Status](docs/images/stackpulse-status.png) |        ![ArgoCD](docs/images/argocd.png)        |   ![Prometheus](docs/images/prometheus.png)   |
-|                       **Grafana**                       |                **Node Exporter**                |               **Alertmanager**                |
-|      ![Grafana](docs/images/grafana-dashboard.png)      | ![Node Exporter](docs/images/node-exporter.png) | ![Alertmanager](docs/images/alertmanager.png) |
+|                    CloudInferOps Status                    |                     ArgoCD                      |                  Prometheus                   |
+| :--------------------------------------------------------: | :---------------------------------------------: | :-------------------------------------------: |
+| ![CloudInferOps Status](docs/images/stackpulse-status.png) |        ![ArgoCD](docs/images/argocd.png)        |   ![Prometheus](docs/images/prometheus.png)   |
+|                          Grafana                           |                  Node Exporter                  |                 Alertmanager                  |
+|       ![Grafana](docs/images/grafana-dashboard.png)        | ![Node Exporter](docs/images/node-exporter.png) | ![Alertmanager](docs/images/alertmanager.png) |
 
 ---
 
-## 🗂️ Repository Structure
+## 💼 Benefits
+
+### For Engineers
+
+- One CLI to deploy and operate AI inference infrastructure.
+- Local-first workflow that can expand to cloud environments.
+- Built-in visibility into model latency, tokens, errors, and health.
+- Repeatable Kubernetes and GitOps deployment model.
+- Benchmark reports to compare models and infrastructure choices.
+
+### For Platform Teams
+
+- Standardized LLM deployment path.
+- Observable inference workloads.
+- Clear operational ownership through dashboards and alerts.
+- GitOps-based reproducibility.
+- Extensible providers for local and GPU-backed inference.
+
+### For Resume And Portfolio
+
+CloudInferOps demonstrates:
+
+- Go infrastructure CLI engineering.
+- Python FastAPI backend development.
+- Kubernetes platform operations.
+- AI infrastructure and LLMOps.
+- Observability with Prometheus, Grafana, Loki, Tempo, and OpenTelemetry.
+- GitOps and CI/CD.
+- Benchmarking and reliability engineering.
+
+Resume bullet:
 
 ```text
-StackPulse/
-├── cmd/
-│   └── stackpulse/
-├── internal/
-│   ├── alerts/
-│   ├── cli/
-│   ├── config/
-│   ├── doctor/
-│   ├── gitops/
-│   ├── helm/
-│   ├── installer/
-│   ├── kubernetes/
-│   ├── observability/
-│   ├── utils/
-│   └── webhook/
-├── charts/
-│   └── webhook-handler/
-├── configs/
-├── dashboards/
-├── docs/
-├── scripts/
-│   └── install.sh
-├── .github/
-│   └── workflows/
-├── Dockerfile.webhook
-├── go.mod
-├── go.sum
-├── README.md
-├── ROADMAP.md
-└── LICENSE
+Built CloudInferOps, a Go and Python multi-cloud AI infrastructure CLI for deploying, monitoring, benchmarking, and operating LLM inference workloads on Kubernetes using FastAPI, Ollama/vLLM, Prometheus, Grafana, OpenTelemetry, Helm, and ArgoCD.
 ```
 
 ---
 
-## 🛠️ Built With
+## 🧭 Roadmap
 
-- [Go](https://go.dev/)
-- [Cobra](https://github.com/spf13/cobra)
-- [Viper](https://github.com/spf13/viper)
-- [Kubernetes](https://kubernetes.io/)
-- [Helm](https://helm.sh/)
-- [Prometheus](https://prometheus.io/)
-- [Grafana](https://grafana.com/)
-- [Loki](https://grafana.com/oss/loki/)
-- [Tempo](https://grafana.com/oss/tempo/)
-- [OpenTelemetry](https://opentelemetry.io/)
-- [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/)
-- [GitHub Actions](https://github.com/features/actions)
+- Multi-provider inference routing.
+- GPU-aware scheduling and autoscaling.
+- Model performance comparison dashboards.
+- Cost optimization recommendations.
+- AWS EKS Terraform module.
+- GKE and AKS deployment docs.
+- Multi-tenant API keys and quotas.
+- Web UI for benchmark history and incident review.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome.
-
 ```bash
-sudo git clone https://github.com/shivamshashank/StackPulse.git
-cd StackPulse
-sudo go mod tidy
-sudo go test ./...
+git clone https://github.com/shivamshashank/cloud-infer-ops.git
+cd cloud-infer-ops
+go mod tidy
+env GOCACHE=/private/tmp/cloudinferops-go-cache go test ./...
 ```
 
 Create a branch:
@@ -837,14 +1051,7 @@ Create a branch:
 git checkout -b feature/my-feature
 ```
 
-Commit and push:
-
-```bash
-git commit -m "feat: add my feature"
-git push origin feature/my-feature
-```
-
-Open a pull request.
+Run checks, commit, and open a pull request.
 
 ---
 
@@ -858,16 +1065,16 @@ This project is licensed under the MIT License.
 
 **Shivam Shashank**
 
-- 🌐 Portfolio: [shivam-shashank.me](https://www.shivam-shashank.me/)
-- 💼 LinkedIn:
+- Portfolio: [shivam-shashank.me](https://www.shivam-shashank.me/)
+- LinkedIn:
   [shivam-shashank-2b5766217](https://www.linkedin.com/in/shivam-shashank-2b5766217/)
-- 📧 Email: [shivamkumar872000@gmail.com](mailto:shivamkumar872000@gmail.com)
-- 🐙 GitHub: [shivamshashank](https://github.com/shivamshashank)
+- Email: [shivamkumar872000@gmail.com](mailto:shivamkumar872000@gmail.com)
+- GitHub: [shivamshashank](https://github.com/shivamshashank)
 
 ---
 
 <div align="center">
 
-### ⭐ If StackPulse helps you, please star the repository.
+### ⭐ CloudInferOps - Deploy LLMs, observe tokens, benchmark latency, and operate AI workloads on Kubernetes.
 
 </div>
