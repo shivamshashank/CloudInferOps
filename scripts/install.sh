@@ -91,7 +91,7 @@ else
             COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
             BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date +%Y-%m-%dT%H:%M:%SZ)
             PKG="github.com/shivamshashank/CloudInferOps/internal/cli"
-            go build -ldflags="-s -w -X ${PKG}.Version=${VERSION} -X ${PKG}.Commit=${COMMIT} -X ${PKG}.BuildDate=${BUILD_DATE}" -o "${TEMP_BIN}" cmd/cloudinferops/main.go
+            go build -ldflags="-s -w -X ${PKG}.Version=${VERSION} -X ${PKG}.Commit=${COMMIT} -X ${PKG}.BuildDate=${BUILD_DATE}" -o "${TEMP_BIN}" ./cmd/cloudinferops/
             echo -e "${SUCCESS}Compiled local CloudInferOps binary successfully."
         else
             echo -e "${ERROR}Cannot install: No release asset exists yet, and not in CloudInferOps repository source folder."

@@ -52,4 +52,4 @@ jobs:
           flags: unittests
 
       - name: Test Build Package
-        run: go build -v -ldflags="-s -w" -o cloudinferops cmd/cloudinferops/main.go
+        run: go build -v -ldflags="-s -w" -o cloudinferops ./cmd/cloudinferops/

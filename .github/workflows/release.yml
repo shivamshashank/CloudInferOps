@@ -67,19 +67,19 @@ jobs:
 
           # Linux AMD64
           echo "Compiling Linux AMD64 binary..."
-          env GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-linux-amd64 cmd/cloudinferops/main.go
+          env GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-linux-amd64 ./cmd/cloudinferops/
 
           # Linux ARM64
           echo "Compiling Linux ARM64 binary..."
-          env GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-linux-arm64 cmd/cloudinferops/main.go
+          env GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-linux-arm64 ./cmd/cloudinferops/
 
           # macOS AMD64
           echo "Compiling macOS AMD64 binary..."
-          env GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-darwin-amd64 cmd/cloudinferops/main.go
+          env GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-darwin-amd64 ./cmd/cloudinferops/
 
           # macOS ARM64
           echo "Compiling macOS ARM64 binary..."
-          env GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-darwin-arm64 cmd/cloudinferops/main.go
+          env GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-darwin-arm64 ./cmd/cloudinferops/
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
