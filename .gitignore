@@ -1,2 +1,26 @@
-stackpulse
+# Go binary
+cloudinfer
+
+# Coverage
 coverage.out
+
+# Editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swo1
+*.swo2
+
+# Build artifacts
+dist/
+bin/
+*.exe
+*.test
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

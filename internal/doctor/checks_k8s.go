@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 // runKubectl runs a kubectl command using the preferred kubeconfig file path.

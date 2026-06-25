@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
-	"github.com/shivamshashank/StackPulse/internal/doctor"
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/doctor"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ var doctorCmd = &cobra.Command{
 		if err != nil {
 			// Configuration doesn't exist, we will warn the user but still proceed with defaults
 			fmt.Printf("%sConfiguration file not found. Running doctor with default settings...\n", utils.PrefixInfo)
-			fmt.Printf("%sRun 'sudo stackpulse init' to create a custom configuration file.\n\n", utils.PrefixInfo)
+			fmt.Printf("%sRun 'sudo cloudinfer init' to create a custom configuration file.\n\n", utils.PrefixInfo)
 
 			// Setup default Kubeconfig path env
 			defaultKubeconfig := config.ExpandPath("~/.kube/config")

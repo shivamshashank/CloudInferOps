@@ -3,7 +3,7 @@ package observability
 import (
 	"testing"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
 )
 
 func TestDryRunDeployments(t *testing.T) {

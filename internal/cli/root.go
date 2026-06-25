@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
 	"github.com/spf13/cobra"
 )
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "stackpulse",
-	Short: "🚀 StackPulse is a one-command observability platform for Kubernetes and Linux VMs",
-	Long: `🚀 StackPulse is a Go-based DevOps/SRE CLI that detects your environment,
+	Use:   "cloudinfer",
+	Short: "🚀 CloudInferOps is a one-command observability platform for Kubernetes and Linux VMs",
+	Long: `🚀 CloudInferOps is a Go-based DevOps/SRE CLI that detects your environment,
 validates Kubernetes readiness, installs lightweight Kubernetes when needed, and
 deploys a production-style observability stack with metrics, logs, traces,
 dashboards, alerts, and incident webhooks.`,
@@ -26,7 +26,7 @@ dashboards, alerts, and incident webhooks.`,
 		}
 
 		if os.Geteuid() != 0 {
-			return fmt.Errorf("StackPulse requires root privileges. Please run with sudo")
+			return fmt.Errorf("CloudInferOps requires root privileges. Please run with sudo")
 		}
 
 		// Initialize config (without forcing creation)

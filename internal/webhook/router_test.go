@@ -12,7 +12,7 @@ import (
 func TestParseAlertmanagerPayload(t *testing.T) {
 	// Mock JSON Alertmanager webhook request body
 	payloadJSON := `{
-		"receiver": "stackpulse-webhook",
+		"receiver": "cloudinfer-webhook",
 		"status": "firing",
 		"alerts": [
 			{

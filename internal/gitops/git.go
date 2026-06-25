@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 // CheckGitInstalled verifies that the git CLI is available on the host machine.
@@ -22,12 +22,12 @@ func InitLocalRepo(repoDir string) error {
 	}
 
 	// Configure local user
-	_, stderr, err = utils.ExecCommand(repoDir, "git", "config", "user.name", "StackPulse Admin")
+	_, stderr, err = utils.ExecCommand(repoDir, "git", "config", "user.name", "CloudInferOps Admin")
 	if err != nil {
 		return fmt.Errorf("failed to config user.name: %w (stderr: %s)", err, stderr)
 	}
 
-	_, stderr, err = utils.ExecCommand(repoDir, "git", "config", "user.email", "admin@stackpulse.dev")
+	_, stderr, err = utils.ExecCommand(repoDir, "git", "config", "user.email", "admin@cloudinfer.dev")
 	if err != nil {
 		return fmt.Errorf("failed to config user.email: %w (stderr: %s)", err, stderr)
 	}
@@ -38,7 +38,7 @@ func InitLocalRepo(repoDir string) error {
 		return fmt.Errorf("failed to add files to git: %w (stderr: %s)", err, stderr)
 	}
 
-	_, _, err = utils.ExecCommand(repoDir, "git", "commit", "-m", "Bootstrap StackPulse GitOps")
+	_, _, err = utils.ExecCommand(repoDir, "git", "commit", "-m", "Bootstrap CloudInferOps GitOps")
 	if err != nil {
 		// If there is nothing to commit, we can ignore the error
 		return nil

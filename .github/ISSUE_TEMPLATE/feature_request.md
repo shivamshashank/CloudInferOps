@@ -1,24 +1,36 @@
 ---
 name: 🚀 Feature Request
-about: Propose a new feature, dashboard, or installer support for StackPulse.
+about: Propose a new feature, dashboard, or installer support for CloudInferOps.
 title: "[FEATURE] "
 labels: ["enhancement"]
 assignees: ""
 ---
 
 ## 💡 Is your feature request related to a problem?
-A clear and concise description of what the problem is. Ex. "I'm always frustrated when..."
+
+A clear and concise description of what the problem is. Ex. "I'm always
+frustrated when..."
 
 ## 🚀 Proposed Solution
-A clear and concise description of what you want to happen. Describe how this integrates with the StackPulse CLI or its deployed components (e.g. adding a new prebuilt dashboard, adding another Kubernetes distribution support to Doctor/Installer, or adding more Alert rules).
+
+A clear and concise description of what you want to happen. Describe how this
+integrates with the CloudInferOps CLI or its deployed components (e.g. adding a
+new prebuilt dashboard, adding another Kubernetes distribution support to
+Doctor/Installer, or adding more Alert rules).
 
 ## 🛠️ Implementation Details (Optional)
+
 If you have a design in mind, please describe the structure or workflow.
-* Which CLI command should support this? (e.g., `stackpulse deploy`, `stackpulse doctor`, `stackpulse status`)
-* Which Go packages or Helm charts would need changes?
+
+- Which CLI command should support this? (e.g., `cloudinfer deploy`,
+  `cloudinfer doctor`, `cloudinfer status`)
+- Which Go packages or Helm charts would need changes?
 
 ## 🔄 Alternatives Considered
-A clear and concise description of any alternative solutions or features you've considered.
+
+A clear and concise description of any alternative solutions or features you've
+considered.
 
 ## 💡 Additional Context
+
 Add any other context or mockups about the feature request here.

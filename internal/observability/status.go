@@ -6,8 +6,8 @@ import (
 	"net"
 	"strings"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 // PrintStatus queries the active cluster to collect pod health, decrypt secrets, and print a unified dashboard.
@@ -85,7 +85,7 @@ func PrintStatus() error {
 
 	// 3. Fetch and Decode Grafana Admin Password
 	plainPassword := "<unretrievable>"
-	pwdSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "stackpulse-prometheus-grafana", "-n", ns, "-o", "jsonpath={.data.admin-password}")
+	pwdSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "cloudinfer-prometheus-grafana", "-n", ns, "-o", "jsonpath={.data.admin-password}")
 	if err == nil && pwdSecret != "" {
 		decoded, err := DecodeBase64(strings.TrimSpace(pwdSecret))
 		if err == nil {
@@ -114,7 +114,7 @@ func PrintStatus() error {
 
 	// 4. Output Unified Dashboard
 	fmt.Println()
-	fmt.Printf("%s%s🩺  StackPulse Status Dashboard%s\n", utils.PrefixInfo, utils.ColorBold, utils.ColorReset)
+	fmt.Printf("%s%s🩺  CloudInferOps Status Dashboard%s\n", utils.PrefixInfo, utils.ColorBold, utils.ColorReset)
 	fmt.Println("-----------------------------------------------------------------")
 	fmt.Printf("🌐  Kubernetes Context:   %s\n", utils.ColorBold+context+utils.ColorReset)
 	fmt.Printf("📦  Namespace:            %s\n", ns)
@@ -151,7 +151,7 @@ func PrintStatus() error {
 	healthyCount := 0
 
 	hasGitOpsServer := false
-	if gitServerOut, _, err := utils.ExecCommand("", "kubectl", "get", "deployment", "stackpulse-git-server", "-n", ns, "--no-headers"); err == nil && gitServerOut != "" {
+	if gitServerOut, _, err := utils.ExecCommand("", "kubectl", "get", "deployment", "cloudinfer-git-server", "-n", ns, "--no-headers"); err == nil && gitServerOut != "" {
 		hasGitOpsServer = true
 	}
 

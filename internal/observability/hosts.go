@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 var hostsFilePath = "/etc/hosts"
@@ -23,7 +23,7 @@ func FetchIngressIP(ns string, dryRun bool) (string, error) {
 	fmt.Printf("%sResolving Ingress Controller IP...\n", utils.PrefixInfo)
 
 	// Strategy 1: Get IP from the NGINX Ingress Controller Service (most reliable)
-	controllerSvc := "stackpulse-ingress-nginx-controller"
+	controllerSvc := "cloudinfer-ingress-nginx-controller"
 	for i := 0; i < 6; i++ {
 		// Try LoadBalancer IP
 		ip, _, err := utils.ExecCommand("", "kubectl", "get", "svc", controllerSvc, "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
@@ -45,7 +45,7 @@ func FetchIngressIP(ns string, dryRun bool) (string, error) {
 	}
 
 	// Strategy 2: Get IP from the Ingress resource status
-	ingressName := "stackpulse-prometheus-grafana"
+	ingressName := "cloudinfer-prometheus-grafana"
 	ip, _, err := utils.ExecCommand("", "kubectl", "get", "ingress", ingressName, "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
 	if err == nil && ip != "" {
 		return strings.TrimSpace(ip), nil
@@ -86,7 +86,7 @@ func UpdateHostsFile(ip, host string) error {
 	newLines = append(newLines, fmt.Sprintf("%-16s %s", ip, host))
 	newContent := strings.Join(newLines, "\n")
 
-	// 4. Write to local temporary file in StackPulse directory
+	// 4. Write to local temporary file in CloudInferOps directory
 	configDir, err := config.GetConfigDir()
 	if err != nil {
 		return err
@@ -97,7 +97,7 @@ func UpdateHostsFile(ip, host string) error {
 	}
 
 	// 5. Use sudo cp to copy back to /etc/hosts
-	fmt.Printf("%sStackPulse will now update your local /etc/hosts file.\n", utils.PrefixInfo)
+	fmt.Printf("%sCloudInferOps will now update your local /etc/hosts file.\n", utils.PrefixInfo)
 	fmt.Printf("%sAdministrative privileges required. Requesting sudo password...\n", utils.PrefixInfo)
 
 	var stderr string

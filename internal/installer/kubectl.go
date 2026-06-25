@@ -5,7 +5,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 // DownloadKubectlBinary downloads the kubectl binary from the official release and installs it to /usr/local/bin/kubectl.

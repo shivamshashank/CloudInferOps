@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 // DownloadMinikubeBinary downloads the minikube binary from the official release and installs it to /usr/local/bin/minikube.

@@ -26,25 +26,35 @@ CloudInferOps - Multi-Cloud AI Inference Operations CLI
 
 ### One-Line Project Pitch
 
-CloudInferOps is a Go and Python platform-engineering project that deploys and operates production-style LLM inference workloads across local and cloud Kubernetes environments with observability, GitOps, benchmarking, autoscaling, and incident workflows.
+CloudInferOps is a Go and Python platform-engineering project that deploys and
+operates production-style LLM inference workloads across local and cloud
+Kubernetes environments with observability, GitOps, benchmarking, autoscaling,
+and incident workflows.
 
 ### Resume Pitch
 
-Built CloudInferOps, a multi-cloud AI infrastructure CLI that combines a Go Kubernetes control plane with Python FastAPI inference services to deploy, monitor, benchmark, and operate LLM workloads using Kubernetes, Helm, ArgoCD, Prometheus, Grafana, OpenTelemetry, Ollama, and optional vLLM.
+Built CloudInferOps, a multi-cloud AI infrastructure CLI that combines a Go
+Kubernetes control plane with Python FastAPI inference services to deploy,
+monitor, benchmark, and operate LLM workloads using Kubernetes, Helm, ArgoCD,
+Prometheus, Grafana, OpenTelemetry, Ollama, and optional vLLM.
 
-## Why Extend StackPulse Instead Of Starting Over
+## Why Extend CloudInferOps Instead Of Starting Over
 
-StackPulse already has the hard platform foundation:
+CloudInferOps already has the hard platform foundation:
 
 - Go CLI using Cobra.
 - Kubernetes readiness and system diagnostics.
 - Local cluster bootstrap support for kind, minikube, and k3s.
 - Helm-based deployment engine.
-- Prometheus, Grafana, Loki, Tempo, OpenTelemetry, Alertmanager, ArgoCD, and GitOps flows.
+- Prometheus, Grafana, Loki, Tempo, OpenTelemetry, Alertmanager, ArgoCD, and
+  GitOps flows.
 - Alert and incident webhook handling.
 - Status commands and test coverage.
 
-CloudInferOps should keep that foundation and add the AI inference layer. This creates a stronger engineering story than a Python-only rewrite because it shows that the project uses Go for infrastructure operations and Python for AI-serving workflows.
+CloudInferOps should keep that foundation and add the AI inference layer. This
+creates a stronger engineering story than a Python-only rewrite because it shows
+that the project uses Go for infrastructure operations and Python for AI-serving
+workflows.
 
 ## Final Outcome
 
@@ -68,7 +78,8 @@ The project should produce:
 - Optional vLLM deployment path for GPU-backed inference.
 - Kubernetes manifests and Helm values for inference services.
 - Prometheus metrics for AI workloads.
-- Grafana dashboards for LLM latency, tokens/sec, TTFT, error rate, and model usage.
+- Grafana dashboards for LLM latency, tokens/sec, TTFT, error rate, and model
+  usage.
 - OpenTelemetry traces across gateway, router, and inference backend.
 - Benchmark reports for latency, throughput, and estimated cost.
 - GitOps deployment support through ArgoCD.
@@ -355,11 +366,15 @@ cloud-infer-ops/
 
 ## Migration Principles
 
-- Keep Go for CLI, Kubernetes, Helm, GitOps, status, diagnostics, and deployment automation.
-- Add Python for FastAPI, model routing, LLM provider adapters, streaming, and AI-specific metrics.
+- Keep Go for CLI, Kubernetes, Helm, GitOps, status, diagnostics, and deployment
+  automation.
+- Add Python for FastAPI, model routing, LLM provider adapters, streaming, and
+  AI-specific metrics.
 - Avoid renaming everything in one risky commit; migrate in small phases.
-- Keep old command behavior working until equivalent CloudInferOps commands are tested.
-- Prefer compatibility aliases during transition, then remove legacy names near the end.
+- Keep old command behavior working until equivalent CloudInferOps commands are
+  tested.
+- Prefer compatibility aliases during transition, then remove legacy names near
+  the end.
 - Make every major feature demoable from the CLI.
 - Keep all implementation tied to tests and README updates.
 
@@ -378,18 +393,18 @@ git checkout -b codex/cloudinferops-migration
 - Run current tests:
 
 ```bash
-env GOCACHE=/private/tmp/stackpulse-go-cache go test ./...
+env GOCACHE=/private/tmp/cloudinfer-go-cache go test ./...
 ```
 
 - Record current command list:
 
 ```bash
-go run ./cmd/stackpulse version
-go run ./cmd/stackpulse --help
+go run ./cmd/cloudinfer version
+go run ./cmd/cloudinfer --help
 ```
 
 - Add this migration plan to the repo.
-- Decide whether `StackPulse` should remain as a historical note in README.
+- Decide whether `CloudInferOps` should remain as a historical note in README.
 
 Acceptance criteria:
 
@@ -399,12 +414,12 @@ Acceptance criteria:
 
 ## Phase 1 - Product Rename
 
-Goal: Rename public project identity from StackPulse to CloudInferOps.
+Goal: Rename public project identity from CloudInferOps to CloudInferOps.
 
 Files and directories to update:
 
 ```text
-cmd/stackpulse/                  -> cmd/cloudinferops/
+cmd/cloudinfer/                  -> cmd/cloudinferops/
 go.mod module path               -> github.com/shivamshashank/cloud-infer-ops
 README.md                        -> CloudInferOps identity
 scripts/install.sh               -> cloudinferops binary
@@ -419,27 +434,31 @@ internal/webhook/*.go            -> Kubernetes service/image names
 Recommended compatibility approach:
 
 - Rename binary to `cloudinferops`.
-- Keep a temporary `stackpulse` alias script or compatibility note for one release only.
-- Keep Kubernetes resource renames scoped and deliberate because renaming live resources creates migration complexity.
+- Keep a temporary `cloudinfer` alias script or compatibility note for one
+  release only.
+- Keep Kubernetes resource renames scoped and deliberate because renaming live
+  resources creates migration complexity.
 
 Suggested command changes:
 
 ```text
-stackpulse doctor                -> cloudinferops doctor
-stackpulse init                  -> cloudinferops init
-stackpulse deploy observability  -> cloudinferops deploy platform
-stackpulse status                -> cloudinferops status
-stackpulse gitops bootstrap      -> cloudinferops gitops bootstrap
-stackpulse alerts                -> cloudinferops alerts
+cloudinfer doctor                -> cloudinferops doctor
+cloudinfer init                  -> cloudinferops init
+cloudinfer deploy observability  -> cloudinferops deploy platform
+cloudinfer status                -> cloudinferops status
+cloudinfer gitops bootstrap      -> cloudinferops gitops bootstrap
+cloudinfer alerts                -> cloudinferops alerts
 ```
 
 Implementation tasks:
 
-- Rename `cmd/stackpulse` to `cmd/cloudinferops`.
+- Rename `cmd/cloudinfer` to `cmd/cloudinferops`.
 - Change Cobra root `Use` to `cloudinferops`.
-- Change root descriptions from Kubernetes observability platform to AI inference operations CLI.
-- Rename config directory from `~/.stackpulse` to `~/.cloudinferops`.
-- Add migration fallback that reads old `~/.stackpulse/config.yaml` if the new config does not exist.
+- Change root descriptions from Kubernetes observability platform to AI
+  inference operations CLI.
+- Rename config directory from `~/.cloudinfer` to `~/.cloudinferops`.
+- Add migration fallback that reads old `~/.cloudinfer/config.yaml` if the new
+  config does not exist.
 - Update install script to install `/usr/local/bin/cloudinferops`.
 - Update docs and examples.
 
@@ -456,11 +475,12 @@ Acceptance criteria:
 - `cloudinferops --help` works.
 - `cloudinferops version` works.
 - Existing tests pass.
-- README no longer presents the project as StackPulse.
+- README no longer presents the project as CloudInferOps.
 
 ## Phase 2 - Command Model Update
 
-Goal: Convert the CLI from observability-only wording to AI infrastructure operations.
+Goal: Convert the CLI from observability-only wording to AI infrastructure
+operations.
 
 Target command tree:
 
@@ -499,7 +519,8 @@ Implementation tasks:
 - Add `deploy inference` command with dry-run support.
 - Add `models list` command to call the deployed gateway or local config.
 - Add `benchmark run` and `benchmark report` command shells.
-- Update `status` output to include inference services even before they are built.
+- Update `status` output to include inference services even before they are
+  built.
 
 Tests:
 
@@ -1177,4 +1198,6 @@ Developer or Platform Engineer
   -> Benchmark reports
 ```
 
-CloudInferOps should feel like a real internal platform tool an AI infrastructure team would use to bootstrap, observe, benchmark, and operate LLM workloads.
+CloudInferOps should feel like a real internal platform tool an AI
+infrastructure team would use to bootstrap, observe, benchmark, and operate LLM
+workloads.

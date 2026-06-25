@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 var procMeminfoPath = "/proc/meminfo"

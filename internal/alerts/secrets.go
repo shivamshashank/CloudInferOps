@@ -3,7 +3,7 @@ package alerts
 import (
 	"fmt"
 
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 // CreateSecret creates or updates a Kubernetes Secret inside the cluster in an idempotent manner

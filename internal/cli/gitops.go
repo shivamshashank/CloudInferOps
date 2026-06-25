@@ -8,11 +8,11 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
-	"github.com/shivamshashank/StackPulse/internal/doctor"
-	"github.com/shivamshashank/StackPulse/internal/gitops"
-	"github.com/shivamshashank/StackPulse/internal/installer"
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/doctor"
+	"github.com/shivamshashank/CloudInferOps/internal/gitops"
+	"github.com/shivamshashank/CloudInferOps/internal/installer"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 	"github.com/spf13/cobra"
 )
 

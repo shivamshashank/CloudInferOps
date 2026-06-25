@@ -47,11 +47,11 @@ exit 0
 }
 
 func TestUpdateHostsFile(t *testing.T) {
-	// Isolate StackPulse config dir
+	// Isolate CloudInferOps config dir
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 
-	if err := os.MkdirAll(filepath.Join(tmpDir, ".stackpulse"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(tmpDir, ".cloudinfer"), 0755); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
 
