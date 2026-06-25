@@ -85,7 +85,7 @@ func PrintStatus() error {
 
 	// 3. Fetch and Decode Grafana Admin Password
 	plainPassword := "<unretrievable>"
-	pwdSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "cloudinfer-prometheus-grafana", "-n", ns, "-o", "jsonpath={.data.admin-password}")
+	pwdSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "cloudinferops-prometheus-grafana", "-n", ns, "-o", "jsonpath={.data.admin-password}")
 	if err == nil && pwdSecret != "" {
 		decoded, err := DecodeBase64(strings.TrimSpace(pwdSecret))
 		if err == nil {
@@ -151,7 +151,7 @@ func PrintStatus() error {
 	healthyCount := 0
 
 	hasGitOpsServer := false
-	if gitServerOut, _, err := utils.ExecCommand("", "kubectl", "get", "deployment", "cloudinfer-git-server", "-n", ns, "--no-headers"); err == nil && gitServerOut != "" {
+	if gitServerOut, _, err := utils.ExecCommand("", "kubectl", "get", "deployment", "cloudinferops-git-server", "-n", ns, "--no-headers"); err == nil && gitServerOut != "" {
 		hasGitOpsServer = true
 	}
 

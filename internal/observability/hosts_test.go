@@ -51,7 +51,7 @@ func TestUpdateHostsFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 
-	if err := os.MkdirAll(filepath.Join(tmpDir, ".cloudinfer"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(tmpDir, ".cloudinferops"), 0755); err != nil {
 		t.Fatalf("failed to create config dir: %v", err)
 	}
 

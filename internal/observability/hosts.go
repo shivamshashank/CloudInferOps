@@ -23,7 +23,7 @@ func FetchIngressIP(ns string, dryRun bool) (string, error) {
 	fmt.Printf("%sResolving Ingress Controller IP...\n", utils.PrefixInfo)
 
 	// Strategy 1: Get IP from the NGINX Ingress Controller Service (most reliable)
-	controllerSvc := "cloudinfer-ingress-nginx-controller"
+	controllerSvc := "cloudinferops-ingress-nginx-controller"
 	for i := 0; i < 6; i++ {
 		// Try LoadBalancer IP
 		ip, _, err := utils.ExecCommand("", "kubectl", "get", "svc", controllerSvc, "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
@@ -45,7 +45,7 @@ func FetchIngressIP(ns string, dryRun bool) (string, error) {
 	}
 
 	// Strategy 2: Get IP from the Ingress resource status
-	ingressName := "cloudinfer-prometheus-grafana"
+	ingressName := "cloudinferops-prometheus-grafana"
 	ip, _, err := utils.ExecCommand("", "kubectl", "get", "ingress", ingressName, "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
 	if err == nil && ip != "" {
 		return strings.TrimSpace(ip), nil

@@ -23,7 +23,7 @@ func DeployWebhookHandler(dryRun bool) error {
 	serviceYaml := fmt.Sprintf(`apiVersion: v1
 kind: Service
 metadata:
-  name: cloudinfer-webhook-handler
+  name: cloudinferops-webhook-handler
   namespace: %s
 spec:
   ports:
@@ -31,28 +31,28 @@ spec:
     targetPort: 8080
     protocol: TCP
   selector:
-    app: cloudinfer-webhook-handler
+    app: cloudinferops-webhook-handler
   type: ClusterIP`, ns)
 
 	// Deployment manifest
 	deploymentYaml := fmt.Sprintf(`apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cloudinfer-webhook-handler
+  name: cloudinferops-webhook-handler
   namespace: %s
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: cloudinfer-webhook-handler
+      app: cloudinferops-webhook-handler
   template:
     metadata:
       labels:
-        app: cloudinfer-webhook-handler
+        app: cloudinferops-webhook-handler
     spec:
       containers:
       - name: webhook-handler
-        image: ghcr.io/shivamshashank/cloudinfer-webhook-handler:latest
+        image: ghcr.io/shivamshashank/cloudinferops-webhook-handler:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -72,13 +72,13 @@ spec:
         - name: SLACK_WEBHOOK_URL
           valueFrom:
             secretKeyRef:
-              name: cloudinfer-slack-webhook
+              name: cloudinferops-slack-webhook
               key: webhook-url
               optional: true
         - name: PAGERDUTY_INTEGRATION_KEY
           valueFrom:
             secretKeyRef:
-              name: cloudinfer-pagerduty-key
+              name: cloudinferops-pagerduty-key
               key: integration-key
               optional: true`, ns)
 
@@ -103,7 +103,7 @@ spec:
 
 	fmt.Printf("%sSuccessfully deployed Custom Webhook Handler Gateway.\n", utils.PrefixOK)
 	fmt.Println("-----------------------------------------------------------------")
-	fmt.Printf("🌐  Service Name:  cloudinfer-webhook-handler\n")
+	fmt.Printf("🌐  Service Name:  cloudinferops-webhook-handler\n")
 	fmt.Printf("📡  Endpoints:     GET  /health\n")
 	fmt.Printf("                   POST /webhook/alertmanager\n")
 	fmt.Printf("                   GET  /incidents\n")

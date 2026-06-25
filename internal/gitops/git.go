@@ -27,7 +27,7 @@ func InitLocalRepo(repoDir string) error {
 		return fmt.Errorf("failed to config user.name: %w (stderr: %s)", err, stderr)
 	}
 
-	_, stderr, err = utils.ExecCommand(repoDir, "git", "config", "user.email", "admin@cloudinfer.dev")
+	_, stderr, err = utils.ExecCommand(repoDir, "git", "config", "user.email", "admin@cloudinferops.dev")
 	if err != nil {
 		return fmt.Errorf("failed to config user.email: %w (stderr: %s)", err, stderr)
 	}

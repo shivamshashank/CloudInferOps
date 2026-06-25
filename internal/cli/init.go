@@ -12,7 +12,7 @@ import (
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize CloudInferOps configuration",
-	Long:  `Creates the default ~/.cloudinfer/config.yaml configuration file if it does not exist.`,
+	Long:  `Creates the default ~/.cloudinferops/config.yaml configuration file if it does not exist.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path, err := config.GetConfigPath()
 		if err != nil {

@@ -71,15 +71,15 @@ func TestExecCommand(t *testing.T) {
 }
 
 func TestExecCommandEnv(t *testing.T) {
-	env := map[string]string{"TEST_ENV_VAR": "cloudinfer-test"}
+	env := map[string]string{"TEST_ENV_VAR": "cloudinferops-test"}
 	// We run 'sh -c echo $TEST_ENV_VAR' or just a simple command that prints it.
 	// On Mac/Linux, we can run 'printenv' or 'env' or 'sh'. Let's run printenv or env.
 	stdout, _, err := ExecCommandEnv("", env, "sh", "-c", "echo $TEST_ENV_VAR")
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-	if stdout != "cloudinfer-test" {
-		t.Errorf("expected 'cloudinfer-test', got '%s'", stdout)
+	if stdout != "cloudinferops-test" {
+		t.Errorf("expected 'cloudinferops-test', got '%s'", stdout)
 	}
 }
 

@@ -393,14 +393,14 @@ git checkout -b codex/cloudinferops-migration
 - Run current tests:
 
 ```bash
-env GOCACHE=/private/tmp/cloudinfer-go-cache go test ./...
+env GOCACHE=/private/tmp/cloudinferops-go-cache go test ./...
 ```
 
 - Record current command list:
 
 ```bash
-go run ./cmd/cloudinfer version
-go run ./cmd/cloudinfer --help
+go run ./cmd/cloudinferops version
+go run ./cmd/cloudinferops --help
 ```
 
 - Add this migration plan to the repo.
@@ -419,7 +419,7 @@ Goal: Rename public project identity from CloudInferOps to CloudInferOps.
 Files and directories to update:
 
 ```text
-cmd/cloudinfer/                  -> cmd/cloudinferops/
+cmd/cloudinferops/                  -> cmd/cloudinferops/
 go.mod module path               -> github.com/shivamshashank/cloud-infer-ops
 README.md                        -> CloudInferOps identity
 scripts/install.sh               -> cloudinferops binary
@@ -434,7 +434,7 @@ internal/webhook/*.go            -> Kubernetes service/image names
 Recommended compatibility approach:
 
 - Rename binary to `cloudinferops`.
-- Keep a temporary `cloudinfer` alias script or compatibility note for one
+- Keep a temporary `cloudinferops` alias script or compatibility note for one
   release only.
 - Keep Kubernetes resource renames scoped and deliberate because renaming live
   resources creates migration complexity.
@@ -442,22 +442,22 @@ Recommended compatibility approach:
 Suggested command changes:
 
 ```text
-cloudinfer doctor                -> cloudinferops doctor
-cloudinfer init                  -> cloudinferops init
-cloudinfer deploy observability  -> cloudinferops deploy platform
-cloudinfer status                -> cloudinferops status
-cloudinfer gitops bootstrap      -> cloudinferops gitops bootstrap
-cloudinfer alerts                -> cloudinferops alerts
+cloudinferops doctor                -> cloudinferops doctor
+cloudinferops init                  -> cloudinferops init
+cloudinferops deploy observability  -> cloudinferops deploy platform
+cloudinferops status                -> cloudinferops status
+cloudinferops gitops bootstrap      -> cloudinferops gitops bootstrap
+cloudinferops alerts                -> cloudinferops alerts
 ```
 
 Implementation tasks:
 
-- Rename `cmd/cloudinfer` to `cmd/cloudinferops`.
+- Rename `cmd/cloudinferops` to `cmd/cloudinferops`.
 - Change Cobra root `Use` to `cloudinferops`.
 - Change root descriptions from Kubernetes observability platform to AI
   inference operations CLI.
-- Rename config directory from `~/.cloudinfer` to `~/.cloudinferops`.
-- Add migration fallback that reads old `~/.cloudinfer/config.yaml` if the new
+- Rename config directory from `~/.cloudinferops` to `~/.cloudinferops`.
+- Add migration fallback that reads old `~/.cloudinferops/config.yaml` if the new
   config does not exist.
 - Update install script to install `/usr/local/bin/cloudinferops`.
 - Update docs and examples.

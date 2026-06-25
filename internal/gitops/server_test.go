@@ -11,8 +11,8 @@ func TestGitServerManifests(t *testing.T) {
 	if !strings.Contains(manifest, "namespace: gitops-ns") {
 		t.Errorf("expected manifest to contain namespace, got: %s", manifest)
 	}
-	if !strings.Contains(manifest, "name: cloudinfer-git-server") {
-		t.Errorf("expected manifest to contain cloudinfer-git-server deployment")
+	if !strings.Contains(manifest, "name: cloudinferops-git-server") {
+		t.Errorf("expected manifest to contain cloudinferops-git-server deployment")
 	}
 }
 

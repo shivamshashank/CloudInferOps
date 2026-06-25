@@ -23,19 +23,19 @@ A clear and concise description of what you expected to happen.
 
 ## 🩺 CloudInferOps Doctor Output
 
-Please paste the output of running `cloudinfer doctor` (or
-`sudo cloudinfer doctor` if running in elevated mode) here:
+Please paste the output of running `cloudinferops doctor` (or
+`sudo cloudinferops doctor` if running in elevated mode) here:
 
 ```text
-# Paste 'cloudinfer doctor' output here
+# Paste 'cloudinferops doctor' output here
 ```
 
 ## 💻 Environment Details
 
-- **CloudInferOps Version:** (e.g., `cloudinfer version` or `v1.0.0`)
+- **CloudInferOps Version:** (e.g., `cloudinferops version` or `v1.0.0`)
 - **OS & CPU Architecture:** (e.g., Ubuntu 22.04 amd64, macOS arm64)
 - **Kubernetes Distribution:** (e.g., k3s, kind, minikube, EKS, GKE, none)
-- **Local config (`~/.cloudinfer/config.yaml`):** (If relevant, please remove
+- **Local config (`~/.cloudinferops/config.yaml`):** (If relevant, please remove
   any secrets/tokens before pasting)
   ```yaml
   # Paste config here if applicable

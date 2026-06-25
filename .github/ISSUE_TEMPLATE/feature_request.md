@@ -22,8 +22,8 @@ Doctor/Installer, or adding more Alert rules).
 
 If you have a design in mind, please describe the structure or workflow.
 
-- Which CLI command should support this? (e.g., `cloudinfer deploy`,
-  `cloudinfer doctor`, `cloudinfer status`)
+- Which CLI command should support this? (e.g., `cloudinferops deploy`,
+  `cloudinferops doctor`, `cloudinferops status`)
 - Which Go packages or Helm charts would need changes?
 
 ## 🔄 Alternatives Considered

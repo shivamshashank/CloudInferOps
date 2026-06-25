@@ -71,10 +71,10 @@ else
 fi
 
 # 3. Download binary
-BINARY_NAME="cloudinfer-${OS}-${ARCH}"
+BINARY_NAME="cloudinferops-${OS}-${ARCH}"
 DOWNLOAD_URL="https://github.com/shivamshashank/CloudInferOps/releases/download/${VERSION}/${BINARY_NAME}"
 TEMP_DIR=$(mktemp -d)
-TEMP_BIN="${TEMP_DIR}/cloudinfer"
+TEMP_BIN="${TEMP_DIR}/cloudinferops"
 
 echo -e "${INFO}Downloading binary from: ${DOWNLOAD_URL}"
 # Try downloading the compiled binary
@@ -87,11 +87,11 @@ else
     if command -v go &>/dev/null; then
         echo -e "${INFO}Compiling local binary via 'go build'..."
         # If in repository context, build locally
-        if [ -f "cmd/cloudinfer/main.go" ]; then
+        if [ -f "cmd/cloudinferops/main.go" ]; then
             COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
             BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date +%Y-%m-%dT%H:%M:%SZ)
             PKG="github.com/shivamshashank/CloudInferOps/internal/cli"
-            go build -ldflags="-s -w -X ${PKG}.Version=${VERSION} -X ${PKG}.Commit=${COMMIT} -X ${PKG}.BuildDate=${BUILD_DATE}" -o "${TEMP_BIN}" cmd/cloudinfer/main.go
+            go build -ldflags="-s -w -X ${PKG}.Version=${VERSION} -X ${PKG}.Commit=${COMMIT} -X ${PKG}.BuildDate=${BUILD_DATE}" -o "${TEMP_BIN}" cmd/cloudinferops/main.go
             echo -e "${SUCCESS}Compiled local CloudInferOps binary successfully."
         else
             echo -e "${ERROR}Cannot install: No release asset exists yet, and not in CloudInferOps repository source folder."
@@ -106,7 +106,7 @@ else
 fi
 
 # 4. Install binary to /usr/local/bin
-INSTALL_PATH="/usr/local/bin/cloudinfer"
+INSTALL_PATH="/usr/local/bin/cloudinferops"
 echo -e "${INFO}Installing to ${INSTALL_PATH}..."
 
 # Check write permissions, use sudo if needed
@@ -128,6 +128,6 @@ INSTALLED_VER=$("${INSTALL_PATH}" version | grep "version:" | awk '{print $NF}' 
 
 echo -e "\n${READY}${BOLD}Successfully installed CloudInferOps!${RESET}"
 echo -e "  🚀 Installed version: ${INSTALLED_VER}"
-echo -e "  🩺 Run '${BOLD}sudo cloudinfer doctor${RESET}' to test your system environment."
-echo -e "  📦 Run '${BOLD}sudo cloudinfer deploy observability${RESET}' to deploy the stack."
-echo -e "  📊 Run '${BOLD}sudo cloudinfer status${RESET}' to check the dashboard links."
+echo -e "  🩺 Run '${BOLD}sudo cloudinferops doctor${RESET}' to test your system environment."
+echo -e "  📦 Run '${BOLD}sudo cloudinferops deploy observability${RESET}' to deploy the stack."
+echo -e "  📊 Run '${BOLD}sudo cloudinferops status${RESET}' to check the dashboard links."

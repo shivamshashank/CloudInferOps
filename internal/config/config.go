@@ -88,26 +88,26 @@ func DefaultConfig() Config {
 		Alerts: AlertsConfig{
 			Slack: SlackConfig{
 				Enabled:          false,
-				WebhookUrlSecret: "cloudinfer-slack-webhook",
+				WebhookUrlSecret: "cloudinferops-slack-webhook",
 			},
 			PagerDuty: PagerDutyConfig{
 				Enabled:              false,
-				IntegrationKeySecret: "cloudinfer-pagerduty-key",
+				IntegrationKeySecret: "cloudinferops-pagerduty-key",
 			},
 		},
 	}
 }
 
-// GetConfigDir returns the absolute path to CloudInferOps configuration directory (~/.cloudinfer)
+// GetConfigDir returns the absolute path to CloudInferOps configuration directory (~/.cloudinferops)
 func GetConfigDir() (string, error) {
 	home, err := utils.GetRealHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("unable to determine home directory: %w", err)
 	}
-	return filepath.Join(home, ".cloudinfer"), nil
+	return filepath.Join(home, ".cloudinferops"), nil
 }
 
-// GetConfigPath returns the absolute path to the config file (~/.cloudinfer/config.yaml)
+// GetConfigPath returns the absolute path to the config file (~/.cloudinferops/config.yaml)
 func GetConfigPath() (string, error) {
 	dir, err := GetConfigDir()
 	if err != nil {
@@ -195,7 +195,7 @@ func InitConfig(createIfMissing bool) error {
 	return nil
 }
 
-// SaveConfig saves the current GlobalConfig to ~/.cloudinfer/config.yaml
+// SaveConfig saves the current GlobalConfig to ~/.cloudinferops/config.yaml
 func SaveConfig() error {
 	dir, err := GetConfigDir()
 	if err != nil {

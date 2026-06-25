@@ -12,13 +12,13 @@ import (
 // ProvisionDashboards generates and applies all SRE Grafana dashboards as auto-discovered ConfigMaps.
 func ProvisionDashboards(ns string, dryRun bool) error {
 	dashboards := map[string]string{
-		"cloudinfer-cluster-overview":   getClusterOverviewJSON(),
-		"cloudinfer-node-dashboard":     getNodeDashboardJSON(),
-		"cloudinfer-pod-dashboard":      getPodDashboardJSON(),
-		"cloudinfer-app-dashboard":      getAppDashboardJSON(),
-		"cloudinfer-otel-dashboard":     getOtelDashboardJSON(),
-		"cloudinfer-loki-dashboard":     getLokiDashboardJSON(),
-		"cloudinfer-blackbox-dashboard": getBlackboxDashboardJSON(),
+		"cloudinferops-cluster-overview":   getClusterOverviewJSON(),
+		"cloudinferops-node-dashboard":     getNodeDashboardJSON(),
+		"cloudinferops-pod-dashboard":      getPodDashboardJSON(),
+		"cloudinferops-app-dashboard":      getAppDashboardJSON(),
+		"cloudinferops-otel-dashboard":     getOtelDashboardJSON(),
+		"cloudinferops-loki-dashboard":     getLokiDashboardJSON(),
+		"cloudinferops-blackbox-dashboard": getBlackboxDashboardJSON(),
 	}
 
 	fmt.Printf("%sProvisioning auto-discovered SRE Grafana dashboards...\n", utils.PrefixInfo)
@@ -195,7 +195,7 @@ func getClusterOverviewJSON() string {
   "refresh": "5s",
   "schemaVersion": 36,
   "style": "dark",
-  "tags": ["cloudinfer", "kubernetes"],
+  "tags": ["cloudinferops", "kubernetes"],
   "templating": {
     "list": []
   },
@@ -206,7 +206,7 @@ func getClusterOverviewJSON() string {
   "timepicker": {},
   "timezone": "browser",
   "title": "CloudInferOps Cluster Overview",
-  "uid": "cloudinfer-cluster-overview",
+  "uid": "cloudinferops-cluster-overview",
   "version": 1
 }`
 }
@@ -233,9 +233,9 @@ func getNodeDashboardJSON() string {
   ],
   "schemaVersion": 36,
   "style": "dark",
-  "tags": ["cloudinfer", "node"],
+  "tags": ["cloudinferops", "node"],
   "title": "CloudInferOps Node Dashboard",
-  "uid": "cloudinfer-node-dashboard",
+  "uid": "cloudinferops-node-dashboard",
   "version": 1
 }`
 }
@@ -276,9 +276,9 @@ func getPodDashboardJSON() string {
   ],
   "schemaVersion": 36,
   "style": "dark",
-  "tags": ["cloudinfer", "pod"],
+  "tags": ["cloudinferops", "pod"],
   "title": "CloudInferOps Pod Dashboard",
-  "uid": "cloudinfer-pod-dashboard",
+  "uid": "cloudinferops-pod-dashboard",
   "version": 1
 }`
 }
@@ -333,9 +333,9 @@ func getAppDashboardJSON() string {
   ],
   "schemaVersion": 36,
   "style": "dark",
-  "tags": ["cloudinfer", "sre"],
+  "tags": ["cloudinferops", "sre"],
   "title": "CloudInferOps RED Application Dashboard",
-  "uid": "cloudinfer-app-dashboard",
+  "uid": "cloudinferops-app-dashboard",
   "version": 1
 }`
 }
@@ -368,9 +368,9 @@ func getOtelDashboardJSON() string {
   ],
   "schemaVersion": 36,
   "style": "dark",
-  "tags": ["cloudinfer", "otel"],
+  "tags": ["cloudinferops", "otel"],
   "title": "CloudInferOps OpenTelemetry Dashboard",
-  "uid": "cloudinfer-otel-dashboard",
+  "uid": "cloudinferops-otel-dashboard",
   "version": 1
 }`
 }
@@ -397,9 +397,9 @@ func getLokiDashboardJSON() string {
   ],
   "schemaVersion": 36,
   "style": "dark",
-  "tags": ["cloudinfer", "loki"],
+  "tags": ["cloudinferops", "loki"],
   "title": "CloudInferOps Loki Dashboard",
-  "uid": "cloudinfer-loki-dashboard",
+  "uid": "cloudinferops-loki-dashboard",
   "version": 1
 }`
 }
@@ -440,9 +440,9 @@ func getBlackboxDashboardJSON() string {
   ],
   "schemaVersion": 36,
   "style": "dark",
-  "tags": ["cloudinfer", "blackbox"],
+  "tags": ["cloudinferops", "blackbox"],
   "title": "CloudInferOps Blackbox Endpoint Dashboard",
-  "uid": "cloudinfer-blackbox-dashboard",
+  "uid": "cloudinferops-blackbox-dashboard",
   "version": 1
 }`
 }

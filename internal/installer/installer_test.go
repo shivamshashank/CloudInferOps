@@ -68,7 +68,7 @@ exit 0
 		"kind": `#!/bin/sh
 case "$*" in
   *"get clusters"*)
-    echo "cloudinfer"
+    echo "cloudinferops"
     exit 0
     ;;
 esac

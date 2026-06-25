@@ -88,7 +88,7 @@ var uninstallAllCmd = &cobra.Command{
 			fmt.Printf("%sSkipping binary removal.\n", utils.PrefixInfo)
 		}
 
-		if promptConfirm("4. Delete CloudInferOps configuration (~/.cloudinfer)? [y/N]: ") {
+		if promptConfirm("4. Delete CloudInferOps configuration (~/.cloudinferops)? [y/N]: ") {
 			_ = performUninstallConfig(uninstallDryRun)
 		} else {
 			fmt.Printf("%sSkipping configuration removal.\n", utils.PrefixInfo)
@@ -169,8 +169,8 @@ func performUninstallWebhookHandler(dryRun bool) error {
 	}
 
 	if dryRun {
-		fmt.Printf("%s[DRY-RUN] helm uninstall cloudinfer-webhook-handler -n %s\n", utils.PrefixInfo, ns)
-		fmt.Printf("%s[DRY-RUN] kubectl delete deployment,svc cloudinfer-webhook-handler -n %s --ignore-not-found=true\n", utils.PrefixInfo, ns)
+		fmt.Printf("%s[DRY-RUN] helm uninstall cloudinferops-webhook-handler -n %s\n", utils.PrefixInfo, ns)
+		fmt.Printf("%s[DRY-RUN] kubectl delete deployment,svc cloudinferops-webhook-handler -n %s --ignore-not-found=true\n", utils.PrefixInfo, ns)
 		return nil
 	}
 
@@ -180,8 +180,8 @@ func performUninstallWebhookHandler(dryRun bool) error {
 		"KUBECONFIG": filepath.Join(realHome, ".kube", "config"),
 	}
 
-	_, _, _ = utils.ExecCommandEnv("", kubeEnv, "helm", "uninstall", "cloudinfer-webhook-handler", "-n", ns)
-	_, _, _ = utils.ExecCommandEnv("", kubeEnv, "kubectl", "delete", "deployment,svc", "cloudinfer-webhook-handler", "-n", ns, "--ignore-not-found=true")
+	_, _, _ = utils.ExecCommandEnv("", kubeEnv, "helm", "uninstall", "cloudinferops-webhook-handler", "-n", ns)
+	_, _, _ = utils.ExecCommandEnv("", kubeEnv, "kubectl", "delete", "deployment,svc", "cloudinferops-webhook-handler", "-n", ns, "--ignore-not-found=true")
 	stopSpinner()
 
 	fmt.Printf("%sWebhook handler uninstalled successfully.\n", utils.PrefixOK)
@@ -201,12 +201,12 @@ func performUninstallClusters(dryRun bool) error {
 	if _, err := exec.LookPath("kind"); err == nil {
 		// Verify if cluster exists
 		out, _, _ := utils.ExecCommandEnv("", kubeEnv, "kind", "get", "clusters")
-		if strings.Contains(out, "cloudinfer") {
+		if strings.Contains(out, "cloudinferops") {
 			if dryRun {
-				fmt.Printf("%s[DRY-RUN] kind delete cluster --name cloudinfer\n", utils.PrefixInfo)
+				fmt.Printf("%s[DRY-RUN] kind delete cluster --name cloudinferops\n", utils.PrefixInfo)
 			} else {
-				fmt.Printf("%sRemoving kind cluster 'cloudinfer'...\n", utils.PrefixInfo)
-				_, _, _ = utils.ExecCommandEnv("", kubeEnv, "kind", "delete", "cluster", "--name", "cloudinfer")
+				fmt.Printf("%sRemoving kind cluster 'cloudinferops'...\n", utils.PrefixInfo)
+				_, _, _ = utils.ExecCommandEnv("", kubeEnv, "kind", "delete", "cluster", "--name", "cloudinferops")
 			}
 		}
 	}
@@ -275,7 +275,7 @@ func performUninstallConfig(dryRun bool) error {
 		return nil
 	}
 
-	configDir := filepath.Join(realHome, ".cloudinfer")
+	configDir := filepath.Join(realHome, ".cloudinferops")
 	if _, err := os.Stat(configDir); err == nil {
 		if dryRun {
 			fmt.Printf("%s[DRY-RUN] rm -rf %s\n", utils.PrefixInfo, configDir)

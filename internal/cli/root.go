@@ -10,7 +10,7 @@ import (
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "cloudinfer",
+	Use:   "cloudinferops",
 	Short: "🚀 CloudInferOps is a one-command observability platform for Kubernetes and Linux VMs",
 	Long: `🚀 CloudInferOps is a Go-based DevOps/SRE CLI that detects your environment,
 validates Kubernetes readiness, installs lightweight Kubernetes when needed, and

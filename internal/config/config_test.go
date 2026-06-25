@@ -14,7 +14,7 @@ func TestDefaultConfig(t *testing.T) {
 	if !cfg.Observability.Prometheus {
 		t.Error("Expected Prometheus to be true by default")
 	}
-	if cfg.Alerts.Slack.WebhookUrlSecret != "cloudinfer-slack-webhook" {
+	if cfg.Alerts.Slack.WebhookUrlSecret != "cloudinferops-slack-webhook" {
 		t.Errorf("Expected default slack webhook secret, got '%s'", cfg.Alerts.Slack.WebhookUrlSecret)
 	}
 }
@@ -71,7 +71,7 @@ func TestGetConfigPath(t *testing.T) {
 		t.Fatalf("expected no error from GetConfigPath, got: %v", err)
 	}
 
-	expected := filepath.Join(tempDir, ".cloudinfer", "config.yaml")
+	expected := filepath.Join(tempDir, ".cloudinferops", "config.yaml")
 	if path != expected {
 		t.Errorf("expected path %q, got %q", expected, path)
 	}

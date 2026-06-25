@@ -61,7 +61,7 @@ decrypts Grafana admin credentials, and automatically opens your default web bro
 
 		// 4. Fetch and decode Grafana admin password
 		plainPassword := "<unretrievable>"
-		pwdSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "cloudinfer-prometheus-grafana", "-n", ns, "-o", "jsonpath={.data.admin-password}")
+		pwdSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "cloudinferops-prometheus-grafana", "-n", ns, "-o", "jsonpath={.data.admin-password}")
 		if err == nil && pwdSecret != "" {
 			decoded, err := observability.DecodeBase64(strings.TrimSpace(pwdSecret))
 			if err == nil {

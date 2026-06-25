@@ -979,7 +979,7 @@ sudo cloudinferops uninstall all
 
 |                    CloudInferOps Status                    |                     ArgoCD                      |                  Prometheus                   |
 | :--------------------------------------------------------: | :---------------------------------------------: | :-------------------------------------------: |
-| ![CloudInferOps Status](docs/images/cloudinfer-status.png) |        ![ArgoCD](docs/images/argocd.png)        |   ![Prometheus](docs/images/prometheus.png)   |
+| ![CloudInferOps Status](docs/images/cloudinferops-status.png) |        ![ArgoCD](docs/images/argocd.png)        |   ![Prometheus](docs/images/prometheus.png)   |
 |                          Grafana                           |                  Node Exporter                  |                 Alertmanager                  |
 |       ![Grafana](docs/images/grafana-dashboard.png)        | ![Node Exporter](docs/images/node-exporter.png) | ![Alertmanager](docs/images/alertmanager.png) |
 

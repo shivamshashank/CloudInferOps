@@ -52,10 +52,10 @@ func (r *DoctorReport) Print() {
 	if r.HasErrors {
 		fmt.Printf("%sSome critical prerequisites failed. Please resolve them before proceeding.\n", utils.PrefixError)
 	} else if r.HasK8s {
-		fmt.Printf("%sRun: sudo cloudinfer deploy observability\n", utils.PrefixReady)
+		fmt.Printf("%sRun: sudo cloudinferops deploy observability\n", utils.PrefixReady)
 	} else {
 		fmt.Printf("%sKubernetes cluster not detected.\n", utils.PrefixWarn)
-		fmt.Printf("%sRun: sudo cloudinfer deploy observability (which can automatically set up a local cluster for you) or configure an existing cluster.\n", utils.PrefixInfo)
+		fmt.Printf("%sRun: sudo cloudinferops deploy observability (which can automatically set up a local cluster for you) or configure an existing cluster.\n", utils.PrefixInfo)
 	}
 }
 

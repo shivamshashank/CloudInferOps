@@ -47,7 +47,7 @@ func DownloadKindBinary() error {
 
 // InstallKind creates a local kind cluster and waits for ready nodes.
 func InstallKind() error {
-	const clusterName = "cloudinfer"
+	const clusterName = "cloudinferops"
 
 	fmt.Printf("%sInitializing kind cluster setup...\n", utils.PrefixInfo)
 

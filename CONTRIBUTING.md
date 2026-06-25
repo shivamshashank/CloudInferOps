@@ -76,7 +76,7 @@ git checkout -b fix/bug-description
 
 CloudInferOps follows a clean directory structure:
 
-- `cmd/cloudinfer/`: The entry point for the Go command-line application.
+- `cmd/cloudinferops/`: The entry point for the Go command-line application.
 - `internal/`: Subpackages representing core CLI commands, configurations,
   doctor checks, Helm logic, observability components, and alerts.
 - `charts/`: The Helm charts bundled or managed by the CLI.

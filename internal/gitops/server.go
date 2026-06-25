@@ -12,24 +12,24 @@ import (
 	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
-// GitServerManifests returns the deployment and service YAML manifests for cloudinfer-git-server.
+// GitServerManifests returns the deployment and service YAML manifests for cloudinferops-git-server.
 func GitServerManifests(ns string) string {
 	return fmt.Sprintf(`apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cloudinfer-git-server
+  name: cloudinferops-git-server
   namespace: %s
   labels:
-    app: cloudinfer-git-server
+    app: cloudinferops-git-server
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: cloudinfer-git-server
+      app: cloudinferops-git-server
   template:
     metadata:
       labels:
-        app: cloudinfer-git-server
+        app: cloudinferops-git-server
     spec:
       containers:
       - name: git-server
@@ -57,11 +57,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: cloudinfer-git-server
+  name: cloudinferops-git-server
   namespace: %s
 spec:
   selector:
-    app: cloudinfer-git-server
+    app: cloudinferops-git-server
   ports:
   - port: 9418
     targetPort: 9418
@@ -78,7 +78,7 @@ func DeployGitServer(ns string, dryRun bool) error {
 	}
 
 	manifest := GitServerManifests(ns)
-	tmpPath := filepath.Join(os.TempDir(), "cloudinfer-git-server.yaml")
+	tmpPath := filepath.Join(os.TempDir(), "cloudinferops-git-server.yaml")
 	if err := os.WriteFile(tmpPath, []byte(manifest), 0600); err != nil {
 		return fmt.Errorf("failed to write git server manifest: %w", err)
 	}
@@ -89,11 +89,11 @@ func DeployGitServer(ns string, dryRun bool) error {
 		return fmt.Errorf("failed to apply git server deployment: %w (stderr: %s)", err, stderr)
 	}
 
-	fmt.Printf("%sWaiting for cloudinfer-git-server to be ready...\n", utils.PrefixInfo)
+	fmt.Printf("%sWaiting for cloudinferops-git-server to be ready...\n", utils.PrefixInfo)
 	for i := 0; i < 30; i++ {
 		_, _, waitErr := utils.ExecCommand("", "kubectl", "wait", "--namespace", ns,
 			"--for=condition=Ready", "pod",
-			"-l", "app=cloudinfer-git-server",
+			"-l", "app=cloudinferops-git-server",
 			"--timeout=10s")
 		if waitErr == nil {
 			fmt.Printf("%sGit Server is ready.\n", utils.PrefixOK)
@@ -108,7 +108,7 @@ func DeployGitServer(ns string, dryRun bool) error {
 // StartPortForward sets up a background port-forward for the git-server and returns a cancel function.
 func StartPortForward(ns string, localPort, targetPort int) (func(), error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	cmd := exec.CommandContext(ctx, "kubectl", "port-forward", "-n", ns, "svc/cloudinfer-git-server", fmt.Sprintf("%d:%d", localPort, targetPort))
+	cmd := exec.CommandContext(ctx, "kubectl", "port-forward", "-n", ns, "svc/cloudinferops-git-server", fmt.Sprintf("%d:%d", localPort, targetPort))
 
 	if err := cmd.Start(); err != nil {
 		cancel()
@@ -126,9 +126,9 @@ func StartPortForward(ns string, localPort, targetPort int) (func(), error) {
 	return cleanup, nil
 }
 
-// IsGitServerRunning checks if the cloudinfer-git-server deployment exists in the cluster.
+// IsGitServerRunning checks if the cloudinferops-git-server deployment exists in the cluster.
 func IsGitServerRunning(ns string) bool {
-	out, _, err := utils.ExecCommand("", "kubectl", "get", "deployment", "cloudinfer-git-server", "-n", ns, "-o", "jsonpath={.status.readyReplicas}")
+	out, _, err := utils.ExecCommand("", "kubectl", "get", "deployment", "cloudinferops-git-server", "-n", ns, "-o", "jsonpath={.status.readyReplicas}")
 	if err != nil {
 		return false
 	}

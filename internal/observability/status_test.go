@@ -21,7 +21,7 @@ func TestDecodeBase64(t *testing.T) {
 		},
 		{
 			input:    "Y2xvdWRpbmZlcg==",
-			expected: "cloudinfer",
+			expected: "cloudinferops",
 			err:      false,
 		},
 		{
@@ -65,24 +65,24 @@ case "$*" in
     exit 0
     ;;
   *"get pods"*)
-    echo "cloudinfer-prometheus-server-123 1/1 Running 0 1d"
-    echo "cloudinfer-prometheus-grafana-123 1/1 Running 0 1d"
-    echo "cloudinfer-loki-123 1/1 Running 0 1d"
-    echo "cloudinfer-tempo-123 1/1 Running 0 1d"
-    echo "cloudinfer-otel-123 1/1 Running 0 1d"
-    echo "cloudinfer-webhook-handler-123 1/1 Running 0 1d"
-    echo "cloudinfer-victoria-metrics-0 1/1 Running 0 1d"
-    echo "cloudinfer-pyroscope-0 1/1 Running 0 1d"
-    echo "cloudinfer-thanos-store-0 1/1 Running 0 1d"
-    echo "cloudinfer-blackbox-exporter-123 1/1 Running 0 1d"
-    echo "cloudinfer-alertmanager-0 1/1 Running 0 1d"
+    echo "cloudinferops-prometheus-server-123 1/1 Running 0 1d"
+    echo "cloudinferops-prometheus-grafana-123 1/1 Running 0 1d"
+    echo "cloudinferops-loki-123 1/1 Running 0 1d"
+    echo "cloudinferops-tempo-123 1/1 Running 0 1d"
+    echo "cloudinferops-otel-123 1/1 Running 0 1d"
+    echo "cloudinferops-webhook-handler-123 1/1 Running 0 1d"
+    echo "cloudinferops-victoria-metrics-0 1/1 Running 0 1d"
+    echo "cloudinferops-pyroscope-0 1/1 Running 0 1d"
+    echo "cloudinferops-thanos-store-0 1/1 Running 0 1d"
+    echo "cloudinferops-blackbox-exporter-123 1/1 Running 0 1d"
+    echo "cloudinferops-alertmanager-0 1/1 Running 0 1d"
     exit 0
     ;;
-  *"get secret cloudinfer-prometheus-grafana"*)
+  *"get secret cloudinferops-prometheus-grafana"*)
     echo "YWRtaW4="
     exit 0
     ;;
-  *"get svc cloudinfer-ingress-nginx-controller"*)
+  *"get svc cloudinferops-ingress-nginx-controller"*)
     echo "192.168.99.100"
     exit 0
     ;;
