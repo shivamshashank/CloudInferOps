@@ -20,7 +20,7 @@ func TestDecodeBase64(t *testing.T) {
 			err:      false,
 		},
 		{
-			input:    "Y2xvdWRpbmZlcg==",
+			input:    "Y2xvdWRpbmZlcm9wcw==",
 			expected: "cloudinferops",
 			err:      false,
 		},
