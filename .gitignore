@@ -1,2 +1,5 @@
-cloudinferops
+# Go binary
+/cloudinferops
+
+# Coverage
 coverage.out
