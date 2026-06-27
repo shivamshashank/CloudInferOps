@@ -1,6 +1,6 @@
 # Security Policy
 
-We take the security of **StackPulse** seriously. If you believe you have found
+We take the security of **CloudInferOps** seriously. If you believe you have found
 a security vulnerability, we ask that you disclose it to us responsibly
 according to the instructions below.
 
@@ -9,7 +9,7 @@ according to the instructions below.
 ## Supported Versions
 
 Currently, security updates and patches are provided for the following versions
-of StackPulse:
+of CloudInferOps:
 
 | Version | Supported          |
 | ------- | ------------------ |
@@ -52,5 +52,5 @@ To report a vulnerability:
    patched version and coordinate a public security advisory to credit you for
    your responsible disclosure (unless you prefer to remain anonymous).
 
-We thank you for helping us keep StackPulse secure and reliable for the whole
+We thank you for helping us keep CloudInferOps secure and reliable for the whole
 community!

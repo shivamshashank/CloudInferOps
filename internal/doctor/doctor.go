@@ -2,7 +2,7 @@ package doctor
 
 import (
 	"fmt"
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 type CheckStatus int
@@ -29,7 +29,7 @@ type DoctorReport struct {
 
 // Print prints a stylized doctor report to the terminal
 func (r *DoctorReport) Print() {
-	fmt.Println(utils.ColorBold + "🩺  StackPulse Doctor" + utils.ColorReset)
+	fmt.Println(utils.ColorBold + "🩺  CloudInferOps Doctor" + utils.ColorReset)
 	fmt.Println()
 
 	for _, res := range r.Results {
@@ -51,10 +51,10 @@ func (r *DoctorReport) Print() {
 	if r.HasErrors {
 		fmt.Printf("%sSome critical prerequisites failed. Please resolve them before proceeding.\n", utils.PrefixError)
 	} else if r.HasK8s {
-		fmt.Printf("%sRun: sudo stackpulse deploy observability\n", utils.PrefixReady)
+		fmt.Printf("%sRun: sudo cloudinferops deploy observability\n", utils.PrefixReady)
 	} else {
 		fmt.Printf("%sKubernetes cluster not detected.\n", utils.PrefixWarn)
-		fmt.Printf("%sRun: sudo stackpulse deploy observability (which can automatically set up a local cluster for you) or configure an existing cluster.\n", utils.PrefixInfo)
+		fmt.Printf("%sRun: sudo cloudinferops deploy observability (which can automatically set up a local cluster for you) or configure an existing cluster.\n", utils.PrefixInfo)
 	}
 }
 

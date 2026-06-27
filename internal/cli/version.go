@@ -15,9 +15,9 @@ var (
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version number of StackPulse",
+	Short: "Print the version number of CloudInferOps",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("🚀 StackPulse version: %s\n", Version)
+		fmt.Printf("🚀 CloudInferOps version: %s\n", Version)
 		fmt.Printf("🔑 Commit: %s\n", Commit)
 		fmt.Printf("📅 Build date: %s\n", BuildDate)
 	},

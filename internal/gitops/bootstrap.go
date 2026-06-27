@@ -9,16 +9,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
-	"github.com/shivamshashank/StackPulse/internal/helm"
-	"github.com/shivamshashank/StackPulse/internal/observability"
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/helm"
+	"github.com/shivamshashank/CloudInferOps/internal/observability"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 // BootstrapGitOps orchestrates the full Model B GitOps deployment:
 // 1. Installs Ingress NGINX & ArgoCD via Helm
 // 2. Provisions the in-cluster Git server
-// 3. Generates the GitOps repository layout under ~/.stackpulse/gitops-repo
+// 3. Generates the GitOps repository layout under ~/.cloudinferops/gitops-repo
 // 4. Initializes, commits, and pushes the local repo to the Git server
 // 5. Registers ArgoCD Applications pointing to the Git server
 // 6. Configures the ingress controller routing
@@ -28,7 +28,7 @@ func BootstrapGitOps(dryRun bool) error {
 		ns = "observability"
 	}
 
-	fmt.Printf("%sStarting StackPulse GitOps Bootstrap (Model B)...\n", utils.PrefixInfo)
+	fmt.Printf("%sStarting CloudInferOps GitOps Bootstrap (Model B)...\n", utils.PrefixInfo)
 
 	if !CheckGitInstalled() {
 		return fmt.Errorf("git CLI is required on the host system but was not found. Please install git and try again")
@@ -55,7 +55,7 @@ func BootstrapGitOps(dryRun bool) error {
 	ingressFlags := []string{
 		"--set", "controller.watchIngressWithoutClass=true",
 	}
-	if err := helm.InstallRelease("stackpulse-ingress-nginx", "ingress-nginx/ingress-nginx", ns, ingressFlags, dryRun); err != nil {
+	if err := helm.InstallRelease("cloudinferops-ingress-nginx", "ingress-nginx/ingress-nginx", ns, ingressFlags, dryRun); err != nil {
 		return err
 	}
 
@@ -66,7 +66,7 @@ func BootstrapGitOps(dryRun bool) error {
 		for i := 0; i < 30; i++ {
 			_, _, waitErr := utils.ExecCommand("", "kubectl", "wait", "--namespace", ns,
 				"--for=condition=Ready", "pod",
-				"-l", "app.kubernetes.io/component=controller,app.kubernetes.io/instance=stackpulse-ingress-nginx",
+				"-l", "app.kubernetes.io/component=controller,app.kubernetes.io/instance=cloudinferops-ingress-nginx",
 				"--timeout=10s")
 			if waitErr == nil {
 				ready = true
@@ -85,7 +85,7 @@ func BootstrapGitOps(dryRun bool) error {
 		"--set", "server.extraArgs={--insecure,--rootpath=/argocd}",
 		"--set", "server.ingress.enabled=false",
 	}
-	if err := helm.InstallRelease("stackpulse-argocd", "argo/argo-cd", ns, argoFlags, dryRun); err != nil {
+	if err := helm.InstallRelease("cloudinferops-argocd", "argo/argo-cd", ns, argoFlags, dryRun); err != nil {
 		return err
 	}
 
@@ -129,7 +129,7 @@ func BootstrapGitOps(dryRun bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to get user home directory: %w", err)
 	}
-	repoDir := filepath.Join(home, ".stackpulse", "gitops-repo")
+	repoDir := filepath.Join(home, ".cloudinferops", "gitops-repo")
 
 	if !dryRun {
 		if err := generateGitOpsRepo(repoDir); err != nil {
@@ -198,9 +198,9 @@ func BootstrapGitOps(dryRun bool) error {
 	fmt.Printf("📊  Prometheus Server:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/prometheus/", instanceIP)+utils.ColorReset)
 	fmt.Printf("📊  Alertmanager Panel:  %s\n", utils.ColorBold+fmt.Sprintf("http://%s/alertmanager/", instanceIP)+utils.ColorReset)
 	fmt.Println("\n    👤  Default credentials:   Username: admin")
-	fmt.Printf("                               Password: Use 'sudo stackpulse status' to decrypt\n")
+	fmt.Printf("                               Password: Use 'sudo cloudinferops status' to decrypt\n")
 	fmt.Println("\n    ⏳  Note: It may take 5-6 minutes for all services and pods to fully start.")
-	fmt.Printf("           Run %s to monitor the live progress.\n", utils.ColorCyan+"sudo stackpulse status"+utils.ColorReset)
+	fmt.Printf("           Run %s to monitor the live progress.\n", utils.ColorCyan+"sudo cloudinferops status"+utils.ColorReset)
 	fmt.Println("-----------------------------------------------------------------")
 
 	return nil
@@ -226,7 +226,7 @@ func generateGitOpsRepo(repoDir string) error {
 
 	// 1. Infra Component Chart
 	infraChart := `apiVersion: v2
-name: stackpulse-infra
+name: cloudinferops-infra
 version: 1.0.0
 dependencies:
   - name: ingress-nginx
@@ -246,7 +246,7 @@ dependencies:
 `
 	if config.GlobalConfig.Observability.Thanos {
 		infraValues += `thanos:
-  existingObjstoreSecret: stackpulse-thanos-objstore
+  existingObjstoreSecret: cloudinferops-thanos-objstore
 `
 	}
 
@@ -264,7 +264,7 @@ dependencies:
 	}
 
 	monitoringChart := `apiVersion: v2
-name: stackpulse-monitoring
+name: cloudinferops-monitoring
 version: 1.0.0
 dependencies:
 `
@@ -335,12 +335,12 @@ dependencies:
         isDefaultDatasource: true
         name: Prometheus
         uid: prometheus
-        url: http://stackpulse-prometheus-kube-prometheus.observability:9090/prometheus
+        url: http://cloudinferops-prometheus-kube-prometheus.observability:9090/prometheus
         alertmanager:
           enabled: true
           name: Alertmanager
           uid: alertmanager
-          url: http://stackpulse-prometheus-kube-alertmanager.observability:9093/alertmanager
+          url: http://cloudinferops-prometheus-kube-alertmanager.observability:9093/alertmanager
   prometheus:
     ingress:
       enabled: false
@@ -408,7 +408,7 @@ dependencies:
 			return err
 		}
 
-		if err := os.WriteFile(filepath.Join(templatesDir, "stackpulse-alerts.yaml"), []byte(observability.GetAlertRulesManifest(ns)), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(templatesDir, "cloudinferops-alerts.yaml"), []byte(observability.GetAlertRulesManifest(ns)), 0644); err != nil {
 			return err
 		}
 	}
@@ -417,7 +417,7 @@ dependencies:
 	sampleAppYAML := `apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: stackpulse-sample-app
+  name: cloudinferops-sample-app
   namespace: default
   labels:
     app: sample-app
@@ -440,7 +440,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: stackpulse-sample-app
+  name: cloudinferops-sample-app
   namespace: default
 spec:
   ports:
@@ -461,9 +461,9 @@ func deployArgoCDApplications(ns string, dryRun bool) error {
 		name string
 		path string
 	}{
-		{"stackpulse-infra", "infra"},
-		{"stackpulse-monitoring", "monitoring"},
-		{"stackpulse-apps", "apps"},
+		{"cloudinferops-infra", "infra"},
+		{"cloudinferops-monitoring", "monitoring"},
+		{"cloudinferops-apps", "apps"},
 	}
 
 	for _, app := range apps {
@@ -475,7 +475,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'git://stackpulse-git-server.observability.svc.cluster.local/gitops.git'
+    repoURL: 'git://cloudinferops-git-server.observability.svc.cluster.local/gitops.git'
     path: %s
     targetRevision: HEAD
   destination:
@@ -543,7 +543,7 @@ func applyGitOpsIngress(ns string, dryRun bool) error {
 	manifest := fmt.Sprintf(`apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: stackpulse-observability
+  name: cloudinferops-observability
   namespace: %s
   annotations:
     kubernetes.io/ingress.class: nginx
@@ -558,38 +558,38 @@ spec:
             pathType: ImplementationSpecific
             backend:
               service:
-                name: stackpulse-prometheus-grafana
+                name: cloudinferops-prometheus-grafana
                 port:
                   number: 80
           - path: /prometheus(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: stackpulse-prometheus-kube-prometheus
+                name: cloudinferops-prometheus-kube-prometheus
                 port:
                   number: 9090
           - path: /alertmanager(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: stackpulse-prometheus-kube-alertmanager
+                name: cloudinferops-prometheus-kube-alertmanager
                 port:
                   number: 9093
           - path: /argocd(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
-                name: stackpulse-argocd-server
+                name: cloudinferops-argocd-server
                 port:
                   number: 80
 `, ns)
 
 	if dryRun {
-		fmt.Printf("%s[DRY-RUN] kubectl apply -f stackpulse-observability-ingress.yaml\n", utils.PrefixInfo)
+		fmt.Printf("%s[DRY-RUN] kubectl apply -f cloudinferops-observability-ingress.yaml\n", utils.PrefixInfo)
 		return nil
 	}
 
-	tmpPath := filepath.Join(os.TempDir(), "stackpulse-observability-ingress.yaml")
+	tmpPath := filepath.Join(os.TempDir(), "cloudinferops-observability-ingress.yaml")
 	if err := os.WriteFile(tmpPath, []byte(manifest), 0600); err != nil {
 		return err
 	}
@@ -604,7 +604,7 @@ spec:
 
 func fetchIngressIP(ns string) (string, error) {
 	for i := 0; i < 15; i++ {
-		out, _, err := utils.ExecCommand("", "kubectl", "get", "ingress", "stackpulse-observability", "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
+		out, _, err := utils.ExecCommand("", "kubectl", "get", "ingress", "cloudinferops-observability", "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
 		if err == nil && out != "" {
 			return out, nil
 		}
@@ -659,5 +659,5 @@ func waitForArgoCDApps(ns string, dryRun bool) {
 		time.Sleep(5 * time.Second)
 	}
 	stopSpinner()
-	fmt.Printf("%sTimeout waiting for applications to become healthy. Check progress using 'stackpulse status'.\n", utils.PrefixWarn)
+	fmt.Printf("%sTimeout waiting for applications to become healthy. Check progress using 'cloudinferops status'.\n", utils.PrefixWarn)
 }

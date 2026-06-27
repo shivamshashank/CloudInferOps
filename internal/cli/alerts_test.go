@@ -14,6 +14,6 @@ func TestAlertsCommandWiring(t *testing.T) {
 
 func TestTestCmdRun(t *testing.T) {
 	// Execute the command to ensure it prints standard output correctly without panicking
-	// This simulates a user running `stackpulse alerts test`
+	// This simulates a user running `cloudinferops alerts test`
 	testCmd.Run(&cobra.Command{}, []string{})
 }

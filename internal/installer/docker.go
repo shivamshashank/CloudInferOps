@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 // InstallDocker downloads and installs Docker Engine using the official convenience script.

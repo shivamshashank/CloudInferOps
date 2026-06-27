@@ -8,12 +8,12 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
-	"github.com/shivamshashank/StackPulse/internal/doctor"
-	"github.com/shivamshashank/StackPulse/internal/installer"
-	"github.com/shivamshashank/StackPulse/internal/observability"
-	"github.com/shivamshashank/StackPulse/internal/utils"
-	"github.com/shivamshashank/StackPulse/internal/webhook"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/doctor"
+	"github.com/shivamshashank/CloudInferOps/internal/installer"
+	"github.com/shivamshashank/CloudInferOps/internal/observability"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/webhook"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +25,7 @@ var (
 // deployCmd represents the parent deploy command
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
-	Short: "Deploy StackPulse components onto Kubernetes",
+	Short: "Deploy CloudInferOps components onto Kubernetes",
 	Long:  `Parent command for provisioning observability pipelines and gateway services in your active cluster.`,
 }
 
@@ -137,7 +137,7 @@ var observabilityCmd = &cobra.Command{
 		// 2. Load configuration (fallback on defaults if not initialized)
 		if err := config.InitConfig(false); err != nil {
 			fmt.Printf("%sConfiguration file not found. Deploying with default settings...\n", utils.PrefixInfo)
-			fmt.Printf("%sRun '%s' to configure custom namespaces and metrics.\n\n", utils.PrefixInfo, utils.ColorBold+"sudo stackpulse init"+utils.ColorReset)
+			fmt.Printf("%sRun '%s' to configure custom namespaces and metrics.\n\n", utils.PrefixInfo, utils.ColorBold+"sudo cloudinferops init"+utils.ColorReset)
 			config.GlobalConfig = config.DefaultConfig()
 		}
 
@@ -193,7 +193,7 @@ func init() {
 
 func promptClusterOption(reader io.Reader) (string, error) {
 	fmt.Println("Kubernetes cluster not detected.")
-	fmt.Println("Would you like StackPulse to install a local Kubernetes cluster for you?")
+	fmt.Println("Would you like CloudInferOps to install a local Kubernetes cluster for you?")
 	fmt.Println("  1. kind (Docker-based local Kubernetes)")
 	fmt.Println("  2. k3s (Lightweight Linux-only Kubernetes)")
 	fmt.Println("  3. minikube (Cross-platform local Kubernetes)")

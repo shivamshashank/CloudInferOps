@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +18,7 @@ var forceUninstall bool
 
 var uninstallCmd = &cobra.Command{
 	Use:   "uninstall",
-	Short: "Uninstall StackPulse components",
+	Short: "Uninstall CloudInferOps components",
 	Long:  `Parent command for removing observability pipelines, gateway services, and local clusters.`,
 }
 
@@ -29,7 +29,7 @@ var uninstallObservabilityCmd = &cobra.Command{
 		if err := config.InitConfig(false); err != nil {
 			config.GlobalConfig = config.DefaultConfig()
 		}
-		if !forceUninstall && !promptConfirm("This will remove the StackPulse observability stack. Continue? [y/N]: ") {
+		if !forceUninstall && !promptConfirm("This will remove the CloudInferOps observability stack. Continue? [y/N]: ") {
 			fmt.Printf("%sUninstall cancelled.\n", utils.PrefixWarn)
 			return nil
 		}
@@ -44,7 +44,7 @@ var uninstallWebhookHandlerCmd = &cobra.Command{
 		if err := config.InitConfig(false); err != nil {
 			config.GlobalConfig = config.DefaultConfig()
 		}
-		if !forceUninstall && !promptConfirm("This will remove the StackPulse webhook handler. Continue? [y/N]: ") {
+		if !forceUninstall && !promptConfirm("This will remove the CloudInferOps webhook handler. Continue? [y/N]: ") {
 			fmt.Printf("%sUninstall cancelled.\n", utils.PrefixWarn)
 			return nil
 		}
@@ -67,7 +67,7 @@ var uninstallAllCmd = &cobra.Command{
 			return performUninstallConfig(uninstallDryRun)
 		}
 
-		fmt.Printf("\n%s🧹 StackPulse Interactive Uninstall%s\n", utils.ColorBold, utils.ColorReset)
+		fmt.Printf("\n%s🧹 CloudInferOps Interactive Uninstall%s\n", utils.ColorBold, utils.ColorReset)
 		fmt.Println("-----------------------------------------------------------------")
 
 		if promptConfirm("1. Remove the Observability Stack (Prometheus, Grafana, etc.)? [y/N]: ") {
@@ -76,7 +76,7 @@ var uninstallAllCmd = &cobra.Command{
 			fmt.Printf("%sSkipping observability stack removal.\n", utils.PrefixInfo)
 		}
 
-		if promptConfirm("2. Tear down local StackPulse clusters (k3s, minikube, kind)? [y/N]: ") {
+		if promptConfirm("2. Tear down local CloudInferOps clusters (k3s, minikube, kind)? [y/N]: ") {
 			_ = performUninstallClusters(uninstallDryRun)
 		} else {
 			fmt.Printf("%sSkipping local clusters tear down.\n", utils.PrefixInfo)
@@ -88,7 +88,7 @@ var uninstallAllCmd = &cobra.Command{
 			fmt.Printf("%sSkipping binary removal.\n", utils.PrefixInfo)
 		}
 
-		if promptConfirm("4. Delete StackPulse configuration (~/.stackpulse)? [y/N]: ") {
+		if promptConfirm("4. Delete CloudInferOps configuration (~/.cloudinferops)? [y/N]: ") {
 			_ = performUninstallConfig(uninstallDryRun)
 		} else {
 			fmt.Printf("%sSkipping configuration removal.\n", utils.PrefixInfo)
@@ -169,8 +169,8 @@ func performUninstallWebhookHandler(dryRun bool) error {
 	}
 
 	if dryRun {
-		fmt.Printf("%s[DRY-RUN] helm uninstall stackpulse-webhook-handler -n %s\n", utils.PrefixInfo, ns)
-		fmt.Printf("%s[DRY-RUN] kubectl delete deployment,svc stackpulse-webhook-handler -n %s --ignore-not-found=true\n", utils.PrefixInfo, ns)
+		fmt.Printf("%s[DRY-RUN] helm uninstall cloudinferops-webhook-handler -n %s\n", utils.PrefixInfo, ns)
+		fmt.Printf("%s[DRY-RUN] kubectl delete deployment,svc cloudinferops-webhook-handler -n %s --ignore-not-found=true\n", utils.PrefixInfo, ns)
 		return nil
 	}
 
@@ -180,8 +180,8 @@ func performUninstallWebhookHandler(dryRun bool) error {
 		"KUBECONFIG": filepath.Join(realHome, ".kube", "config"),
 	}
 
-	_, _, _ = utils.ExecCommandEnv("", kubeEnv, "helm", "uninstall", "stackpulse-webhook-handler", "-n", ns)
-	_, _, _ = utils.ExecCommandEnv("", kubeEnv, "kubectl", "delete", "deployment,svc", "stackpulse-webhook-handler", "-n", ns, "--ignore-not-found=true")
+	_, _, _ = utils.ExecCommandEnv("", kubeEnv, "helm", "uninstall", "cloudinferops-webhook-handler", "-n", ns)
+	_, _, _ = utils.ExecCommandEnv("", kubeEnv, "kubectl", "delete", "deployment,svc", "cloudinferops-webhook-handler", "-n", ns, "--ignore-not-found=true")
 	stopSpinner()
 
 	fmt.Printf("%sWebhook handler uninstalled successfully.\n", utils.PrefixOK)
@@ -201,12 +201,12 @@ func performUninstallClusters(dryRun bool) error {
 	if _, err := exec.LookPath("kind"); err == nil {
 		// Verify if cluster exists
 		out, _, _ := utils.ExecCommandEnv("", kubeEnv, "kind", "get", "clusters")
-		if strings.Contains(out, "stackpulse") {
+		if strings.Contains(out, "cloudinferops") {
 			if dryRun {
-				fmt.Printf("%s[DRY-RUN] kind delete cluster --name stackpulse\n", utils.PrefixInfo)
+				fmt.Printf("%s[DRY-RUN] kind delete cluster --name cloudinferops\n", utils.PrefixInfo)
 			} else {
-				fmt.Printf("%sRemoving kind cluster 'stackpulse'...\n", utils.PrefixInfo)
-				_, _, _ = utils.ExecCommandEnv("", kubeEnv, "kind", "delete", "cluster", "--name", "stackpulse")
+				fmt.Printf("%sRemoving kind cluster 'cloudinferops'...\n", utils.PrefixInfo)
+				_, _, _ = utils.ExecCommandEnv("", kubeEnv, "kind", "delete", "cluster", "--name", "cloudinferops")
 			}
 		}
 	}
@@ -268,19 +268,19 @@ func performUninstallBinaries(dryRun bool) error {
 }
 
 func performUninstallConfig(dryRun bool) error {
-	fmt.Printf("%sChecking for StackPulse configuration to remove...\n", utils.PrefixInfo)
+	fmt.Printf("%sChecking for CloudInferOps configuration to remove...\n", utils.PrefixInfo)
 
 	realHome, err := utils.GetRealHomeDir()
 	if err != nil {
 		return nil
 	}
 
-	configDir := filepath.Join(realHome, ".stackpulse")
+	configDir := filepath.Join(realHome, ".cloudinferops")
 	if _, err := os.Stat(configDir); err == nil {
 		if dryRun {
 			fmt.Printf("%s[DRY-RUN] rm -rf %s\n", utils.PrefixInfo, configDir)
 		} else {
-			fmt.Printf("%sRemoving StackPulse configuration directory at %s...\n", utils.PrefixInfo, configDir)
+			fmt.Printf("%sRemoving CloudInferOps configuration directory at %s...\n", utils.PrefixInfo, configDir)
 			if os.Getuid() == 0 {
 				_, _, _ = utils.ExecCommand("", "rm", "-rf", configDir)
 			} else {

@@ -18,7 +18,7 @@ WARN="  🟡 ${YELLOW}[WARN]${RESET} "
 ERROR="  🔴 ${RED}[ERROR]${RESET} "
 READY="  🚀 ${GREEN}${BOLD}[READY]${RESET} "
 
-echo -e "${BOLD}StackPulse Installer${RESET}"
+echo -e "${BOLD}CloudInferOps Installer${RESET}"
 echo -e "---------------------"
 
 # 1. System environment detection
@@ -31,13 +31,13 @@ case "${OS_NAME}" in
         OS="linux"
         ;;
     darwin)
-        echo -e "${ERROR}StackPulse no longer supports macOS (darwin) natively."
+        echo -e "${ERROR}CloudInferOps no longer supports macOS (darwin) natively."
         echo -e "${INFO}To test locally on macOS, please run inside a Linux VM (e.g., using Multipass)."
         exit 1
         ;;
     *)
         echo -e "${ERROR}Unsupported operating system: ${OS_NAME}"
-        echo -e "${ERROR}StackPulse only supports Linux."
+        echo -e "${ERROR}CloudInferOps only supports Linux."
         exit 1
         ;;
 esac
@@ -51,7 +51,7 @@ case "${ARCH_NAME}" in
         ;;
     *)
         echo -e "${ERROR}Unsupported CPU architecture: ${ARCH_NAME}"
-        echo -e "${ERROR}StackPulse supports x86_64 (amd64) and arm64."
+        echo -e "${ERROR}CloudInferOps supports x86_64 (amd64) and arm64."
         exit 1
         ;;
 esac
@@ -59,8 +59,8 @@ esac
 echo -e "${SUCCESS}System matches: ${OS}/${ARCH}"
 
 # 2. Retrieve version
-echo -e "${INFO}Fetching latest StackPulse version..."
-LATEST_TAG=$(curl -s "https://api.github.com/repos/shivamshashank/StackPulse/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || true)
+echo -e "${INFO}Fetching latest CloudInferOps version..."
+LATEST_TAG=$(curl -s "https://api.github.com/repos/shivamshashank/CloudInferOps/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || true)
 
 if [ -z "${LATEST_TAG}" ]; then
     VERSION="v0.1.3"
@@ -71,15 +71,15 @@ else
 fi
 
 # 3. Download binary
-BINARY_NAME="stackpulse-${OS}-${ARCH}"
-DOWNLOAD_URL="https://github.com/shivamshashank/StackPulse/releases/download/${VERSION}/${BINARY_NAME}"
+BINARY_NAME="cloudinferops-${OS}-${ARCH}"
+DOWNLOAD_URL="https://github.com/shivamshashank/CloudInferOps/releases/download/${VERSION}/${BINARY_NAME}"
 TEMP_DIR=$(mktemp -d)
-TEMP_BIN="${TEMP_DIR}/stackpulse"
+TEMP_BIN="${TEMP_DIR}/cloudinferops"
 
 echo -e "${INFO}Downloading binary from: ${DOWNLOAD_URL}"
 # Try downloading the compiled binary
 if curl -sSLf -o "${TEMP_BIN}" "${DOWNLOAD_URL}"; then
-    echo -e "${SUCCESS}Successfully downloaded StackPulse release ${VERSION}."
+    echo -e "${SUCCESS}Successfully downloaded CloudInferOps release ${VERSION}."
 else
     # Fallback/Development mock helper for local installations before releases are tagged
     echo -e "${WARN}Release asset not found on GitHub yet (project is in pre-release stage)."
@@ -87,14 +87,14 @@ else
     if command -v go &>/dev/null; then
         echo -e "${INFO}Compiling local binary via 'go build'..."
         # If in repository context, build locally
-        if [ -f "cmd/stackpulse/main.go" ]; then
+        if [ -f "cmd/cloudinferops/main.go" ]; then
             COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
             BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date +%Y-%m-%dT%H:%M:%SZ)
-            PKG="github.com/shivamshashank/StackPulse/internal/cli"
-            go build -ldflags="-s -w -X ${PKG}.Version=${VERSION} -X ${PKG}.Commit=${COMMIT} -X ${PKG}.BuildDate=${BUILD_DATE}" -o "${TEMP_BIN}" cmd/stackpulse/main.go
-            echo -e "${SUCCESS}Compiled local StackPulse binary successfully."
+            PKG="github.com/shivamshashank/CloudInferOps/internal/cli"
+            go build -ldflags="-s -w -X ${PKG}.Version=${VERSION} -X ${PKG}.Commit=${COMMIT} -X ${PKG}.BuildDate=${BUILD_DATE}" -o "${TEMP_BIN}" cmd/cloudinferops/main.go
+            echo -e "${SUCCESS}Compiled local CloudInferOps binary successfully."
         else
-            echo -e "${ERROR}Cannot install: No release asset exists yet, and not in StackPulse repository source folder."
+            echo -e "${ERROR}Cannot install: No release asset exists yet, and not in CloudInferOps repository source folder."
             rm -rf "${TEMP_DIR}"
             exit 1
         fi
@@ -106,7 +106,7 @@ else
 fi
 
 # 4. Install binary to /usr/local/bin
-INSTALL_PATH="/usr/local/bin/stackpulse"
+INSTALL_PATH="/usr/local/bin/cloudinferops"
 echo -e "${INFO}Installing to ${INSTALL_PATH}..."
 
 # Check write permissions, use sudo if needed
@@ -120,14 +120,14 @@ fi
 chmod +x "${INSTALL_PATH}"
 rm -rf "${TEMP_DIR}"
 
-echo -e "${SUCCESS}StackPulse binary installed to ${INSTALL_PATH} successfully."
+echo -e "${SUCCESS}CloudInferOps binary installed to ${INSTALL_PATH} successfully."
 
 # 5. Verify run
 echo -e "${INFO}Verifying installation..."
 INSTALLED_VER=$("${INSTALL_PATH}" version | grep "version:" | awk '{print $NF}' || echo "unknown")
 
-echo -e "\n${READY}${BOLD}Successfully installed StackPulse!${RESET}"
+echo -e "\n${READY}${BOLD}Successfully installed CloudInferOps!${RESET}"
 echo -e "  🚀 Installed version: ${INSTALLED_VER}"
-echo -e "  🩺 Run '${BOLD}sudo stackpulse doctor${RESET}' to test your system environment."
-echo -e "  📦 Run '${BOLD}sudo stackpulse deploy observability${RESET}' to deploy the stack."
-echo -e "  📊 Run '${BOLD}sudo stackpulse status${RESET}' to check the dashboard links."
+echo -e "  🩺 Run '${BOLD}sudo cloudinferops doctor${RESET}' to test your system environment."
+echo -e "  📦 Run '${BOLD}sudo cloudinferops deploy observability${RESET}' to deploy the stack."
+echo -e "  📊 Run '${BOLD}sudo cloudinferops status${RESET}' to check the dashboard links."

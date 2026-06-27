@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
-	"github.com/shivamshashank/StackPulse/internal/helm"
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/helm"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 // DeployObservability orchestrates the step-by-step installation of the enabled observability charts
@@ -22,7 +22,7 @@ func DeployObservability(dryRun bool) error {
 		ns = "observability"
 	}
 
-	fmt.Printf("%sStarting StackPulse Observability Stack Deployment...\n", utils.PrefixInfo)
+	fmt.Printf("%sStarting CloudInferOps Observability Stack Deployment...\n", utils.PrefixInfo)
 	if dryRun {
 		fmt.Printf("%sRunning in [DRY-RUN] mode. No changes will be made to your cluster.\n\n", utils.PrefixInfo)
 	}
@@ -107,7 +107,7 @@ func DeployObservability(dryRun bool) error {
 	ingressFlags := []string{
 		"--set", "controller.watchIngressWithoutClass=true",
 	}
-	if err := helm.InstallRelease("stackpulse-ingress-nginx", "ingress-nginx/ingress-nginx", ns, ingressFlags, dryRun); err != nil {
+	if err := helm.InstallRelease("cloudinferops-ingress-nginx", "ingress-nginx/ingress-nginx", ns, ingressFlags, dryRun); err != nil {
 		return err
 	}
 
@@ -118,7 +118,7 @@ func DeployObservability(dryRun bool) error {
 		for i := 0; i < 30; i++ {
 			_, _, waitErr := utils.ExecCommand("", "kubectl", "wait", "--namespace", ns,
 				"--for=condition=Ready", "pod",
-				"-l", "app.kubernetes.io/component=controller,app.kubernetes.io/instance=stackpulse-ingress-nginx",
+				"-l", "app.kubernetes.io/component=controller,app.kubernetes.io/instance=cloudinferops-ingress-nginx",
 				"--timeout=10s")
 			if waitErr == nil {
 				ready = true
@@ -139,7 +139,7 @@ func DeployObservability(dryRun bool) error {
 			"--set", "server.extraArgs={--insecure,--rootpath=/argocd}",
 			"--set", "server.ingress.enabled=false",
 		}
-		if err := helm.InstallRelease("stackpulse-argocd", "argo/argo-cd", ns, argoFlags, dryRun); err != nil {
+		if err := helm.InstallRelease("cloudinferops-argocd", "argo/argo-cd", ns, argoFlags, dryRun); err != nil {
 			return err
 		}
 		// Wait for ArgoCD Application CRDs to initialize before we apply applications
@@ -195,12 +195,12 @@ func DeployObservability(dryRun bool) error {
 		valuesYAML.WriteString("      isDefaultDatasource: true\n")
 		valuesYAML.WriteString("      name: Prometheus\n")
 		valuesYAML.WriteString("      uid: prometheus\n")
-		fmt.Fprintf(&valuesYAML, "      url: http://stackpulse-prometheus-kube-prometheus.%s:9090/prometheus\n", ns)
+		fmt.Fprintf(&valuesYAML, "      url: http://cloudinferops-prometheus-kube-prometheus.%s:9090/prometheus\n", ns)
 		valuesYAML.WriteString("      alertmanager:\n")
 		valuesYAML.WriteString("        enabled: true\n")
 		valuesYAML.WriteString("        name: Alertmanager\n")
 		valuesYAML.WriteString("        uid: alertmanager\n")
-		fmt.Fprintf(&valuesYAML, "        url: http://stackpulse-prometheus-kube-alertmanager.%s:9093/alertmanager\n", ns)
+		fmt.Fprintf(&valuesYAML, "        url: http://cloudinferops-prometheus-kube-alertmanager.%s:9093/alertmanager\n", ns)
 
 		// Build additional Grafana data sources dynamically
 		valuesYAML.WriteString("  additionalDataSources:\n")
@@ -208,21 +208,21 @@ func DeployObservability(dryRun bool) error {
 			valuesYAML.WriteString("    - name: Loki\n")
 			valuesYAML.WriteString("      type: loki\n")
 			valuesYAML.WriteString("      access: proxy\n")
-			fmt.Fprintf(&valuesYAML, "      url: http://stackpulse-loki.%s:3100\n", ns)
+			fmt.Fprintf(&valuesYAML, "      url: http://cloudinferops-loki.%s:3100\n", ns)
 			valuesYAML.WriteString("      uid: loki\n")
 		}
 		if config.GlobalConfig.Observability.Tempo {
 			valuesYAML.WriteString("    - name: Tempo\n")
 			valuesYAML.WriteString("      type: tempo\n")
 			valuesYAML.WriteString("      access: proxy\n")
-			fmt.Fprintf(&valuesYAML, "      url: http://stackpulse-tempo.%s:3100\n", ns)
+			fmt.Fprintf(&valuesYAML, "      url: http://cloudinferops-tempo.%s:3100\n", ns)
 			valuesYAML.WriteString("      uid: tempo\n")
 		}
 		if config.GlobalConfig.Observability.Pyroscope {
 			valuesYAML.WriteString("    - name: Pyroscope\n")
 			valuesYAML.WriteString("      type: pyroscope\n")
 			valuesYAML.WriteString("      access: proxy\n")
-			fmt.Fprintf(&valuesYAML, "      url: http://stackpulse-pyroscope.%s:4040\n", ns)
+			fmt.Fprintf(&valuesYAML, "      url: http://cloudinferops-pyroscope.%s:4040\n", ns)
 			valuesYAML.WriteString("      uid: pyroscope\n")
 		}
 
@@ -267,7 +267,7 @@ func DeployObservability(dryRun bool) error {
 			valuesYAML.WriteString("          - source_labels: [__param_target]\n")
 			valuesYAML.WriteString("            target_label: instance\n")
 			valuesYAML.WriteString("          - target_label: __address__\n")
-			fmt.Fprintf(&valuesYAML, "            replacement: stackpulse-blackbox-prometheus-blackbox-exporter.%s:9115\n", ns)
+			fmt.Fprintf(&valuesYAML, "            replacement: cloudinferops-blackbox-prometheus-blackbox-exporter.%s:9115\n", ns)
 		}
 
 		valuesYAML.WriteString("kube-state-metrics:\n")
@@ -285,18 +285,18 @@ func DeployObservability(dryRun bool) error {
 		valuesYAML.WriteString("    externalUrl: http://localhost/alertmanager\n")
 
 		if config.GlobalConfig.Observability.ArgoCD {
-			if err := deployViaArgoCD("stackpulse-prometheus", "https://prometheus-community.github.io/helm-charts", "kube-prometheus-stack", ns, nil, valuesYAML.String(), dryRun); err != nil {
+			if err := deployViaArgoCD("cloudinferops-prometheus", "https://prometheus-community.github.io/helm-charts", "kube-prometheus-stack", ns, nil, valuesYAML.String(), dryRun); err != nil {
 				return err
 			}
 		} else {
-			tmpValuesPath := filepath.Join(os.TempDir(), "stackpulse-prometheus-values.yaml")
+			tmpValuesPath := filepath.Join(os.TempDir(), "cloudinferops-prometheus-values.yaml")
 			if err := os.WriteFile(tmpValuesPath, []byte(valuesYAML.String()), 0600); err != nil {
 				return fmt.Errorf("failed to write temporary prometheus values file: %w", err)
 			}
 			defer func() { _ = os.Remove(tmpValuesPath) }()
 
 			flags := []string{"-f", tmpValuesPath}
-			if err := helm.InstallRelease("stackpulse-prometheus", "prometheus-community/kube-prometheus-stack", ns, flags, dryRun); err != nil {
+			if err := helm.InstallRelease("cloudinferops-prometheus", "prometheus-community/kube-prometheus-stack", ns, flags, dryRun); err != nil {
 				return err
 			}
 		}
@@ -319,11 +319,11 @@ func DeployObservability(dryRun bool) error {
 			"--set", "loki.isDefault=false",
 		}
 		if config.GlobalConfig.Observability.ArgoCD {
-			if err := deployViaArgoCD("stackpulse-loki", "https://grafana.github.io/helm-charts", "loki-stack", ns, flags, "", dryRun); err != nil {
+			if err := deployViaArgoCD("cloudinferops-loki", "https://grafana.github.io/helm-charts", "loki-stack", ns, flags, "", dryRun); err != nil {
 				return err
 			}
 		} else {
-			if err := helm.InstallRelease("stackpulse-loki", "grafana/loki-stack", ns, flags, dryRun); err != nil {
+			if err := helm.InstallRelease("cloudinferops-loki", "grafana/loki-stack", ns, flags, dryRun); err != nil {
 				return err
 			}
 		}
@@ -332,11 +332,11 @@ func DeployObservability(dryRun bool) error {
 	// C. Tempo Distributed Tracing
 	if config.GlobalConfig.Observability.Tempo {
 		if config.GlobalConfig.Observability.ArgoCD {
-			if err := deployViaArgoCD("stackpulse-tempo", "https://grafana.github.io/helm-charts", "tempo", ns, nil, "", dryRun); err != nil {
+			if err := deployViaArgoCD("cloudinferops-tempo", "https://grafana.github.io/helm-charts", "tempo", ns, nil, "", dryRun); err != nil {
 				return err
 			}
 		} else {
-			if err := helm.InstallRelease("stackpulse-tempo", "grafana/tempo", ns, nil, dryRun); err != nil {
+			if err := helm.InstallRelease("cloudinferops-tempo", "grafana/tempo", ns, nil, dryRun); err != nil {
 				return err
 			}
 		}
@@ -349,11 +349,11 @@ func DeployObservability(dryRun bool) error {
 			"--set", "image.repository=ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s",
 		}
 		if config.GlobalConfig.Observability.ArgoCD {
-			if err := deployViaArgoCD("stackpulse-otel", "https://open-telemetry.github.io/opentelemetry-helm-charts", "opentelemetry-collector", ns, flags, "", dryRun); err != nil {
+			if err := deployViaArgoCD("cloudinferops-otel", "https://open-telemetry.github.io/opentelemetry-helm-charts", "opentelemetry-collector", ns, flags, "", dryRun); err != nil {
 				return err
 			}
 		} else {
-			if err := helm.InstallRelease("stackpulse-otel", "open-telemetry/opentelemetry-collector", ns, flags, dryRun); err != nil {
+			if err := helm.InstallRelease("cloudinferops-otel", "open-telemetry/opentelemetry-collector", ns, flags, dryRun); err != nil {
 				return err
 			}
 		}
@@ -362,11 +362,11 @@ func DeployObservability(dryRun bool) error {
 	// A1. Blackbox Exporter Deployment
 	if config.GlobalConfig.Observability.BlackboxExporter {
 		if config.GlobalConfig.Observability.ArgoCD {
-			if err := deployViaArgoCD("stackpulse-blackbox", "https://prometheus-community.github.io/helm-charts", "prometheus-blackbox-exporter", ns, nil, "", dryRun); err != nil {
+			if err := deployViaArgoCD("cloudinferops-blackbox", "https://prometheus-community.github.io/helm-charts", "prometheus-blackbox-exporter", ns, nil, "", dryRun); err != nil {
 				return err
 			}
 		} else {
-			if err := helm.InstallRelease("stackpulse-blackbox", "prometheus-community/prometheus-blackbox-exporter", ns, nil, dryRun); err != nil {
+			if err := helm.InstallRelease("cloudinferops-blackbox", "prometheus-community/prometheus-blackbox-exporter", ns, nil, dryRun); err != nil {
 				return err
 			}
 		}
@@ -375,11 +375,11 @@ func DeployObservability(dryRun bool) error {
 	// A2. Pyroscope Profiler Deployment
 	if config.GlobalConfig.Observability.Pyroscope {
 		if config.GlobalConfig.Observability.ArgoCD {
-			if err := deployViaArgoCD("stackpulse-pyroscope", "https://grafana.github.io/helm-charts", "pyroscope", ns, nil, "", dryRun); err != nil {
+			if err := deployViaArgoCD("cloudinferops-pyroscope", "https://grafana.github.io/helm-charts", "pyroscope", ns, nil, "", dryRun); err != nil {
 				return err
 			}
 		} else {
-			if err := helm.InstallRelease("stackpulse-pyroscope", "grafana/pyroscope", ns, nil, dryRun); err != nil {
+			if err := helm.InstallRelease("cloudinferops-pyroscope", "grafana/pyroscope", ns, nil, dryRun); err != nil {
 				return err
 			}
 		}
@@ -391,14 +391,14 @@ func DeployObservability(dryRun bool) error {
 			return fmt.Errorf("failed to create Thanos objstore secret: %w", err)
 		}
 		thanosFlags := []string{
-			"--set", "existingObjstoreSecret=stackpulse-thanos-objstore",
+			"--set", "existingObjstoreSecret=cloudinferops-thanos-objstore",
 		}
 		if config.GlobalConfig.Observability.ArgoCD {
-			if err := deployViaArgoCD("stackpulse-thanos", "https://charts.bitnami.com/bitnami", "thanos", ns, thanosFlags, "", dryRun); err != nil {
+			if err := deployViaArgoCD("cloudinferops-thanos", "https://charts.bitnami.com/bitnami", "thanos", ns, thanosFlags, "", dryRun); err != nil {
 				return err
 			}
 		} else {
-			if err := helm.InstallRelease("stackpulse-thanos", "bitnami/thanos", ns, thanosFlags, dryRun); err != nil {
+			if err := helm.InstallRelease("cloudinferops-thanos", "bitnami/thanos", ns, thanosFlags, dryRun); err != nil {
 				return err
 			}
 		}
@@ -411,11 +411,11 @@ func DeployObservability(dryRun bool) error {
 			"--set", "vmcluster.enabled=false",
 		}
 		if config.GlobalConfig.Observability.ArgoCD {
-			if err := deployViaArgoCD("stackpulse-vm", "https://victoriametrics.github.io/helm-charts", "victoria-metrics-k8s-stack", ns, vmFlags, "", dryRun); err != nil {
+			if err := deployViaArgoCD("cloudinferops-vm", "https://victoriametrics.github.io/helm-charts", "victoria-metrics-k8s-stack", ns, vmFlags, "", dryRun); err != nil {
 				return err
 			}
 		} else {
-			if err := helm.InstallRelease("stackpulse-vm", "vm/victoria-metrics-k8s-stack", ns, vmFlags, dryRun); err != nil {
+			if err := helm.InstallRelease("cloudinferops-vm", "vm/victoria-metrics-k8s-stack", ns, vmFlags, dryRun); err != nil {
 				return err
 			}
 		}
@@ -474,14 +474,14 @@ func DeployObservability(dryRun bool) error {
 		}
 
 		fmt.Println("\n    👤  Default credentials:   Username: admin")
-		fmt.Printf("                               Password command: %s\n", utils.ColorCyan+fmt.Sprintf("kubectl get secret --namespace %s stackpulse-prometheus-grafana -o jsonpath=\"{.data.admin-password}\" | base64 --decode ; echo", ns)+utils.ColorReset)
+		fmt.Printf("                               Password command: %s\n", utils.ColorCyan+fmt.Sprintf("kubectl get secret --namespace %s cloudinferops-prometheus-grafana -o jsonpath=\"{.data.admin-password}\" | base64 --decode ; echo", ns)+utils.ColorReset)
 		if config.GlobalConfig.Observability.ArgoCD {
 			fmt.Printf("                               ArgoCD Password:  %s\n", utils.ColorCyan+fmt.Sprintf("kubectl get secret --namespace %s %s -o jsonpath=\"{.data.password}\" | base64 --decode ; echo", ns, argoSecretName)+utils.ColorReset)
 		}
 	}
 
 	fmt.Println("\n    ⏳  Note: It may take 5-6 minutes for all services and pods to fully start.")
-	fmt.Printf("           Run %s to monitor the live progress.\n", utils.ColorCyan+"sudo stackpulse status"+utils.ColorReset)
+	fmt.Printf("           Run %s to monitor the live progress.\n", utils.ColorCyan+"sudo cloudinferops status"+utils.ColorReset)
 
 	fmt.Println("-----------------------------------------------------------------")
 	return nil
@@ -491,7 +491,7 @@ func createThanosSecret(ns string, dryRun bool) error {
 	secretYAML := fmt.Sprintf(`apiVersion: v1
 kind: Secret
 metadata:
-  name: stackpulse-thanos-objstore
+  name: cloudinferops-thanos-objstore
   namespace: %s
 type: Opaque
 stringData:
@@ -506,7 +506,7 @@ stringData:
 		return nil
 	}
 
-	tmpPath := filepath.Join(os.TempDir(), "stackpulse-thanos-objstore.yaml")
+	tmpPath := filepath.Join(os.TempDir(), "cloudinferops-thanos-objstore.yaml")
 	if err := os.WriteFile(tmpPath, []byte(secretYAML), 0600); err != nil {
 		return err
 	}
@@ -517,10 +517,10 @@ stringData:
 }
 
 func applyObservabilityIngress(ns string, dryRun bool) error {
-	grafanaSvc := "stackpulse-prometheus-grafana"
-	prometheusSvc := "stackpulse-prometheus-kube-prometheus"
-	alertmanagerSvc := "stackpulse-prometheus-kube-alertmanager"
-	argoSvc := "stackpulse-argocd-server"
+	grafanaSvc := "cloudinferops-prometheus-grafana"
+	prometheusSvc := "cloudinferops-prometheus-kube-prometheus"
+	alertmanagerSvc := "cloudinferops-prometheus-kube-alertmanager"
+	argoSvc := "cloudinferops-argocd-server"
 
 	if !dryRun {
 		var err error
@@ -559,7 +559,7 @@ func applyObservabilityIngress(ns string, dryRun bool) error {
 	manifest := fmt.Sprintf(`apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: stackpulse-observability
+  name: cloudinferops-observability
   namespace: %s
   annotations:
     kubernetes.io/ingress.class: nginx
@@ -594,12 +594,12 @@ spec:
 `, ns, grafanaSvc, prometheusSvc, alertmanagerSvc, argoRoute)
 
 	if dryRun {
-		fmt.Printf("%s[DRY-RUN] kubectl apply -f stackpulse-observability-ingress.yaml\n", utils.PrefixInfo)
+		fmt.Printf("%s[DRY-RUN] kubectl apply -f cloudinferops-observability-ingress.yaml\n", utils.PrefixInfo)
 		return nil
 	}
 
-	fmt.Printf("%sApplying StackPulse observability Ingress routes...\n", utils.PrefixInfo)
-	tmpPath := filepath.Join(os.TempDir(), "stackpulse-observability-ingress.yaml")
+	fmt.Printf("%sApplying CloudInferOps observability Ingress routes...\n", utils.PrefixInfo)
+	tmpPath := filepath.Join(os.TempDir(), "cloudinferops-observability-ingress.yaml")
 	if err := os.WriteFile(tmpPath, []byte(manifest), 0600); err != nil {
 		return fmt.Errorf("failed to write temporary ingress manifest: %w", err)
 	}
@@ -637,7 +637,7 @@ func findServiceByPort(ns, nameHint string, port int, fallback string) (string, 
 
 	for _, svc := range services.Items {
 		name := strings.ToLower(svc.Metadata.Name)
-		if !strings.Contains(name, "stackpulse") || !strings.Contains(name, nameHint) {
+		if !strings.Contains(name, "cloudinferops") || !strings.Contains(name, nameHint) {
 			continue
 		}
 		for _, svcPort := range svc.Spec.Ports {
@@ -803,5 +803,5 @@ func waitForArgoCDApps(ns string, dryRun bool) {
 		time.Sleep(5 * time.Second)
 	}
 	stopSpinner()
-	fmt.Printf("%sTimeout waiting for applications to become healthy. Check progress using 'stackpulse status'.\n", utils.PrefixWarn)
+	fmt.Printf("%sTimeout waiting for applications to become healthy. Check progress using 'cloudinferops status'.\n", utils.PrefixWarn)
 }

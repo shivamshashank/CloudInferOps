@@ -1,4 +1,4 @@
-module github.com/shivamshashank/StackPulse
+module github.com/shivamshashank/CloudInferOps
 
 go 1.23.0
 

@@ -3,8 +3,8 @@ package webhook
 import (
 	"fmt"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 // DeployWebhookHandler renders and applies Kubernetes manifests for the incident processing gateway service
@@ -23,7 +23,7 @@ func DeployWebhookHandler(dryRun bool) error {
 	serviceYaml := fmt.Sprintf(`apiVersion: v1
 kind: Service
 metadata:
-  name: stackpulse-webhook-handler
+  name: cloudinferops-webhook-handler
   namespace: %s
 spec:
   ports:
@@ -31,28 +31,28 @@ spec:
     targetPort: 8080
     protocol: TCP
   selector:
-    app: stackpulse-webhook-handler
+    app: cloudinferops-webhook-handler
   type: ClusterIP`, ns)
 
 	// Deployment manifest
 	deploymentYaml := fmt.Sprintf(`apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: stackpulse-webhook-handler
+  name: cloudinferops-webhook-handler
   namespace: %s
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: stackpulse-webhook-handler
+      app: cloudinferops-webhook-handler
   template:
     metadata:
       labels:
-        app: stackpulse-webhook-handler
+        app: cloudinferops-webhook-handler
     spec:
       containers:
       - name: webhook-handler
-        image: ghcr.io/shivamshashank/stackpulse-webhook-handler:latest
+        image: ghcr.io/shivamshashank/cloudinferops-webhook-handler:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -72,13 +72,13 @@ spec:
         - name: SLACK_WEBHOOK_URL
           valueFrom:
             secretKeyRef:
-              name: stackpulse-slack-webhook
+              name: cloudinferops-slack-webhook
               key: webhook-url
               optional: true
         - name: PAGERDUTY_INTEGRATION_KEY
           valueFrom:
             secretKeyRef:
-              name: stackpulse-pagerduty-key
+              name: cloudinferops-pagerduty-key
               key: integration-key
               optional: true`, ns)
 
@@ -103,7 +103,7 @@ spec:
 
 	fmt.Printf("%sSuccessfully deployed Custom Webhook Handler Gateway.\n", utils.PrefixOK)
 	fmt.Println("-----------------------------------------------------------------")
-	fmt.Printf("🌐  Service Name:  stackpulse-webhook-handler\n")
+	fmt.Printf("🌐  Service Name:  cloudinferops-webhook-handler\n")
 	fmt.Printf("📡  Endpoints:     GET  /health\n")
 	fmt.Printf("                   POST /webhook/alertmanager\n")
 	fmt.Printf("                   GET  /incidents\n")

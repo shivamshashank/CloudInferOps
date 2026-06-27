@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 // InstallK3s runs the K3s installation script, copies its kubeconfig, fixes permissions, and waits for cluster nodes to be ready.

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 // DownloadKindBinary downloads the kind binary from the official release and installs it to /usr/local/bin/kind.
@@ -47,7 +47,7 @@ func DownloadKindBinary() error {
 
 // InstallKind creates a local kind cluster and waits for ready nodes.
 func InstallKind() error {
-	const clusterName = "stackpulse"
+	const clusterName = "cloudinferops"
 
 	fmt.Printf("%sInitializing kind cluster setup...\n", utils.PrefixInfo)
 

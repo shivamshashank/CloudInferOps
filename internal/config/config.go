@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 	"github.com/spf13/viper"
 )
 
-// Config represents the schema of StackPulse configuration.
+// Config represents the schema of CloudInferOps configuration.
 type Config struct {
 	Namespace     string       `mapstructure:"namespace"`
 	Kubernetes    K8sConfig    `mapstructure:"kubernetes"`
@@ -88,26 +88,26 @@ func DefaultConfig() Config {
 		Alerts: AlertsConfig{
 			Slack: SlackConfig{
 				Enabled:          false,
-				WebhookUrlSecret: "stackpulse-slack-webhook",
+				WebhookUrlSecret: "cloudinferops-slack-webhook",
 			},
 			PagerDuty: PagerDutyConfig{
 				Enabled:              false,
-				IntegrationKeySecret: "stackpulse-pagerduty-key",
+				IntegrationKeySecret: "cloudinferops-pagerduty-key",
 			},
 		},
 	}
 }
 
-// GetConfigDir returns the absolute path to StackPulse configuration directory (~/.stackpulse)
+// GetConfigDir returns the absolute path to CloudInferOps configuration directory (~/.cloudinferops)
 func GetConfigDir() (string, error) {
 	home, err := utils.GetRealHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("unable to determine home directory: %w", err)
 	}
-	return filepath.Join(home, ".stackpulse"), nil
+	return filepath.Join(home, ".cloudinferops"), nil
 }
 
-// GetConfigPath returns the absolute path to the config file (~/.stackpulse/config.yaml)
+// GetConfigPath returns the absolute path to the config file (~/.cloudinferops/config.yaml)
 func GetConfigPath() (string, error) {
 	dir, err := GetConfigDir()
 	if err != nil {
@@ -195,7 +195,7 @@ func InitConfig(createIfMissing bool) error {
 	return nil
 }
 
-// SaveConfig saves the current GlobalConfig to ~/.stackpulse/config.yaml
+// SaveConfig saves the current GlobalConfig to ~/.cloudinferops/config.yaml
 func SaveConfig() error {
 	dir, err := GetConfigDir()
 	if err != nil {

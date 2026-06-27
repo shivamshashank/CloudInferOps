@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
 
 	"github.com/spf13/cobra"
 )
@@ -65,7 +65,7 @@ func TestConnectCommand_WithArgoCD(t *testing.T) {
 	// This mock simulates success for kubectl calls including ArgoCD and Grafana secrets
 	mockKubectlPath := filepath.Join(mockBinDir, "kubectl")
 	mockKubectlContent := `#!/bin/sh
-if echo "$*" | grep -q "stackpulse-prometheus-grafana"; then
+if echo "$*" | grep -q "cloudinferops-prometheus-grafana"; then
     echo "cGFzc3dvcmQ=" # "password" in base64
     exit 0
 fi

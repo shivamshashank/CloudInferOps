@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
 )
 
 func TestDeployWebhookHandlerDryRun(t *testing.T) {
