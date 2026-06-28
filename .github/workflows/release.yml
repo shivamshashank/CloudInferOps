@@ -30,21 +30,20 @@ jobs:
         run: |
           git fetch --tags --force
           LATEST_TAG=$(git tag -l "v*" | sort -V | tail -n1 || true)
+
           if [ -z "$LATEST_TAG" ]; then
             NEXT_TAG="v1.0.0"
           else
             VERSION_PART=${LATEST_TAG#v}
-            # Parse version parts
             IFS='.' read -r major minor patch <<< "$VERSION_PART"
             if [ "$major" -eq 0 ]; then
               NEXT_TAG="v1.0.0"
             else
-              next_patch=$((patch + 1))
-              NEXT_TAG="v${major}.${minor}.${next_patch}"
+              NEXT_TAG="v${major}.${minor}.$((patch+1))"
             fi
           fi
+
           echo "next_tag=${NEXT_TAG}" >> $GITHUB_OUTPUT
-          echo "Calculated next tag: ${NEXT_TAG}"
 
       - name: Create and Push Git Tag
         run: |
@@ -53,31 +52,30 @@ jobs:
           git tag "${{ steps.next_version.outputs.next_tag }}"
           git push origin "${{ steps.next_version.outputs.next_tag }}"
 
-      - name: Compile Cross-Platform Binaries
+      - name: Build Linux Binaries
         run: |
           mkdir -p dist
 
-          # Extract dynamic build metadata
           COMMIT_SHA=$(git rev-parse --short HEAD)
           BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           PKG="github.com/shivamshashank/CloudInferOps/internal/cli"
-          LDFLAGS="-s -w -X ${PKG}.Version=${{ steps.next_version.outputs.next_tag }} -X ${PKG}.Commit=${COMMIT_SHA} -X ${PKG}.BuildDate=${BUILD_DATE}"
 
-          # Linux AMD64
-          echo "Compiling Linux AMD64 binary..."
-          env GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-linux-amd64 cmd/cloudinferops/main.go
+          LDFLAGS="-s -w \
+          -X ${PKG}.Version=${{ steps.next_version.outputs.next_tag }} \
+          -X ${PKG}.Commit=${COMMIT_SHA} \
+          -X ${PKG}.BuildDate=${BUILD_DATE}"
 
-          # Linux ARM64
-          echo "Compiling Linux ARM64 binary..."
-          env GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-linux-arm64 cmd/cloudinferops/main.go
+          GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" \
+            -o dist/cloudinferops-linux-amd64 cmd/cloudinferops/main.go
 
-          # macOS AMD64
-          echo "Compiling macOS AMD64 binary..."
-          env GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-darwin-amd64 cmd/cloudinferops/main.go
+          GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS}" \
+            -o dist/cloudinferops-linux-arm64 cmd/cloudinferops/main.go
 
-          # macOS ARM64
-          echo "Compiling macOS ARM64 binary..."
-          env GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-darwin-arm64 cmd/cloudinferops/main.go
+      - name: Generate SHA256 Checksums
+        run: |
+          cd dist
+          sha256sum cloudinferops-linux-* > checksums.txt
+          cat checksums.txt
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -85,23 +83,17 @@ jobs:
           tag_name: ${{ steps.next_version.outputs.next_tag }}
           name: Release ${{ steps.next_version.outputs.next_tag }}
           body: |
-            ## 🚀 CloudInferOps Release ${{ steps.next_version.outputs.next_tag }}
+            ## 🚀 CloudInferOps ${{ steps.next_version.outputs.next_tag }}
 
-            Automated production release generated after merging to `main`.
+            ### Downloads
 
-            ### 📦 Supported Platform Downloads
+            - cloudinferops-linux-amd64
+            - cloudinferops-linux-arm64
 
-            - **Linux (x86_64 / amd64)**: `cloudinferops-linux-amd64`
-            - **Linux (arm64 / aarch64)**: `cloudinferops-linux-arm64`
-            - **macOS (Intel / amd64)**: `cloudinferops-darwin-amd64`
-            - **macOS (Apple Silicon / arm64)**: `cloudinferops-darwin-arm64`
-
-            ---
-            *Built with Go 1.23*
+            SHA256 checksums are provided in `checksums.txt`.
           draft: false
           prerelease: false
           files: |
             dist/cloudinferops-linux-amd64
             dist/cloudinferops-linux-arm64
-            dist/cloudinferops-darwin-amd64
-            dist/cloudinferops-darwin-arm64
+            dist/checksums.txt

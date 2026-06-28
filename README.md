@@ -76,6 +76,7 @@ CloudInferOps follows a simple workflow:
 sudo curl -sSL https://raw.githubusercontent.com/shivamshashank/CloudInferOps/main/scripts/install.sh | sudo bash
 sudo cloudinferops bootstrap
 sudo cloudinferops status
+sudo cloudinferops deploy observability
 ```
 
 ---
@@ -207,10 +208,9 @@ sudo cloudinferops deploy observability
 > [!TIP]
 > **No Kubernetes? No problem!** If CloudInferOps does not detect an existing
 > Kubernetes cluster, it will automatically ask to install and bootstrap a
-> Kubernetes cluster via `kubeadm`
-> on-the-fly, then automatically deploy the observability stack onto it. If you
-> already have a cluster running, it will deploy directly onto your active
-> context.
+> Kubernetes cluster via `kubeadm` on-the-fly, then automatically deploy the
+> observability stack onto it. If you already have a cluster running, it will
+> deploy directly onto your active context.
 
 CloudInferOps deploys:
 
@@ -270,7 +270,7 @@ Example:
 
 ```text
                            ┌──────────────────────────┐
-                           │      CloudInferOps CLI      │
+                           │      CloudInferOps CLI   │
                            │        Go Binary         │
                            └─────────────┬────────────┘
                                          │
@@ -566,8 +566,8 @@ kind delete cluster --name cloudinferops-test
 
 ## 🔁 CI/CD & GitOps
 
-CloudInferOps uses GitHub Actions for automated testing, builds, Docker images, and
-releases.
+CloudInferOps uses GitHub Actions for automated testing, builds, Docker images,
+and releases.
 
 ### CI Workflow
 
@@ -663,8 +663,8 @@ sudo cloudinferops status
 ```
 
 > [!NOTE]
-> CloudInferOps is built with **smart environment-aware root fallback**. When run
-> as `sudo`, the CLI automatically detects the original invoking user
+> CloudInferOps is built with **smart environment-aware root fallback**. When
+> run as `sudo`, the CLI automatically detects the original invoking user
 > (`$SUDO_USER`) and correctly references their standard home directory paths
 > (such as `~/.kube/config` and `~/.cloudinferops/config.yaml`), preventing
 > configuration directory pollution inside the `/root` path.
@@ -710,8 +710,8 @@ sudo mv /home/ubuntu/cloudinferops /usr/local/bin/cloudinferops
 
 ### 3. Verify Global Run
 
-Now you can execute the `cloudinferops` CLI globally from anywhere in the VM shell
-(just like standard system commands):
+Now you can execute the `cloudinferops` CLI globally from anywhere in the VM
+shell (just like standard system commands):
 
 ```bash
 sudo cloudinferops doctor
@@ -723,8 +723,8 @@ sudo cloudinferops doctor
 sudo cloudinferops deploy observability
 ```
 
-When prompt options appear, select `1` to automatically install `kubeadm`
-or run directly on an existing cluster.
+When prompt options appear, select `1` to automatically install `kubeadm` or run
+directly on an existing cluster.
 
 ### 5. Access Dashboards from Host Browser
 
@@ -758,11 +758,11 @@ sudo cloudinferops uninstall all
 
 ## 📸 Screenshots
 
-|                    CloudInferOps Status                    |                     ArgoCD                      |                  Prometheus                   |
-| :-----------------------------------------------------: | :---------------------------------------------: | :-------------------------------------------: |
+|                     CloudInferOps Status                      |                     ArgoCD                      |                  Prometheus                   |
+| :-----------------------------------------------------------: | :---------------------------------------------: | :-------------------------------------------: |
 | ![CloudInferOps Status](docs/images/cloudinferops-status.png) |        ![ArgoCD](docs/images/argocd.png)        |   ![Prometheus](docs/images/prometheus.png)   |
-|                       **Grafana**                       |                **Node Exporter**                |               **Alertmanager**                |
-|      ![Grafana](docs/images/grafana-dashboard.png)      | ![Node Exporter](docs/images/node-exporter.png) | ![Alertmanager](docs/images/alertmanager.png) |
+|                          **Grafana**                          |                **Node Exporter**                |               **Alertmanager**                |
+|         ![Grafana](docs/images/grafana-dashboard.png)         | ![Node Exporter](docs/images/node-exporter.png) | ![Alertmanager](docs/images/alertmanager.png) |
 
 ---
 
