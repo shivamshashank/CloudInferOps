@@ -1,6 +1,6 @@
-# Contributing to StackPulse
+# Contributing to CloudInferOps
 
-Thank you for your interest in contributing to **StackPulse**! We are building a
+Thank you for your interest in contributing to **CloudInferOps**! We are building a
 one-command observability platform for Kubernetes, Linux VMs, and cloud
 instances, and we welcome contributions from developers, DevOps engineers, and
 SREs of all experience levels.
@@ -25,7 +25,7 @@ There are many ways to contribute:
 
 ## 🛠️ Development Setup
 
-StackPulse is written in **Go** and deploys resources using **Helm** and
+CloudInferOps is written in **Go** and deploys resources using **Helm** and
 **Kubernetes**.
 
 ### Prerequisites
@@ -35,23 +35,21 @@ To set up a local development environment, you will need:
 - **Go** (version 1.21 or higher)
 - **kubectl**
 - **Helm**
-- A local Kubernetes cluster for integration testing (e.g.,
-  [kind](https://kind.sigs.k8s.io/), [minikube](https://minikube.sigs.k8s.io/),
-  or [k3s](https://k3s.io/))
+- A Kubernetes cluster (e.g., via [kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/))
 - **Multipass** (Highly recommended if you are developing on macOS, to easily
   simulate a Linux VM environment)
 
 ### Get the Code
 
-1. Fork the StackPulse repository on GitHub.
+1. Fork the CloudInferOps repository on GitHub.
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/YOUR-USERNAME/StackPulse.git
-   cd StackPulse
+   git clone https://github.com/YOUR-USERNAME/CloudInferOps.git
+   cd CloudInferOps
    ```
 3. Add the upstream repository:
    ```bash
-   git remote add upstream https://github.com/shivamshashank/StackPulse.git
+   git remote add upstream https://github.com/shivamshashank/CloudInferOps.git
    ```
 4. Install the pre-commit hooks to automatically lint your code:
    ```bash
@@ -74,9 +72,9 @@ git checkout -b fix/bug-description
 
 ### 2. Make Your Changes
 
-StackPulse follows a clean directory structure:
+CloudInferOps follows a clean directory structure:
 
-- `cmd/stackpulse/`: The entry point for the Go command-line application.
+- `cmd/cloudinferops/`: The entry point for the Go command-line application.
 - `internal/`: Subpackages representing core CLI commands, configurations,
   doctor checks, Helm logic, observability components, and alerts.
 - `charts/`: The Helm charts bundled or managed by the CLI.
@@ -143,7 +141,7 @@ When your changes are ready, submit a Pull Request:
    git push origin branch-name
    ```
 2. Navigate to the
-   [StackPulse repository](https://github.com/shivamshashank/StackPulse) on
+   [CloudInferOps repository](https://github.com/shivamshashank/CloudInferOps) on
    GitHub.
 3. Click "New Pull Request" and select your fork's branch.
 4. Fill out the Pull Request template completely, providing clear details on

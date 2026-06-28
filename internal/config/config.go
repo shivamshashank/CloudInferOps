@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 	"github.com/spf13/viper"
 )
 
-// Config represents the schema of StackPulse configuration.
+// Config represents the schema of CloudInferOps configuration.
 type Config struct {
 	Namespace     string       `mapstructure:"namespace"`
 	Kubernetes    K8sConfig    `mapstructure:"kubernetes"`
@@ -24,21 +24,23 @@ type K8sConfig struct {
 }
 
 type ObsConfig struct {
-	Prometheus       bool     `mapstructure:"prometheus"`
-	Grafana          bool     `mapstructure:"grafana"`
-	Loki             bool     `mapstructure:"loki"`
-	Tempo            bool     `mapstructure:"tempo"`
-	ArgoCD           bool     `mapstructure:"argoCD"`
-	Alertmanager     bool     `mapstructure:"alertmanager"`
-	OpenTelemetry    bool     `mapstructure:"opentelemetry"`
-	NodeExporter     bool     `mapstructure:"nodeExporter"`
-	KubeStateMetrics bool     `mapstructure:"kubeStateMetrics"`
-	LogCollector     string   `mapstructure:"logCollector"`
-	BlackboxExporter bool     `mapstructure:"blackboxExporter"`
-	BlackboxTargets  []string `mapstructure:"blackboxTargets"`
-	Pyroscope        bool     `mapstructure:"pyroscope"`
-	Thanos           bool     `mapstructure:"thanos"`
-	VictoriaMetrics  bool     `mapstructure:"victoriaMetrics"`
+	Prometheus         bool     `mapstructure:"prometheus"`
+	Grafana            bool     `mapstructure:"grafana"`
+	Loki               bool     `mapstructure:"loki"`
+	Tempo              bool     `mapstructure:"tempo"`
+	ArgoCD             bool     `mapstructure:"argoCD"`
+	Alertmanager       bool     `mapstructure:"alertmanager"`
+	OpenTelemetry      bool     `mapstructure:"opentelemetry"`
+	NodeExporter       bool     `mapstructure:"nodeExporter"`
+	KubeStateMetrics   bool     `mapstructure:"kubeStateMetrics"`
+	LogCollector       string   `mapstructure:"logCollector"`
+	BlackboxExporter   bool     `mapstructure:"blackboxExporter"`
+	BlackboxTargets    []string `mapstructure:"blackboxTargets"`
+	Pyroscope          bool     `mapstructure:"pyroscope"`
+	Thanos             bool     `mapstructure:"thanos"`
+	VictoriaMetrics    bool     `mapstructure:"victoriaMetrics"`
+	IngressServiceType string   `mapstructure:"ingressServiceType"`
+	HostNetwork        bool     `mapstructure:"hostNetwork"`
 }
 
 type AlertsConfig struct {
@@ -69,45 +71,47 @@ func DefaultConfig() Config {
 			Kubeconfig: "~/.kube/config",
 		},
 		Observability: ObsConfig{
-			Prometheus:       true,
-			Grafana:          true,
-			Loki:             true,
-			Tempo:            true,
-			ArgoCD:           true,
-			Alertmanager:     true,
-			OpenTelemetry:    true,
-			NodeExporter:     true,
-			KubeStateMetrics: true,
-			LogCollector:     "alloy",
-			BlackboxExporter: true,
-			BlackboxTargets:  []string{"https://api.github.com", "https://github.com"},
-			Pyroscope:        true,
-			Thanos:           false,
-			VictoriaMetrics:  false,
+			Prometheus:         true,
+			Grafana:            true,
+			Loki:               true,
+			Tempo:              true,
+			ArgoCD:             true,
+			Alertmanager:       true,
+			OpenTelemetry:      true,
+			NodeExporter:       true,
+			KubeStateMetrics:   true,
+			LogCollector:       "alloy",
+			BlackboxExporter:   true,
+			BlackboxTargets:    []string{"https://api.github.com", "https://github.com"},
+			Pyroscope:          true,
+			Thanos:             false,
+			VictoriaMetrics:    false,
+			IngressServiceType: "ClusterIP",
+			HostNetwork:        true,
 		},
 		Alerts: AlertsConfig{
 			Slack: SlackConfig{
 				Enabled:          false,
-				WebhookUrlSecret: "stackpulse-slack-webhook",
+				WebhookUrlSecret: "cloudinferops-slack-webhook",
 			},
 			PagerDuty: PagerDutyConfig{
 				Enabled:              false,
-				IntegrationKeySecret: "stackpulse-pagerduty-key",
+				IntegrationKeySecret: "cloudinferops-pagerduty-key",
 			},
 		},
 	}
 }
 
-// GetConfigDir returns the absolute path to StackPulse configuration directory (~/.stackpulse)
+// GetConfigDir returns the absolute path to CloudInferOps configuration directory (~/.cloudinferops)
 func GetConfigDir() (string, error) {
 	home, err := utils.GetRealHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("unable to determine home directory: %w", err)
 	}
-	return filepath.Join(home, ".stackpulse"), nil
+	return filepath.Join(home, ".cloudinferops"), nil
 }
 
-// GetConfigPath returns the absolute path to the config file (~/.stackpulse/config.yaml)
+// GetConfigPath returns the absolute path to the config file (~/.cloudinferops/config.yaml)
 func GetConfigPath() (string, error) {
 	dir, err := GetConfigDir()
 	if err != nil {
@@ -166,6 +170,8 @@ func InitConfig(createIfMissing bool) error {
 			viper.Set("observability.pyroscope", defaults.Observability.Pyroscope)
 			viper.Set("observability.thanos", defaults.Observability.Thanos)
 			viper.Set("observability.victoriaMetrics", defaults.Observability.VictoriaMetrics)
+			viper.Set("observability.ingressServiceType", defaults.Observability.IngressServiceType)
+			viper.Set("observability.hostNetwork", defaults.Observability.HostNetwork)
 			viper.Set("alerts.slack.enabled", defaults.Alerts.Slack.Enabled)
 			viper.Set("alerts.slack.webhookUrlSecret", defaults.Alerts.Slack.WebhookUrlSecret)
 			viper.Set("alerts.pagerduty.enabled", defaults.Alerts.PagerDuty.Enabled)
@@ -195,7 +201,7 @@ func InitConfig(createIfMissing bool) error {
 	return nil
 }
 
-// SaveConfig saves the current GlobalConfig to ~/.stackpulse/config.yaml
+// SaveConfig saves the current GlobalConfig to ~/.cloudinferops/config.yaml
 func SaveConfig() error {
 	dir, err := GetConfigDir()
 	if err != nil {
@@ -221,6 +227,8 @@ func SaveConfig() error {
 	viper.Set("observability.pyroscope", GlobalConfig.Observability.Pyroscope)
 	viper.Set("observability.thanos", GlobalConfig.Observability.Thanos)
 	viper.Set("observability.victoriaMetrics", GlobalConfig.Observability.VictoriaMetrics)
+	viper.Set("observability.ingressServiceType", GlobalConfig.Observability.IngressServiceType)
+	viper.Set("observability.hostNetwork", GlobalConfig.Observability.HostNetwork)
 	viper.Set("alerts.slack.enabled", GlobalConfig.Alerts.Slack.Enabled)
 	viper.Set("alerts.slack.webhookUrlSecret", GlobalConfig.Alerts.Slack.WebhookUrlSecret)
 	viper.Set("alerts.pagerduty.enabled", GlobalConfig.Alerts.PagerDuty.Enabled)

@@ -1,24 +1,24 @@
 <div align="center">
 
-# 🚀 StackPulse
+# 🚀 CloudInferOps
 
-### StackPulse — One Command Kubernetes Observability Platform
+### CloudInferOps — One Command Kubernetes Observability Platform
 
-**StackPulse** is a Go-based DevOps/SRE CLI that detects your environment,
+**CloudInferOps** is a Go-based DevOps/SRE CLI that detects your environment,
 validates Kubernetes readiness, installs lightweight Kubernetes when needed, and
 deploys a production-style observability stack with metrics, logs, traces,
 dashboards, and alerts.
 
 <br />
 
-[![CI](https://img.shields.io/github/actions/workflow/status/shivamshashank/StackPulse/ci.yml?branch=main&label=CI&logo=githubactions&style=flat-square)](https://github.com/shivamshashank/StackPulse/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/actions/workflow/status/shivamshashank/StackPulse/release.yml?branch=main&label=Release&logo=githubactions&style=flat-square)](https://github.com/shivamshashank/StackPulse/actions/workflows/release.yml)
-[![Codecov](https://img.shields.io/codecov/c/github/shivamshashank/StackPulse?logo=codecov&style=flat-square)](https://codecov.io/gh/shivamshashank/StackPulse)
-[![Go Report Card](https://goreportcard.com/badge/github.com/shivamshashank/StackPulse?https://img.shields.io/badge/go%20report-A+-brightgreen.svg?style=flat)](https://goreportcard.com/report/github.com/shivamshashank/StackPulse)
-[![GitHub release](https://img.shields.io/github/v/release/shivamshashank/StackPulse?style=flat-square)](https://github.com/shivamshashank/StackPulse/releases)
-[![GitHub stars](https://img.shields.io/github/stars/shivamshashank/StackPulse?style=flat-square)](https://github.com/shivamshashank/StackPulse/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/shivamshashank/StackPulse?style=flat-square)](https://github.com/shivamshashank/StackPulse/network/members)
-[![License](https://img.shields.io/github/license/shivamshashank/StackPulse?style=flat-square)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/shivamshashank/CloudInferOps/ci.yml?branch=main&label=CI&logo=githubactions&style=flat-square)](https://github.com/shivamshashank/CloudInferOps/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/actions/workflow/status/shivamshashank/CloudInferOps/release.yml?branch=main&label=Release&logo=githubactions&style=flat-square)](https://github.com/shivamshashank/CloudInferOps/actions/workflows/release.yml)
+[![Codecov](https://img.shields.io/codecov/c/github/shivamshashank/CloudInferOps?logo=codecov&style=flat-square)](https://codecov.io/gh/shivamshashank/CloudInferOps)
+[![Go Report Card](https://goreportcard.com/badge/github.com/shivamshashank/CloudInferOps?https://img.shields.io/badge/go%20report-A+-brightgreen.svg?style=flat)](https://goreportcard.com/report/github.com/shivamshashank/CloudInferOps)
+[![GitHub release](https://img.shields.io/github/v/release/shivamshashank/CloudInferOps?style=flat-square)](https://github.com/shivamshashank/CloudInferOps/releases)
+[![GitHub stars](https://img.shields.io/github/stars/shivamshashank/CloudInferOps?style=flat-square)](https://github.com/shivamshashank/CloudInferOps/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/shivamshashank/CloudInferOps?style=flat-square)](https://github.com/shivamshashank/CloudInferOps/network/members)
+[![License](https://img.shields.io/github/license/shivamshashank/CloudInferOps?style=flat-square)](LICENSE)
 
 <br />
 
@@ -56,9 +56,9 @@ dashboards, and alerts.
 
 ---
 
-## 📌 What is StackPulse?
+## 📌 What is CloudInferOps?
 
-StackPulse turns any Kubernetes-compatible environment into a complete
+CloudInferOps turns any Kubernetes-compatible environment into a complete
 observability platform.
 
 It works on:
@@ -68,15 +68,14 @@ It works on:
 - ☁️ GCP Compute Engine VMs
 - ☁️ Azure VMs
 - ☸️ Existing Kubernetes clusters
-- 🧪 Local clusters such as k3s, kind, minikube, and Docker Desktop Kubernetes
+- 🧪 Kubernetes clusters such as kubeadm and custom setups
 
-StackPulse follows a simple workflow:
+CloudInferOps follows a simple workflow:
 
 ```bash
-sudo curl -sSL https://raw.githubusercontent.com/shivamshashank/StackPulse/main/scripts/install.sh | sudo bash
-sudo stackpulse doctor
-sudo stackpulse deploy observability
-sudo stackpulse status
+sudo curl -sSL https://raw.githubusercontent.com/shivamshashank/CloudInferOps/main/scripts/install.sh | sudo bash
+sudo cloudinferops bootstrap
+sudo cloudinferops status
 ```
 
 ---
@@ -95,7 +94,7 @@ sudo stackpulse status
 ### ☸️ Kubernetes First
 
 - Uses existing Kubernetes cluster if available
-- Installs k3s when Kubernetes is missing
+- Installs kubeadm when Kubernetes is missing
 - Supports local and cloud VM environments
 - Works consistently across local Linux, AWS EC2, GCP VM, and Azure VM
 
@@ -142,16 +141,16 @@ sudo stackpulse status
 
 ## ⚡ Quick Start
 
-### 1. Install StackPulse
+### 1. Install CloudInferOps
 
 ```bash
-sudo curl -sSL https://raw.githubusercontent.com/shivamshashank/StackPulse/main/scripts/install.sh | sudo bash
+sudo curl -sSL https://raw.githubusercontent.com/shivamshashank/CloudInferOps/main/scripts/install.sh | sudo bash
 ```
 
 Verify installation:
 
 ```bash
-stackpulse version
+cloudinferops version
 ```
 
 ---
@@ -159,18 +158,18 @@ stackpulse version
 ### 2. Check Your System
 
 > [!IMPORTANT]
-> **Sudo Privileges Required** StackPulse requires administrative/root
+> **Sudo Privileges Required** CloudInferOps requires administrative/root
 > privileges (`sudo`) to manage system observability resources, check system
 > metrics, and set up networking or local clusters.
 
 ```bash
-sudo stackpulse doctor
+sudo cloudinferops doctor
 ```
 
 Example output:
 
 ```text
-StackPulse Doctor
+CloudInferOps Doctor
 
 [OK] OS: linux/amd64
 [OK] Internet connection
@@ -180,7 +179,7 @@ StackPulse Doctor
 [OK] Minimum memory: 4GB+
 [OK] Minimum CPU: 2 cores+
 
-[INFO] Run: sudo stackpulse deploy observability
+[INFO] Run: sudo cloudinferops deploy observability
 ```
 
 If Kubernetes already exists:
@@ -192,7 +191,7 @@ If Kubernetes already exists:
 [OK] Helm found
 [OK] StorageClass found
 
-[READY] Run: sudo stackpulse deploy observability
+[READY] Run: sudo cloudinferops deploy observability
 ```
 
 ---
@@ -202,18 +201,18 @@ If Kubernetes already exists:
 To deploy the observability stack, simply run:
 
 ```bash
-sudo stackpulse deploy observability
+sudo cloudinferops deploy observability
 ```
 
 > [!TIP]
-> **No Kubernetes? No problem!** If StackPulse does not detect an existing
+> **No Kubernetes? No problem!** If CloudInferOps does not detect an existing
 > Kubernetes cluster, it will automatically ask to install and bootstrap a
-> lightweight local Kubernetes cluster (supporting `kind`, `minikube`, or `k3s`)
+> Kubernetes cluster via `kubeadm`
 > on-the-fly, then automatically deploy the observability stack onto it. If you
 > already have a cluster running, it will deploy directly onto your active
 > context.
 
-StackPulse deploys:
+CloudInferOps deploys:
 
 - Prometheus
 - Grafana
@@ -233,15 +232,15 @@ StackPulse deploys:
 ### 5. Check Status
 
 ```bash
-sudo stackpulse status
+sudo cloudinferops status
 ```
 
 Example:
 
 ```text
-🩺  StackPulse Status Dashboard
+🩺  CloudInferOps Status Dashboard
 -----------------------------------------------------------------
-🌐  Kubernetes Context:   kind-stackpulse
+🌐  Kubernetes Context:   kind-cloudinferops
 📦  Namespace:            observability
 
 📋  System Components Checklist:
@@ -271,7 +270,7 @@ Example:
 
 ```text
                            ┌──────────────────────────┐
-                           │      StackPulse CLI      │
+                           │      CloudInferOps CLI      │
                            │        Go Binary         │
                            └─────────────┬────────────┘
                                          │
@@ -279,12 +278,12 @@ Example:
                  │                       │                       │
           ┌──────▼──────┐        ┌───────▼───────┐        ┌──────▼──────┐
           │   Doctor    │        │ Kubernetes    │        │    Helm     │
-          │   Checks    │        │  Detection    │        │ Deployment  │
+          │   Doctor    │        │  Detection    │        │ Deployment  │
           └──────┬──────┘        └───────┬───────┘        └──────┬──────┘
                  │                       │                       │
                  │              ┌────────▼────────┐              │
                  │              │ Existing K8s or │              │
-                 │              │ k3s Installer   │              │
+                 │              │ kubeadm Install │              │
                  │              └────────┬────────┘              │
                  │                       │                       │
                  └───────────────────────▼───────────────────────┘
@@ -323,62 +322,63 @@ Example:
 ### General
 
 ```bash
-stackpulse version
-sudo stackpulse init
-sudo stackpulse doctor
-sudo stackpulse status
+cloudinferops version
+sudo cloudinferops init
+sudo cloudinferops doctor
+sudo cloudinferops status
 ```
 
 ### Observability
 
 ```bash
-sudo stackpulse deploy observability
-sudo stackpulse deploy observability --dry-run
-sudo stackpulse deploy observability --ha
-sudo stackpulse dashboards import
-sudo stackpulse logs
-sudo stackpulse logs --component grafana
-sudo stackpulse logs --component prometheus
-sudo stackpulse logs --component loki
+sudo cloudinferops deploy observability
+sudo cloudinferops deploy observability --dry-run
+sudo cloudinferops deploy observability --ha
+sudo cloudinferops dashboards import
+sudo cloudinferops logs
+sudo cloudinferops logs --component grafana
+sudo cloudinferops logs --component prometheus
+sudo cloudinferops logs --component loki
 ```
 
 ### GitOps & Continuous Delivery
 
 ```bash
-sudo stackpulse gitops bootstrap
-sudo stackpulse gitops bootstrap --dry-run
-sudo stackpulse gitops status
+sudo cloudinferops gitops bootstrap
+sudo cloudinferops gitops bootstrap --dry-run
+sudo cloudinferops gitops status
 ```
 
 ### Alerts
 
 ```bash
-sudo stackpulse alerts configure --slack
-sudo stackpulse alerts configure --pagerduty
-sudo stackpulse alerts test
+sudo cloudinferops alerts configure --slack
+sudo cloudinferops alerts configure --pagerduty
+sudo cloudinferops alerts test
 ```
 
 ### Webhook Handler
 
 ```bash
-sudo stackpulse deploy webhook-handler
+sudo cloudinferops deploy webhook-handler
 ```
 
 ### Cleanup
 
 ```bash
-sudo stackpulse uninstall observability
-sudo stackpulse uninstall all
+sudo cloudinferops uninstall observability
+sudo cloudinferops uninstall all
+sudo cloudinferops uninstall k8s
 ```
 
 ---
 
 ## ⚙️ Configuration
 
-StackPulse stores local configuration at:
+CloudInferOps stores local configuration at:
 
 ```text
-~/.stackpulse/config.yaml
+~/.cloudinferops/config.yaml
 ```
 
 Example:
@@ -410,17 +410,17 @@ observability:
 alerts:
   slack:
     enabled: false
-    webhookUrlSecret: stackpulse-slack-webhook
+    webhookUrlSecret: cloudinferops-slack-webhook
   pagerduty:
     enabled: false
-    integrationKeySecret: stackpulse-pagerduty-key
+    integrationKeySecret: cloudinferops-pagerduty-key
 ```
 
 ---
 
 ## 🚨 Alert Rules
 
-StackPulse includes SRE-focused alert rules:
+CloudInferOps includes SRE-focused alert rules:
 
 | Alert                      | Description                         |
 | -------------------------- | ----------------------------------- |
@@ -442,19 +442,19 @@ StackPulse includes SRE-focused alert rules:
 ### Configure Slack
 
 ```bash
-sudo stackpulse alerts configure --slack
+sudo cloudinferops alerts configure --slack
 ```
 
 ### Configure PagerDuty
 
 ```bash
-sudo stackpulse alerts configure --pagerduty
+sudo cloudinferops alerts configure --pagerduty
 ```
 
 ### Send Test Alert
 
 ```bash
-sudo stackpulse alerts test
+sudo cloudinferops alerts test
 ```
 
 Expected output:
@@ -469,7 +469,7 @@ Sending test alert...
 
 ## 🧩 Go Webhook Handler
 
-StackPulse includes a custom Go service for incident processing.
+CloudInferOps includes a custom Go service for incident processing.
 
 ### Endpoints
 
@@ -492,7 +492,7 @@ GET  /incidents
 Deploy it with:
 
 ```bash
-sudo stackpulse deploy webhook-handler
+sudo cloudinferops deploy webhook-handler
 ```
 
 ---
@@ -539,11 +539,11 @@ golangci-lint run
 ### Integration Test with kind
 
 ```bash
-kind create cluster --name stackpulse-test
-sudo stackpulse doctor
-sudo stackpulse deploy observability --dry-run
-sudo stackpulse uninstall observability --dry-run
-kind delete cluster --name stackpulse-test
+kind create cluster --name cloudinferops-test
+sudo cloudinferops doctor
+sudo cloudinferops deploy observability --dry-run
+sudo cloudinferops uninstall observability --dry-run
+kind delete cluster --name cloudinferops-test
 ```
 
 ---
@@ -566,7 +566,7 @@ kind delete cluster --name stackpulse-test
 
 ## 🔁 CI/CD & GitOps
 
-StackPulse uses GitHub Actions for automated testing, builds, Docker images, and
+CloudInferOps uses GitHub Actions for automated testing, builds, Docker images, and
 releases.
 
 ### CI Workflow
@@ -603,7 +603,7 @@ Artifacts are uploaded to GitHub Releases.
 Builds and publishes the webhook handler image:
 
 ```text
-ghcr.io/shivamshashank/stackpulse-webhook-handler:latest
+ghcr.io/shivamshashank/cloudinferops-webhook-handler:latest
 ```
 
 ---
@@ -613,7 +613,7 @@ ghcr.io/shivamshashank/stackpulse-webhook-handler:latest
 ### Curl Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/shivamshashank/StackPulse/main/scripts/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/shivamshashank/CloudInferOps/main/scripts/install.sh | bash
 ```
 
 ### Linux Manual Installation (via Curl)
@@ -622,59 +622,59 @@ You can download and install the latest compiled binary manually for Linux:
 
 ```bash
 # 1. Download the latest binary for your architecture (e.g., AMD64 / x86_64)
-curl -LO https://github.com/shivamshashank/StackPulse/releases/latest/download/stackpulse-linux-amd64
+curl -LO https://github.com/shivamshashank/CloudInferOps/releases/latest/download/cloudinferops-linux-amd64
 
 # 2. Make the binary executable
-chmod +x stackpulse-linux-amd64
+chmod +x cloudinferops-linux-amd64
 
 # 3. Move it to your local system's bin directory to make it globally available
-sudo mv stackpulse-linux-amd64 /usr/local/bin/stackpulse
+sudo mv cloudinferops-linux-amd64 /usr/local/bin/cloudinferops
 
 # 4. Verify the installation
-stackpulse version
+cloudinferops version
 ```
 
-_(For ARM64 processors, replace `stackpulse-linux-amd64` with
-`stackpulse-linux-arm64`)_
+_(For ARM64 processors, replace `cloudinferops-linux-amd64` with
+`cloudinferops-linux-arm64`)_
 
 ### Go Install
 
 ```bash
-sudo go install github.com/shivamshashank/StackPulse/cmd/stackpulse@latest
+sudo go install github.com/shivamshashank/CloudInferOps/cmd/cloudinferops@latest
 ```
 
 ### GitHub Releases
 
 Alternatively, you can manually download precompiled binaries for all supported
 platforms (Linux & macOS) directly from
-[GitHub Releases](https://github.com/shivamshashank/StackPulse/releases).
+[GitHub Releases](https://github.com/shivamshashank/CloudInferOps/releases).
 
 ---
 
 ## 👑 Running with Sudo / Root Privileges
 
 To install system prerequisites (such as Kubernetes clusters and core networking
-configurations) and bind services locally, you can run StackPulse fully under
+configurations) and bind services locally, you can run CloudInferOps fully under
 elevated privileges (`sudo` mode):
 
 ```bash
-sudo stackpulse deploy observability
-sudo stackpulse status
+sudo cloudinferops deploy observability
+sudo cloudinferops status
 ```
 
 > [!NOTE]
-> StackPulse is built with **smart environment-aware root fallback**. When run
+> CloudInferOps is built with **smart environment-aware root fallback**. When run
 > as `sudo`, the CLI automatically detects the original invoking user
 > (`$SUDO_USER`) and correctly references their standard home directory paths
-> (such as `~/.kube/config` and `~/.stackpulse/config.yaml`), preventing
+> (such as `~/.kube/config` and `~/.cloudinferops/config.yaml`), preventing
 > configuration directory pollution inside the `/root` path.
 
 ---
 
 ## 🧪 Local Testing via Multipass (Recommended for macOS Users)
 
-Since native Linux VMs are required for k3s, macOS developers can test
-StackPulse locally using a lightweight [Multipass](https://multipass.run/)
+Since native Linux VMs are required for kubeadm, macOS developers can test
+CloudInferOps locally using a lightweight [Multipass](https://multipass.run/)
 Ubuntu VM.
 
 Follow this step-by-step pipeline to run globally inside a local VM:
@@ -685,7 +685,7 @@ Provision an Ubuntu instance meeting minimum system requirements (2 CPUs, 4GB
 RAM):
 
 ```bash
-multipass launch --name stackpulse-vm --cpus 2 --memory 4G --disk 20G
+multipass launch --name cloudinferops-vm --cpus 2 --memory 4G --disk 20G
 ```
 
 ### 2. Move Binary Globally inside the VM
@@ -695,46 +695,46 @@ VM, and move it to `/usr/local/bin` to make it globally available:
 
 ```bash
 # Compile for Linux (from host machine)
-env GOOS=linux GOARCH=amd64 go build -o stackpulse cmd/stackpulse/main.go
+env GOOS=linux GOARCH=amd64 go build -o cloudinferops cmd/cloudinferops/main.go
 
 # Transfer to Multipass VM
-multipass transfer stackpulse stackpulse-vm:/home/ubuntu/stackpulse
+multipass transfer cloudinferops cloudinferops-vm:/home/ubuntu/cloudinferops
 
 # Shell into the VM
-multipass shell stackpulse-vm
+multipass shell cloudinferops-vm
 
 # Inside the VM shell: Make it executable and move to global bin path
-chmod +x /home/ubuntu/stackpulse
-sudo mv /home/ubuntu/stackpulse /usr/local/bin/stackpulse
+chmod +x /home/ubuntu/cloudinferops
+sudo mv /home/ubuntu/cloudinferops /usr/local/bin/cloudinferops
 ```
 
 ### 3. Verify Global Run
 
-Now you can execute the `stackpulse` CLI globally from anywhere in the VM shell
+Now you can execute the `cloudinferops` CLI globally from anywhere in the VM shell
 (just like standard system commands):
 
 ```bash
-sudo stackpulse doctor
+sudo cloudinferops doctor
 ```
 
 ### 4. Deploy Observability Stack
 
 ```bash
-sudo stackpulse deploy observability
+sudo cloudinferops deploy observability
 ```
 
-When prompt options appear, select `2` to automatically install `k3s`
-lightweight Kubernetes or `1` for `kind`.
+When prompt options appear, select `1` to automatically install `kubeadm`
+or run directly on an existing cluster.
 
 ### 5. Access Dashboards from Host Browser
 
 Once fully deployed, retrieve the service status:
 
 ```bash
-sudo stackpulse status
+sudo cloudinferops status
 ```
 
-StackPulse will automatically resolve the active VM interface IP. Simply open
+CloudInferOps will automatically resolve the active VM interface IP. Simply open
 the generated links (e.g. `http://<VM_IP>/grafana`) directly in your host
 machine's web browser!
 
@@ -745,22 +745,22 @@ machine's web browser!
 Remove observability stack:
 
 ```bash
-sudo stackpulse uninstall observability
+sudo cloudinferops uninstall observability
 ```
 
-Remove everything managed by StackPulse:
+Remove everything managed by CloudInferOps:
 
 ```bash
-sudo stackpulse uninstall all
+sudo cloudinferops uninstall all
 ```
 
 ---
 
 ## 📸 Screenshots
 
-|                    StackPulse Status                    |                     ArgoCD                      |                  Prometheus                   |
+|                    CloudInferOps Status                    |                     ArgoCD                      |                  Prometheus                   |
 | :-----------------------------------------------------: | :---------------------------------------------: | :-------------------------------------------: |
-| ![StackPulse Status](docs/images/stackpulse-status.png) |        ![ArgoCD](docs/images/argocd.png)        |   ![Prometheus](docs/images/prometheus.png)   |
+| ![CloudInferOps Status](docs/images/cloudinferops-status.png) |        ![ArgoCD](docs/images/argocd.png)        |   ![Prometheus](docs/images/prometheus.png)   |
 |                       **Grafana**                       |                **Node Exporter**                |               **Alertmanager**                |
 |      ![Grafana](docs/images/grafana-dashboard.png)      | ![Node Exporter](docs/images/node-exporter.png) | ![Alertmanager](docs/images/alertmanager.png) |
 
@@ -769,9 +769,9 @@ sudo stackpulse uninstall all
 ## 🗂️ Repository Structure
 
 ```text
-StackPulse/
+CloudInferOps/
 ├── cmd/
-│   └── stackpulse/
+│   └── cloudinferops/
 ├── internal/
 │   ├── alerts/
 │   ├── cli/
@@ -825,8 +825,8 @@ StackPulse/
 Contributions are welcome.
 
 ```bash
-sudo git clone https://github.com/shivamshashank/StackPulse.git
-cd StackPulse
+sudo git clone https://github.com/shivamshashank/CloudInferOps.git
+cd CloudInferOps
 sudo go mod tidy
 sudo go test ./...
 ```
@@ -868,6 +868,6 @@ This project is licensed under the MIT License.
 
 <div align="center">
 
-### ⭐ If StackPulse helps you, please star the repository.
+### ⭐ If CloudInferOps helps you, please star the repository.
 
 </div>

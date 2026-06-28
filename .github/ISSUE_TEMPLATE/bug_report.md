@@ -1,6 +1,6 @@
 ---
 name: 🐛 Bug Report
-about: Create a report to help us improve StackPulse.
+about: Create a report to help us improve CloudInferOps.
 title: "[BUG] "
 labels: ["bug"]
 assignees: ""
@@ -21,21 +21,21 @@ Steps to reproduce the behavior:
 
 A clear and concise description of what you expected to happen.
 
-## 🩺 StackPulse Doctor Output
+## 🩺 CloudInferOps Doctor Output
 
-Please paste the output of running `stackpulse doctor` (or
-`sudo stackpulse doctor` if running in elevated mode) here:
+Please paste the output of running `cloudinferops doctor` (or
+`sudo cloudinferops doctor` if running in elevated mode) here:
 
 ```text
-# Paste 'stackpulse doctor' output here
+# Paste 'cloudinferops doctor' output here
 ```
 
 ## 💻 Environment Details
 
-- **StackPulse Version:** (e.g., `stackpulse version` or `v1.0.0`)
+- **CloudInferOps Version:** (e.g., `cloudinferops version` or `v1.0.0`)
 - **OS & CPU Architecture:** (e.g., Ubuntu 22.04 amd64, macOS arm64)
 - **Kubernetes Distribution:** (e.g., k3s, kind, minikube, EKS, GKE, none)
-- **Local config (`~/.stackpulse/config.yaml`):** (If relevant, please remove
+- **Local config (`~/.cloudinferops/config.yaml`):** (If relevant, please remove
   any secrets/tokens before pasting)
   ```yaml
   # Paste config here if applicable

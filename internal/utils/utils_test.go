@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"io"
 	"net"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -71,15 +73,15 @@ func TestExecCommand(t *testing.T) {
 }
 
 func TestExecCommandEnv(t *testing.T) {
-	env := map[string]string{"TEST_ENV_VAR": "stackpulse-test"}
+	env := map[string]string{"TEST_ENV_VAR": "cloudinferops-test"}
 	// We run 'sh -c echo $TEST_ENV_VAR' or just a simple command that prints it.
 	// On Mac/Linux, we can run 'printenv' or 'env' or 'sh'. Let's run printenv or env.
 	stdout, _, err := ExecCommandEnv("", env, "sh", "-c", "echo $TEST_ENV_VAR")
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-	if stdout != "stackpulse-test" {
-		t.Errorf("expected 'stackpulse-test', got '%s'", stdout)
+	if stdout != "cloudinferops-test" {
+		t.Errorf("expected 'cloudinferops-test', got '%s'", stdout)
 	}
 }
 
@@ -103,6 +105,51 @@ func TestExecCommandInteractive(t *testing.T) {
 	}
 	if stdout != "interactive" {
 		t.Errorf("expected stdout 'interactive', got '%s'", stdout)
+	}
+	if stderr != "" {
+		t.Errorf("expected empty stderr, got '%s'", stderr)
+	}
+}
+
+func TestExecCommandInteractiveStreamsOutput(t *testing.T) {
+	oldStdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create pipe: %v", err)
+	}
+	os.Stdout = w
+	defer func() {
+		os.Stdout = oldStdout
+		_ = r.Close()
+	}()
+
+	stdout, stderr, err := ExecCommandInteractive("", "sh", "-c", "echo streamed-output")
+	_ = w.Close()
+	streamedOutput, readErr := io.ReadAll(r)
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if readErr != nil {
+		t.Fatalf("failed to read streamed output: %v", readErr)
+	}
+	if stdout != "streamed-output" {
+		t.Errorf("expected stdout 'streamed-output', got '%s'", stdout)
+	}
+	if stderr != "" {
+		t.Errorf("expected empty stderr, got '%s'", stderr)
+	}
+	if !strings.Contains(string(streamedOutput), "streamed-output") {
+		t.Fatalf("expected streamed output to include command output, got %q", string(streamedOutput))
+	}
+}
+
+func TestExecCommandWithStdin(t *testing.T) {
+	stdout, stderr, err := ExecCommandWithStdin("hello-stdin", "", "cat")
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if stdout != "hello-stdin" {
+		t.Errorf("expected stdout 'hello-stdin', got '%s'", stdout)
 	}
 	if stderr != "" {
 		t.Errorf("expected empty stderr, got '%s'", stderr)

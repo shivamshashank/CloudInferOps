@@ -3,16 +3,11 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"os/exec"
-	"runtime"
 	"strings"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
-	"github.com/shivamshashank/StackPulse/internal/doctor"
-	"github.com/shivamshashank/StackPulse/internal/gitops"
-	"github.com/shivamshashank/StackPulse/internal/installer"
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/doctor"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -25,123 +20,16 @@ var gitopsBootstrapDryRun bool
 
 var gitopsBootstrapCmd = &cobra.Command{
 	Use:   "bootstrap",
-	Short: "Deploy the GitOps-managed observability stack via ArgoCD",
-	Long:  `Installs ArgoCD, a local in-cluster Git server, and registers GitOps Applications to continuously sync and manage your observability platform.`,
+	Short: "Alias for 'cloudinferops bootstrap'. Installs Kubernetes and deploys the GitOps stack.",
+	Long: `This command is an alias for 'cloudinferops bootstrap'.
+
+It installs Kubernetes if not found, then deploys the full observability stack using GitOps with ArgoCD.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// 1. Pre-flight check: Verify cluster reachability early
-		_, hasK8s := doctor.CheckK8sCluster()
-		if !hasK8s {
-			if gitopsBootstrapDryRun {
-				return fmt.Errorf("kubernetes cluster unreachable (dry-run bypassed setup)")
-			}
+		// This is an alias. We just call the main bootstrap command's logic.
+		bootstrapCmd.SetArgs(args)
+		bootstrapDryRun = gitopsBootstrapDryRun // Sync the dry-run flag
+		return bootstrapCmd.RunE(cmd, args)
 
-			// Prompt the user to install a local cluster or exit so they can bring their own.
-			choice, err := promptClusterOption(os.Stdin)
-			if err != nil {
-				return err
-			}
-
-			if choice == "no" {
-				fmt.Printf("%sBootstrap cancelled. Install or start Kubernetes, then rerun bootstrap.\n", utils.PrefixWarn)
-				return fmt.Errorf("kubernetes cluster unreachable")
-			}
-
-			switch choice {
-			case "kind":
-				if _, err := exec.LookPath("docker"); err != nil {
-					fmt.Printf("%sDocker is required for kind but was not found. Installing Docker now...\n", utils.PrefixInfo)
-					if dockerErr := installer.InstallDocker(); dockerErr != nil {
-						return fmt.Errorf("failed to install Docker (required by kind): %w", dockerErr)
-					}
-				}
-				if _, err := exec.LookPath("kind"); err != nil {
-					fmt.Printf("%s'kind' not found. Installing it now...\n", utils.PrefixInfo)
-					if installErr := installer.DownloadKindBinary(); installErr != nil {
-						return fmt.Errorf("failed to install kind: %w", installErr)
-					}
-				}
-				if _, err := exec.LookPath("kubectl"); err != nil {
-					fmt.Printf("%s'kubectl' not found. Installing it now...\n", utils.PrefixInfo)
-					if installErr := installer.DownloadKubectlBinary(); installErr != nil {
-						return fmt.Errorf("failed to install kubectl: %w", installErr)
-					}
-				}
-				fmt.Printf("%sStarting kind cluster installation...\n", utils.PrefixInfo)
-				if err := installer.InstallKind(); err != nil {
-					return fmt.Errorf("kind installation failed: %w", err)
-				}
-			case "minikube":
-				if _, err := exec.LookPath("docker"); err != nil {
-					fmt.Printf("%sDocker is required for minikube but was not found. Installing Docker now...\n", utils.PrefixInfo)
-					if dockerErr := installer.InstallDocker(); dockerErr != nil {
-						return fmt.Errorf("failed to install Docker (required by minikube): %w", dockerErr)
-					}
-				}
-				if _, err := exec.LookPath("minikube"); err != nil {
-					fmt.Printf("%s'minikube' not found. Installing it now...\n", utils.PrefixInfo)
-					if installErr := installer.DownloadMinikubeBinary(); installErr != nil {
-						return fmt.Errorf("failed to install minikube: %w", installErr)
-					}
-				}
-				if _, err := exec.LookPath("kubectl"); err != nil {
-					fmt.Printf("%s'kubectl' not found. Installing it now...\n", utils.PrefixInfo)
-					if installErr := installer.DownloadKubectlBinary(); installErr != nil {
-						return fmt.Errorf("failed to install kubectl: %w", installErr)
-					}
-				}
-				fmt.Printf("%sStarting Minikube cluster installation...\n", utils.PrefixInfo)
-				if err := installer.InstallMinikube(); err != nil {
-					return fmt.Errorf("minikube installation failed: %w", err)
-				}
-			case "k3s":
-				if runtime.GOOS != "linux" {
-					return fmt.Errorf("k3s installation is only supported on Linux")
-				}
-				fmt.Printf("%sStarting K3s cluster installation...\n", utils.PrefixInfo)
-				if err := config.InitConfig(true); err != nil {
-					return fmt.Errorf("failed to load configuration: %w", err)
-				}
-				expandedKubeconfig := config.ExpandPath(config.GlobalConfig.Kubernetes.Kubeconfig)
-				if err := installer.InstallK3s(expandedKubeconfig); err != nil {
-					return fmt.Errorf("K3s installation failed: %w", err)
-				}
-			}
-
-			if _, hasK8s = doctor.CheckK8sCluster(); !hasK8s {
-				return fmt.Errorf("kubernetes cluster unreachable after setup")
-			}
-
-			fmt.Printf("%sKubernetes cluster setup completed successfully.\n\n", utils.PrefixOK)
-		}
-
-		// 1.5 Pre-flight check: Verify Helm is installed and install if missing
-		if _, err := exec.LookPath("helm"); err != nil {
-			if gitopsBootstrapDryRun {
-				fmt.Printf("%s[DRY-RUN] Would install Helm\n", utils.PrefixInfo)
-			} else {
-				fmt.Printf("%sHelm is required but was not found. Installing Helm now...\n", utils.PrefixInfo)
-				if _, stderr, installErr := utils.ExecCommandInteractive("", "bash", "-c", "curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash"); installErr != nil {
-					return fmt.Errorf("failed to install Helm: %w (stderr: %s)", installErr, stderr)
-				}
-				fmt.Printf("%sHelm installed successfully.\n", utils.PrefixOK)
-			}
-		}
-
-		// 2. Load configuration (fallback on defaults if not initialized)
-		if err := config.InitConfig(false); err != nil {
-			fmt.Printf("%sConfiguration file not found. Deploying with default settings...\n", utils.PrefixInfo)
-			config.GlobalConfig = config.DefaultConfig()
-		}
-
-		// Always force ArgoCD to true for GitOps bootstrap
-		config.GlobalConfig.Observability.ArgoCD = true
-
-		// 3. Trigger GitOps bootstrap orchestrator
-		if err := gitops.BootstrapGitOps(gitopsBootstrapDryRun); err != nil {
-			return err
-		}
-
-		return nil
 	},
 }
 

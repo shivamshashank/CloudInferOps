@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 var hostsFilePath = "/etc/hosts"
@@ -23,8 +23,8 @@ func FetchIngressIP(ns string, dryRun bool) (string, error) {
 	fmt.Printf("%sResolving Ingress Controller IP...\n", utils.PrefixInfo)
 
 	// Strategy 1: Get IP from the NGINX Ingress Controller Service (most reliable)
-	controllerSvc := "stackpulse-ingress-nginx-controller"
-	for i := 0; i < 6; i++ {
+	controllerSvc := "cloudinferops-ingress-nginx-controller"
+	for i := 0; i < 2; i++ {
 		// Try LoadBalancer IP
 		ip, _, err := utils.ExecCommand("", "kubectl", "get", "svc", controllerSvc, "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
 		if err == nil && ip != "" {
@@ -40,18 +40,28 @@ func FetchIngressIP(ns string, dryRun bool) (string, error) {
 		if err == nil && extIP != "" {
 			return strings.TrimSpace(extIP), nil
 		}
-		fmt.Printf("%sIngress IP not assigned yet, retrying in 5 seconds...\n", utils.PrefixInfo)
-		time.Sleep(ingressIPRetryDelay)
+
+		if i == 0 {
+			// Strategy 2: Try Ingress resource status
+			ingressName := "cloudinferops-observability"
+			ingressIP, _, err := utils.ExecCommand("", "kubectl", "get", "ingress", ingressName, "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
+			if err == nil && ingressIP != "" {
+				return strings.TrimSpace(ingressIP), nil
+			}
+
+			fmt.Printf("%sIngress IP not assigned yet, retrying in 3 seconds...\n", utils.PrefixInfo)
+			time.Sleep(3 * time.Second)
+		}
 	}
 
-	// Strategy 2: Get IP from the Ingress resource status
-	ingressName := "stackpulse-prometheus-grafana"
-	ip, _, err := utils.ExecCommand("", "kubectl", "get", "ingress", ingressName, "-n", ns, "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}")
-	if err == nil && ip != "" {
-		return strings.TrimSpace(ip), nil
+	// Strategy 3: Fall back to first Node's InternalIP (standard for local/baremetal setups)
+	nodeIP, _, err := utils.ExecCommand("", "kubectl", "get", "nodes", "-o", "jsonpath={.items[0].status.addresses[?(@.type==\"InternalIP\")].address}")
+	if err == nil && nodeIP != "" {
+		return strings.TrimSpace(nodeIP), nil
 	}
 
-	return "", fmt.Errorf("ingress IP provisioning timed out")
+	// Strategy 4: Fall back to host local IP
+	return utils.GetLocalIP(), nil
 }
 
 // UpdateHostsFile idempotently maps the Ingress IP to 'grafana.local' in local /etc/hosts
@@ -86,7 +96,7 @@ func UpdateHostsFile(ip, host string) error {
 	newLines = append(newLines, fmt.Sprintf("%-16s %s", ip, host))
 	newContent := strings.Join(newLines, "\n")
 
-	// 4. Write to local temporary file in StackPulse directory
+	// 4. Write to local temporary file in CloudInferOps directory
 	configDir, err := config.GetConfigDir()
 	if err != nil {
 		return err

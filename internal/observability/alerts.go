@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 // ProvisionAlertRules applies a standard PrometheusRule custom resource containing the SRE Alert Pack.
@@ -13,10 +13,10 @@ func ProvisionAlertRules(ns string, dryRun bool) error {
 	manifest := fmt.Sprintf(`apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: stackpulse-sre-alerts
+  name: cloudinferops-sre-alerts
   namespace: %s
   labels:
-    release: stackpulse-prometheus
+    release: cloudinferops-prometheus
 spec:
   groups:
   - name: kubernetes-alerts
@@ -104,7 +104,7 @@ spec:
 		return nil
 	}
 
-	tmpPath := filepath.Join(os.TempDir(), "stackpulse-alerts.yaml")
+	tmpPath := filepath.Join(os.TempDir(), "cloudinferops-alerts.yaml")
 	if err := os.WriteFile(tmpPath, []byte(manifest), 0600); err != nil {
 		return fmt.Errorf("failed to write temporary alerts manifest: %w", err)
 	}
@@ -124,10 +124,10 @@ func GetAlertRulesManifest(ns string) string {
 	return fmt.Sprintf(`apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: stackpulse-sre-alerts
+  name: cloudinferops-sre-alerts
   namespace: %s
   labels:
-    release: stackpulse-prometheus
+    release: cloudinferops-prometheus
 spec:
   groups:
   - name: kubernetes-alerts

@@ -3,10 +3,10 @@ package cli
 import (
 	"fmt"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
-	"github.com/shivamshashank/StackPulse/internal/doctor"
-	"github.com/shivamshashank/StackPulse/internal/observability"
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/doctor"
+	"github.com/shivamshashank/CloudInferOps/internal/observability"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ var statusCmd = &cobra.Command{
 		_, hasK8s := doctor.CheckK8sCluster()
 		if !hasK8s {
 			fmt.Printf("%sKubernetes cluster not detected.\n", utils.PrefixError)
-			fmt.Printf("%sPlease ensure a local cluster is running (Docker Desktop, Kind, or Minikube) and rerun this command.\n", utils.PrefixInfo)
+			fmt.Printf("%sPlease ensure Kubernetes is running and rerun this command.\n", utils.PrefixInfo)
 			return fmt.Errorf("kubernetes cluster unreachable")
 		}
 

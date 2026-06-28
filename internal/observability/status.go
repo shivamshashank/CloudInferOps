@@ -6,8 +6,8 @@ import (
 	"net"
 	"strings"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
-	"github.com/shivamshashank/StackPulse/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 // PrintStatus queries the active cluster to collect pod health, decrypt secrets, and print a unified dashboard.
@@ -85,7 +85,7 @@ func PrintStatus() error {
 
 	// 3. Fetch and Decode Grafana Admin Password
 	plainPassword := "<unretrievable>"
-	pwdSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "stackpulse-prometheus-grafana", "-n", ns, "-o", "jsonpath={.data.admin-password}")
+	pwdSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "cloudinferops-prometheus-grafana", "-n", ns, "-o", "jsonpath={.data.admin-password}")
 	if err == nil && pwdSecret != "" {
 		decoded, err := DecodeBase64(strings.TrimSpace(pwdSecret))
 		if err == nil {
@@ -114,7 +114,7 @@ func PrintStatus() error {
 
 	// 4. Output Unified Dashboard
 	fmt.Println()
-	fmt.Printf("%s%s🩺  StackPulse Status Dashboard%s\n", utils.PrefixInfo, utils.ColorBold, utils.ColorReset)
+	fmt.Printf("%s%s🩺  CloudInferOps Status Dashboard%s\n", utils.PrefixInfo, utils.ColorBold, utils.ColorReset)
 	fmt.Println("-----------------------------------------------------------------")
 	fmt.Printf("🌐  Kubernetes Context:   %s\n", utils.ColorBold+context+utils.ColorReset)
 	fmt.Printf("📦  Namespace:            %s\n", ns)
@@ -151,7 +151,7 @@ func PrintStatus() error {
 	healthyCount := 0
 
 	hasGitOpsServer := false
-	if gitServerOut, _, err := utils.ExecCommand("", "kubectl", "get", "deployment", "stackpulse-git-server", "-n", ns, "--no-headers"); err == nil && gitServerOut != "" {
+	if gitServerOut, _, err := utils.ExecCommand("", "kubectl", "get", "deployment", "cloudinferops-git-server", "-n", ns, "--no-headers"); err == nil && gitServerOut != "" {
 		hasGitOpsServer = true
 	}
 
@@ -192,21 +192,12 @@ func PrintStatus() error {
 		ingressIP, err := FetchIngressIP(ns, false)
 		if err == nil && ingressIP != "" {
 			instanceIP = ingressIP
-		} else {
-			context, _, _ := utils.ExecCommand("", "kubectl", "config", "current-context")
-			context = strings.TrimSpace(context)
-			if strings.Contains(context, "minikube") {
-				minikubeIP, _, err := utils.ExecCommand("", "minikube", "ip")
-				if err == nil && minikubeIP != "" {
-					instanceIP = strings.TrimSpace(minikubeIP)
-				}
-			}
 		}
 
-		// If we are on a cloud VM, the ingress IP might be the private subnet IP.
+		// If we are on a cloud VM or running locally, the ingress IP might be a private subnet IP or loopback.
 		// Attempt to resolve the public IP for correct external browser access.
 		var detectedPublicIP string
-		if parsedIP := net.ParseIP(instanceIP); parsedIP != nil && parsedIP.IsPrivate() {
+		if parsedIP := net.ParseIP(instanceIP); parsedIP != nil && (parsedIP.IsPrivate() || parsedIP.IsLoopback()) {
 			detectedPublicIP = utils.GetPublicIP()
 			if detectedPublicIP != "" {
 				instanceIP = detectedPublicIP

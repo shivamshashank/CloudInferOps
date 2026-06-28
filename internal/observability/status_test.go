@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/shivamshashank/StackPulse/internal/config"
+	"github.com/shivamshashank/CloudInferOps/internal/config"
 )
 
 func TestDecodeBase64(t *testing.T) {
@@ -20,8 +20,8 @@ func TestDecodeBase64(t *testing.T) {
 			err:      false,
 		},
 		{
-			input:    "c3RhY2twdWxzZQ==",
-			expected: "stackpulse",
+			input:    "Y2xvdWRpbmZlcm9wcw==",
+			expected: "cloudinferops",
 			err:      false,
 		},
 		{
@@ -65,24 +65,24 @@ case "$*" in
     exit 0
     ;;
   *"get pods"*)
-    echo "stackpulse-prometheus-server-123 1/1 Running 0 1d"
-    echo "stackpulse-prometheus-grafana-123 1/1 Running 0 1d"
-    echo "stackpulse-loki-123 1/1 Running 0 1d"
-    echo "stackpulse-tempo-123 1/1 Running 0 1d"
-    echo "stackpulse-otel-123 1/1 Running 0 1d"
-    echo "stackpulse-webhook-handler-123 1/1 Running 0 1d"
-    echo "stackpulse-victoria-metrics-0 1/1 Running 0 1d"
-    echo "stackpulse-pyroscope-0 1/1 Running 0 1d"
-    echo "stackpulse-thanos-store-0 1/1 Running 0 1d"
-    echo "stackpulse-blackbox-exporter-123 1/1 Running 0 1d"
-    echo "stackpulse-alertmanager-0 1/1 Running 0 1d"
+    echo "cloudinferops-prometheus-server-123 1/1 Running 0 1d"
+    echo "cloudinferops-prometheus-grafana-123 1/1 Running 0 1d"
+    echo "cloudinferops-loki-123 1/1 Running 0 1d"
+    echo "cloudinferops-tempo-123 1/1 Running 0 1d"
+    echo "cloudinferops-otel-123 1/1 Running 0 1d"
+    echo "cloudinferops-webhook-handler-123 1/1 Running 0 1d"
+    echo "cloudinferops-victoria-metrics-0 1/1 Running 0 1d"
+    echo "cloudinferops-pyroscope-0 1/1 Running 0 1d"
+    echo "cloudinferops-thanos-store-0 1/1 Running 0 1d"
+    echo "cloudinferops-blackbox-exporter-123 1/1 Running 0 1d"
+    echo "cloudinferops-alertmanager-0 1/1 Running 0 1d"
     exit 0
     ;;
-  *"get secret stackpulse-prometheus-grafana"*)
+  *"get secret cloudinferops-prometheus-grafana"*)
     echo "YWRtaW4="
     exit 0
     ;;
-  *"get svc stackpulse-ingress-nginx-controller"*)
+  *"get svc cloudinferops-ingress-nginx-controller"*)
     echo "192.168.99.100"
     exit 0
     ;;

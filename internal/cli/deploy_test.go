@@ -51,12 +51,10 @@ func TestPromptClusterOption(t *testing.T) {
 		input string
 		want  string
 	}{
-		{name: "kind", input: "1\n", want: "kind"},
-		{name: "k3s", input: "2\n", want: "k3s"},
-		{name: "minikube", input: "3\n", want: "minikube"},
-		{name: "self managed", input: "4\n", want: "no"},
+		{name: "kubeadm", input: "1\n", want: "kubeadm"},
+		{name: "self managed", input: "2\n", want: "no"},
 		{name: "default", input: "\n", want: "no"},
-		{name: "invalid", input: "kind\n", want: "no"},
+		{name: "invalid", input: "3\n", want: "no"},
 	}
 
 	for _, tt := range tests {

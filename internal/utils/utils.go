@@ -61,7 +61,7 @@ func ExecCommandInteractive(dir string, name string, arg ...string) (string, str
 	}
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd.Stdin = os.Stdin
-	cmd.Stdout = &stdoutBuf
+	cmd.Stdout = io.MultiWriter(os.Stdout, &stdoutBuf)
 	cmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuf)
 
 	err := cmd.Run()
@@ -81,6 +81,25 @@ func ExecCommandEnv(dir string, env map[string]string, name string, arg ...strin
 	for key, value := range env {
 		cmd.Env = append(cmd.Env, key+"="+value)
 	}
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+
+	err := cmd.Run()
+	stdout := strings.TrimSpace(stdoutBuf.String())
+	stderr := strings.TrimSpace(stderrBuf.String())
+
+	return stdout, stderr, err
+}
+
+// ExecCommandWithStdin runs a shell command with a given string passed to its stdin.
+// Returns trimmed stdout, stderr, and any error.
+func ExecCommandWithStdin(stdinInput string, dir string, name string, arg ...string) (string, string, error) {
+	cmd := exec.Command(name, arg...)
+	if dir != "" {
+		cmd.Dir = dir
+	}
+	cmd.Stdin = strings.NewReader(stdinInput)
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf

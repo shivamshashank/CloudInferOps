@@ -43,15 +43,15 @@ jobs:
               NEXT_TAG="v${major}.${minor}.${next_patch}"
             fi
           fi
-          echo "NEXT_TAG=${NEXT_TAG}" >> $GITHUB_ENV
+          echo "next_tag=${NEXT_TAG}" >> $GITHUB_OUTPUT
           echo "Calculated next tag: ${NEXT_TAG}"
 
       - name: Create and Push Git Tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ env.NEXT_TAG }}"
-          git push origin "${{ env.NEXT_TAG }}"
+          git tag "${{ steps.next_version.outputs.next_tag }}"
+          git push origin "${{ steps.next_version.outputs.next_tag }}"
 
       - name: Compile Cross-Platform Binaries
         run: |
@@ -60,48 +60,48 @@ jobs:
           # Extract dynamic build metadata
           COMMIT_SHA=$(git rev-parse --short HEAD)
           BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          PKG="github.com/shivamshashank/StackPulse/internal/cli"
-          LDFLAGS="-s -w -X ${PKG}.Version=${{ env.NEXT_TAG }} -X ${PKG}.Commit=${COMMIT_SHA} -X ${PKG}.BuildDate=${BUILD_DATE}"
+          PKG="github.com/shivamshashank/CloudInferOps/internal/cli"
+          LDFLAGS="-s -w -X ${PKG}.Version=${{ steps.next_version.outputs.next_tag }} -X ${PKG}.Commit=${COMMIT_SHA} -X ${PKG}.BuildDate=${BUILD_DATE}"
 
           # Linux AMD64
           echo "Compiling Linux AMD64 binary..."
-          env GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/stackpulse-linux-amd64 cmd/stackpulse/main.go
+          env GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-linux-amd64 cmd/cloudinferops/main.go
 
           # Linux ARM64
           echo "Compiling Linux ARM64 binary..."
-          env GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/stackpulse-linux-arm64 cmd/stackpulse/main.go
+          env GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-linux-arm64 cmd/cloudinferops/main.go
 
           # macOS AMD64
           echo "Compiling macOS AMD64 binary..."
-          env GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/stackpulse-darwin-amd64 cmd/stackpulse/main.go
+          env GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-darwin-amd64 cmd/cloudinferops/main.go
 
           # macOS ARM64
           echo "Compiling macOS ARM64 binary..."
-          env GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/stackpulse-darwin-arm64 cmd/stackpulse/main.go
+          env GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o dist/cloudinferops-darwin-arm64 cmd/cloudinferops/main.go
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.NEXT_TAG }}
-          name: Release ${{ env.NEXT_TAG }}
+          tag_name: ${{ steps.next_version.outputs.next_tag }}
+          name: Release ${{ steps.next_version.outputs.next_tag }}
           body: |
-            ## 🚀 StackPulse Release ${{ env.NEXT_TAG }}
+            ## 🚀 CloudInferOps Release ${{ steps.next_version.outputs.next_tag }}
 
             Automated production release generated after merging to `main`.
 
             ### 📦 Supported Platform Downloads
 
-            - **Linux (x86_64 / amd64)**: `stackpulse-linux-amd64`
-            - **Linux (arm64 / aarch64)**: `stackpulse-linux-arm64`
-            - **macOS (Intel / amd64)**: `stackpulse-darwin-amd64`
-            - **macOS (Apple Silicon / arm64)**: `stackpulse-darwin-arm64`
+            - **Linux (x86_64 / amd64)**: `cloudinferops-linux-amd64`
+            - **Linux (arm64 / aarch64)**: `cloudinferops-linux-arm64`
+            - **macOS (Intel / amd64)**: `cloudinferops-darwin-amd64`
+            - **macOS (Apple Silicon / arm64)**: `cloudinferops-darwin-arm64`
 
             ---
             *Built with Go 1.23*
           draft: false
           prerelease: false
           files: |
-            dist/stackpulse-linux-amd64
-            dist/stackpulse-linux-arm64
-            dist/stackpulse-darwin-amd64
-            dist/stackpulse-darwin-arm64
+            dist/cloudinferops-linux-amd64
+            dist/cloudinferops-linux-arm64
+            dist/cloudinferops-darwin-amd64
+            dist/cloudinferops-darwin-arm64
