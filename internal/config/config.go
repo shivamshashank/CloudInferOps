@@ -24,21 +24,23 @@ type K8sConfig struct {
 }
 
 type ObsConfig struct {
-	Prometheus       bool     `mapstructure:"prometheus"`
-	Grafana          bool     `mapstructure:"grafana"`
-	Loki             bool     `mapstructure:"loki"`
-	Tempo            bool     `mapstructure:"tempo"`
-	ArgoCD           bool     `mapstructure:"argoCD"`
-	Alertmanager     bool     `mapstructure:"alertmanager"`
-	OpenTelemetry    bool     `mapstructure:"opentelemetry"`
-	NodeExporter     bool     `mapstructure:"nodeExporter"`
-	KubeStateMetrics bool     `mapstructure:"kubeStateMetrics"`
-	LogCollector     string   `mapstructure:"logCollector"`
-	BlackboxExporter bool     `mapstructure:"blackboxExporter"`
-	BlackboxTargets  []string `mapstructure:"blackboxTargets"`
-	Pyroscope        bool     `mapstructure:"pyroscope"`
-	Thanos           bool     `mapstructure:"thanos"`
-	VictoriaMetrics  bool     `mapstructure:"victoriaMetrics"`
+	Prometheus         bool     `mapstructure:"prometheus"`
+	Grafana            bool     `mapstructure:"grafana"`
+	Loki               bool     `mapstructure:"loki"`
+	Tempo              bool     `mapstructure:"tempo"`
+	ArgoCD             bool     `mapstructure:"argoCD"`
+	Alertmanager       bool     `mapstructure:"alertmanager"`
+	OpenTelemetry      bool     `mapstructure:"opentelemetry"`
+	NodeExporter       bool     `mapstructure:"nodeExporter"`
+	KubeStateMetrics   bool     `mapstructure:"kubeStateMetrics"`
+	LogCollector       string   `mapstructure:"logCollector"`
+	BlackboxExporter   bool     `mapstructure:"blackboxExporter"`
+	BlackboxTargets    []string `mapstructure:"blackboxTargets"`
+	Pyroscope          bool     `mapstructure:"pyroscope"`
+	Thanos             bool     `mapstructure:"thanos"`
+	VictoriaMetrics    bool     `mapstructure:"victoriaMetrics"`
+	IngressServiceType string   `mapstructure:"ingressServiceType"`
+	HostNetwork        bool     `mapstructure:"hostNetwork"`
 }
 
 type AlertsConfig struct {
@@ -69,21 +71,23 @@ func DefaultConfig() Config {
 			Kubeconfig: "~/.kube/config",
 		},
 		Observability: ObsConfig{
-			Prometheus:       true,
-			Grafana:          true,
-			Loki:             true,
-			Tempo:            true,
-			ArgoCD:           true,
-			Alertmanager:     true,
-			OpenTelemetry:    true,
-			NodeExporter:     true,
-			KubeStateMetrics: true,
-			LogCollector:     "alloy",
-			BlackboxExporter: true,
-			BlackboxTargets:  []string{"https://api.github.com", "https://github.com"},
-			Pyroscope:        true,
-			Thanos:           false,
-			VictoriaMetrics:  false,
+			Prometheus:         true,
+			Grafana:            true,
+			Loki:               true,
+			Tempo:              true,
+			ArgoCD:             true,
+			Alertmanager:       true,
+			OpenTelemetry:      true,
+			NodeExporter:       true,
+			KubeStateMetrics:   true,
+			LogCollector:       "alloy",
+			BlackboxExporter:   true,
+			BlackboxTargets:    []string{"https://api.github.com", "https://github.com"},
+			Pyroscope:          true,
+			Thanos:             false,
+			VictoriaMetrics:    false,
+			IngressServiceType: "ClusterIP",
+			HostNetwork:        true,
 		},
 		Alerts: AlertsConfig{
 			Slack: SlackConfig{
@@ -166,6 +170,8 @@ func InitConfig(createIfMissing bool) error {
 			viper.Set("observability.pyroscope", defaults.Observability.Pyroscope)
 			viper.Set("observability.thanos", defaults.Observability.Thanos)
 			viper.Set("observability.victoriaMetrics", defaults.Observability.VictoriaMetrics)
+			viper.Set("observability.ingressServiceType", defaults.Observability.IngressServiceType)
+			viper.Set("observability.hostNetwork", defaults.Observability.HostNetwork)
 			viper.Set("alerts.slack.enabled", defaults.Alerts.Slack.Enabled)
 			viper.Set("alerts.slack.webhookUrlSecret", defaults.Alerts.Slack.WebhookUrlSecret)
 			viper.Set("alerts.pagerduty.enabled", defaults.Alerts.PagerDuty.Enabled)
@@ -221,6 +227,8 @@ func SaveConfig() error {
 	viper.Set("observability.pyroscope", GlobalConfig.Observability.Pyroscope)
 	viper.Set("observability.thanos", GlobalConfig.Observability.Thanos)
 	viper.Set("observability.victoriaMetrics", GlobalConfig.Observability.VictoriaMetrics)
+	viper.Set("observability.ingressServiceType", GlobalConfig.Observability.IngressServiceType)
+	viper.Set("observability.hostNetwork", GlobalConfig.Observability.HostNetwork)
 	viper.Set("alerts.slack.enabled", GlobalConfig.Alerts.Slack.Enabled)
 	viper.Set("alerts.slack.webhookUrlSecret", GlobalConfig.Alerts.Slack.WebhookUrlSecret)
 	viper.Set("alerts.pagerduty.enabled", GlobalConfig.Alerts.PagerDuty.Enabled)

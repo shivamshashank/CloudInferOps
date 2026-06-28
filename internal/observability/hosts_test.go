@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
 func TestFetchIngressIP(t *testing.T) {
@@ -211,7 +213,7 @@ esac
 		t.Errorf("expected 10.0.5.25, got %s", ip)
 	}
 
-	// 4. Timeout strategy test
+	// 4. Fallback to host local IP strategy test
 	mockKubectlContent = `#!/bin/sh
 exit 1
 `
@@ -219,10 +221,12 @@ exit 1
 		t.Fatalf("failed to write mock kubectl: %v", err)
 	}
 
-	_, err = FetchIngressIP("observability", false)
-	if err == nil {
-		t.Error("expected timeout error, got nil")
-	} else if !strings.Contains(err.Error(), "ingress IP provisioning timed out") {
-		t.Errorf("expected error containing 'ingress IP provisioning timed out', got: %v", err)
+	ip, err = FetchIngressIP("observability", false)
+	if err != nil {
+		t.Fatalf("expected fallback to host local IP, got error: %v", err)
+	}
+	expectedIP := utils.GetLocalIP()
+	if ip != expectedIP {
+		t.Errorf("expected %s, got %s", expectedIP, ip)
 	}
 }

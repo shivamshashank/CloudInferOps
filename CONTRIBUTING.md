@@ -35,9 +35,7 @@ To set up a local development environment, you will need:
 - **Go** (version 1.21 or higher)
 - **kubectl**
 - **Helm**
-- A local Kubernetes cluster for integration testing (e.g.,
-  [kind](https://kind.sigs.k8s.io/), [minikube](https://minikube.sigs.k8s.io/),
-  or [k3s](https://k3s.io/))
+- A Kubernetes cluster (e.g., via [kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/))
 - **Multipass** (Highly recommended if you are developing on macOS, to easily
   simulate a Linux VM environment)
 

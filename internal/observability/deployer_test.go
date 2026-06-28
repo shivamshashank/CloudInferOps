@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func setupMocks(t *testing.T) {
@@ -44,6 +45,15 @@ func TestApplyObservabilityIngress_DryRun(t *testing.T) {
 
 func TestApplyObservabilityIngress_LiveMock(t *testing.T) {
 	setupMocks(t)
+	oldMax := serviceDiscoveryMaxRetries
+	oldDelay := serviceDiscoveryRetryDelay
+	serviceDiscoveryMaxRetries = 2
+	serviceDiscoveryRetryDelay = 1 * time.Millisecond
+	defer func() {
+		serviceDiscoveryMaxRetries = oldMax
+		serviceDiscoveryRetryDelay = oldDelay
+	}()
+
 	err := applyObservabilityIngress("test-ns", false)
 	if err != nil {
 		t.Errorf("expected no error on live mock, got %v", err)

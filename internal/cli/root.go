@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"os/user"
 
 	"github.com/shivamshashank/CloudInferOps/internal/config"
 	"github.com/spf13/cobra"
@@ -16,39 +17,72 @@ var RootCmd = &cobra.Command{
 validates Kubernetes readiness, installs lightweight Kubernetes when needed, and
 deploys a production-style observability stack with metrics, logs, traces,
 dashboards, alerts, and incident webhooks.`,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// Skip root check for 'version' and 'help' commands/flags, or if executing RootCmd itself
-		if cmd.Parent() == nil || cmd.Name() == "version" || cmd.Name() == "help" {
-			return nil
-		}
-		if flag := cmd.Flags().Lookup("help"); flag != nil && flag.Changed {
-			return nil
-		}
-
-		if os.Geteuid() != 0 {
-			return fmt.Errorf("CloudInferOps requires root privileges. Please run with sudo")
-		}
-
-		// Initialize config (without forcing creation)
-		_ = config.InitConfig(false)
-
-		// Setup default/configured Kubeconfig path environment variable early so all subprocesses (kubectl, helm, etc.) inherit it
-		if config.GlobalConfig.Kubernetes.Kubeconfig != "" {
-			_ = os.Setenv("KUBECONFIG", config.GlobalConfig.Kubernetes.Kubeconfig)
-		} else {
-			defaultKubeconfig := config.ExpandPath("~/.kube/config")
-			_ = os.Setenv("KUBECONFIG", defaultKubeconfig)
-		}
-
-		return nil
-	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	setupKubeconfigEnv()
+
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func setupKubeconfigEnv() {
+	// Respect any existing KUBECONFIG environment variable
+	if os.Getenv("KUBECONFIG") != "" {
+		return
+	}
+
+	// 1. Try to load config.yaml and use configured kubeconfig path
+	if err := config.InitConfig(false); err == nil {
+		if config.GlobalConfig.Kubernetes.Kubeconfig != "" {
+			_ = os.Setenv("KUBECONFIG", config.GlobalConfig.Kubernetes.Kubeconfig)
+			return
+		}
+	}
+
+	// 2. Fall back to standard user-specific kubeconfig
+	defaultKubeconfig := config.ExpandPath("~/.kube/config")
+	if _, err := os.Stat(defaultKubeconfig); err == nil {
+		_ = os.Setenv("KUBECONFIG", defaultKubeconfig)
+		return
+	}
+
+	// 3. Fall back to /etc/kubernetes/admin.conf if running as root/sudo
+	if os.Getuid() == 0 || hasRootPrivileges() {
+		adminConfig := "/etc/kubernetes/admin.conf"
+		if _, err := os.Stat(adminConfig); err == nil {
+			_ = os.Setenv("KUBECONFIG", adminConfig)
+			return
+		}
+	}
+}
+
+func hasRootPrivileges() bool {
+	return hasRootPrivilegesForTest(os.Geteuid, os.Getuid, os.Getenv, func() (*user.User, error) {
+		return user.Current()
+	})
+}
+
+func hasRootPrivilegesForTest(euid func() int, uid func() int, getenv func(string) string, currentUser func() (*user.User, error)) bool {
+	if euid() == 0 || uid() == 0 {
+		return true
+	}
+
+	if getenv("SUDO_USER") != "" || getenv("SUDO_UID") != "" || getenv("USER") == "root" {
+		return true
+	}
+
+	if currentUser != nil {
+		if usr, err := currentUser(); err == nil && usr != nil {
+			if usr.Uid == "0" || usr.Gid == "0" {
+				return true
+			}
+		}
+	}
+
+	return false
 }

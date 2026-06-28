@@ -15,6 +15,9 @@ import (
 	"github.com/shivamshashank/CloudInferOps/internal/utils"
 )
 
+var serviceDiscoveryMaxRetries = 15
+var serviceDiscoveryRetryDelay = 4 * time.Second
+
 // DeployObservability orchestrates the step-by-step installation of the enabled observability charts
 func DeployObservability(dryRun bool) error {
 	ns := config.GlobalConfig.Namespace
@@ -104,33 +107,8 @@ func DeployObservability(dryRun bool) error {
 	// 3. Deploy Stack Components
 
 	// A0. NGINX Ingress Controller (required for path-based routing to Grafana/Prometheus/Alertmanager)
-	ingressFlags := []string{
-		"--set", "controller.watchIngressWithoutClass=true",
-	}
-	if err := helm.InstallRelease("cloudinferops-ingress-nginx", "ingress-nginx/ingress-nginx", ns, ingressFlags, dryRun); err != nil {
+	if err := DeployIngressController(ns, dryRun); err != nil {
 		return err
-	}
-
-	// Wait for ingress controller pod to become ready before deploying apps that create Ingress resources
-	if !dryRun {
-		stopSpinner := utils.StartSpinner("Waiting for NGINX Ingress Controller to become ready...")
-		ready := false
-		for i := 0; i < 30; i++ {
-			_, _, waitErr := utils.ExecCommand("", "kubectl", "wait", "--namespace", ns,
-				"--for=condition=Ready", "pod",
-				"-l", "app.kubernetes.io/component=controller,app.kubernetes.io/instance=cloudinferops-ingress-nginx",
-				"--timeout=10s")
-			if waitErr == nil {
-				ready = true
-				break
-			}
-		}
-		stopSpinner()
-		if ready {
-			fmt.Printf("%sNGINX Ingress Controller is ready.\n", utils.PrefixOK)
-		} else {
-			fmt.Printf("%sIngress Controller not ready yet, continuing deployment anyway...\n", utils.PrefixWarn)
-		}
 	}
 
 	// E. ArgoCD Continuous Delivery (Bootstrapped first for GitOps management)
@@ -195,14 +173,12 @@ func DeployObservability(dryRun bool) error {
 		valuesYAML.WriteString("      isDefaultDatasource: true\n")
 		valuesYAML.WriteString("      name: Prometheus\n")
 		valuesYAML.WriteString("      uid: prometheus\n")
-		fmt.Fprintf(&valuesYAML, "      url: http://cloudinferops-prometheus-kube-prometheus.%s:9090/prometheus\n", ns)
+		fmt.Fprintf(&valuesYAML, "      url: http://cloudinferops-prometheus-k-prometheus.%s:9090/prometheus\n", ns)
 		valuesYAML.WriteString("      alertmanager:\n")
 		valuesYAML.WriteString("        enabled: true\n")
 		valuesYAML.WriteString("        name: Alertmanager\n")
 		valuesYAML.WriteString("        uid: alertmanager\n")
-		fmt.Fprintf(&valuesYAML, "        url: http://cloudinferops-prometheus-kube-alertmanager.%s:9093/alertmanager\n", ns)
-
-		// Build additional Grafana data sources dynamically
+		fmt.Fprintf(&valuesYAML, "        url: http://cloudinferops-prometheus-k-alertmanager.%s:9093/alertmanager\n", ns)
 		valuesYAML.WriteString("  additionalDataSources:\n")
 		if config.GlobalConfig.Observability.Loki {
 			valuesYAML.WriteString("    - name: Loki\n")
@@ -438,9 +414,9 @@ func DeployObservability(dryRun bool) error {
 			instanceIP = utils.GetLocalIP()
 		}
 
-		// If we are on a cloud VM, the ingress IP might be the private subnet IP.
+		// If we are on a cloud VM or running locally, the ingress IP might be a private subnet IP or loopback.
 		// Attempt to resolve the public IP for correct external browser access.
-		if parsedIP := net.ParseIP(instanceIP); parsedIP != nil && parsedIP.IsPrivate() {
+		if parsedIP := net.ParseIP(instanceIP); parsedIP != nil && (parsedIP.IsPrivate() || parsedIP.IsLoopback()) {
 			detectedPublicIP = utils.GetPublicIP()
 			if detectedPublicIP != "" {
 				instanceIP = detectedPublicIP
@@ -518,8 +494,8 @@ stringData:
 
 func applyObservabilityIngress(ns string, dryRun bool) error {
 	grafanaSvc := "cloudinferops-prometheus-grafana"
-	prometheusSvc := "cloudinferops-prometheus-kube-prometheus"
-	alertmanagerSvc := "cloudinferops-prometheus-kube-alertmanager"
+	prometheusSvc := "cloudinferops-prometheus-k-prometheus"
+	alertmanagerSvc := "cloudinferops-prometheus-k-alertmanager"
 	argoSvc := "cloudinferops-argocd-server"
 
 	if !dryRun {
@@ -547,8 +523,8 @@ func applyObservabilityIngress(ns string, dryRun bool) error {
 	argoRoute := ""
 	if config.GlobalConfig.Observability.ArgoCD {
 		argoRoute = fmt.Sprintf(`
-          - path: /argocd(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: /argocd
+            pathType: Prefix
             backend:
               service:
                 name: %s
@@ -564,28 +540,27 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   ingressClassName: nginx
   rules:
     - http:
         paths:
-          - path: /grafana(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: /grafana
+            pathType: Prefix
             backend:
               service:
                 name: %s
                 port:
                   number: 80
-          - path: /prometheus(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: /prometheus
+            pathType: Prefix
             backend:
               service:
                 name: %s
                 port:
                   number: 9090
-          - path: /alertmanager(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: /alertmanager
+            pathType: Prefix
             backend:
               service:
                 name: %s
@@ -614,48 +589,55 @@ spec:
 }
 
 func findServiceByPort(ns, nameHint string, port int, fallback string) (string, error) {
-	output, stderr, err := utils.ExecCommand("", "kubectl", "get", "svc", "-n", ns, "-o", "json")
-	if err != nil {
-		return "", fmt.Errorf("failed to list services in namespace %s: %w (stderr: %s)", ns, err, stderr)
-	}
+	maxRetries := serviceDiscoveryMaxRetries
+	retryDelay := serviceDiscoveryRetryDelay
 
-	var services struct {
-		Items []struct {
-			Metadata struct {
-				Name string `json:"name"`
-			} `json:"metadata"`
-			Spec struct {
-				Ports []struct {
-					Port int `json:"port"`
-				} `json:"ports"`
-			} `json:"spec"`
-		} `json:"items"`
-	}
-	if err := json.Unmarshal([]byte(output), &services); err != nil {
-		return "", fmt.Errorf("failed to parse Kubernetes services: %w", err)
-	}
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		output, _, err := utils.ExecCommand("", "kubectl", "get", "svc", "-n", ns, "-o", "json")
+		if err == nil {
+			var services struct {
+				Items []struct {
+					Metadata struct {
+						Name string `json:"name"`
+					} `json:"metadata"`
+					Spec struct {
+						Ports []struct {
+							Port int `json:"port"`
+						} `json:"ports"`
+					} `json:"spec"`
+				} `json:"items"`
+			}
+			if errUnmarshal := json.Unmarshal([]byte(output), &services); errUnmarshal == nil {
+				// Strategy 1: exact prefix match
+				for _, svc := range services.Items {
+					name := strings.ToLower(svc.Metadata.Name)
+					if !strings.Contains(name, "cloudinferops") || !strings.Contains(name, nameHint) {
+						continue
+					}
+					for _, svcPort := range svc.Spec.Ports {
+						if svcPort.Port == port {
+							return svc.Metadata.Name, nil
+						}
+					}
+				}
 
-	for _, svc := range services.Items {
-		name := strings.ToLower(svc.Metadata.Name)
-		if !strings.Contains(name, "cloudinferops") || !strings.Contains(name, nameHint) {
-			continue
-		}
-		for _, svcPort := range svc.Spec.Ports {
-			if svcPort.Port == port {
-				return svc.Metadata.Name, nil
+				// Strategy 2: fallback substring match
+				for _, svc := range services.Items {
+					name := strings.ToLower(svc.Metadata.Name)
+					if !strings.Contains(name, nameHint) {
+						continue
+					}
+					for _, svcPort := range svc.Spec.Ports {
+						if svcPort.Port == port {
+							return svc.Metadata.Name, nil
+						}
+					}
+				}
 			}
 		}
-	}
 
-	for _, svc := range services.Items {
-		name := strings.ToLower(svc.Metadata.Name)
-		if !strings.Contains(name, nameHint) {
-			continue
-		}
-		for _, svcPort := range svc.Spec.Ports {
-			if svcPort.Port == port {
-				return svc.Metadata.Name, nil
-			}
+		if attempt < maxRetries {
+			time.Sleep(retryDelay)
 		}
 	}
 
@@ -804,4 +786,42 @@ func waitForArgoCDApps(ns string, dryRun bool) {
 	}
 	stopSpinner()
 	fmt.Printf("%sTimeout waiting for applications to become healthy. Check progress using 'cloudinferops status'.\n", utils.PrefixWarn)
+}
+
+// DeployIngressController handles the installation of the NGINX ingress controller and waits for it to be ready.
+func DeployIngressController(ns string, dryRun bool) error {
+	ingressFlags := []string{
+		"--set", "controller.watchIngressWithoutClass=true",
+	}
+	if config.GlobalConfig.Observability.HostNetwork {
+		ingressFlags = append(ingressFlags, "--set", "controller.hostNetwork=true")
+		ingressFlags = append(ingressFlags, "--set", "controller.dnsPolicy=ClusterFirstWithHostNet")
+	}
+	// Allow overriding service type, but default to ClusterIP when hostNetwork is true
+	ingressServiceType := config.GlobalConfig.Observability.IngressServiceType
+	if ingressServiceType == "" {
+		ingressServiceType = "ClusterIP"
+	}
+	ingressFlags = append(ingressFlags, "--set", fmt.Sprintf("controller.service.type=%s", ingressServiceType))
+	if err := helm.InstallRelease("cloudinferops-ingress-nginx", "ingress-nginx/ingress-nginx", ns, ingressFlags, dryRun); err != nil {
+		return err
+	}
+
+	// Wait for ingress controller pod to become ready before deploying apps that create Ingress resources
+	if !dryRun {
+		stopSpinner := utils.StartSpinner("Waiting for NGINX Ingress Controller to become ready...")
+		defer stopSpinner()
+		for i := 0; i < 30; i++ {
+			_, _, waitErr := utils.ExecCommand("", "kubectl", "wait", "--namespace", ns,
+				"--for=condition=Ready", "pod",
+				"-l", "app.kubernetes.io/component=controller,app.kubernetes.io/instance=cloudinferops-ingress-nginx",
+				"--timeout=10s")
+			if waitErr == nil {
+				fmt.Printf("%sNGINX Ingress Controller is ready.\n", utils.PrefixOK)
+				return nil
+			}
+		}
+		fmt.Printf("%sIngress Controller not ready yet, continuing deployment anyway...\n", utils.PrefixWarn)
+	}
+	return nil
 }

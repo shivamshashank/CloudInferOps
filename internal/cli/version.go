@@ -8,7 +8,7 @@ import (
 
 // Dynamic build variables set during compilation via -ldflags
 var (
-	Version   = "v0.1.3"
+	Version   = "v1.0.0"
 	Commit    = "unknown"
 	BuildDate = "unknown"
 )

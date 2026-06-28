@@ -16,10 +16,75 @@ import (
 var uninstallDryRun bool
 var forceUninstall bool
 
+var uninstallKubernetesCluster = func() error {
+	fmt.Printf("%sRemoving Kubernetes cluster components and kubeadm state...\n", utils.PrefixInfo)
+
+	cleanupCommands := []string{
+		"sudo kubeadm reset --force || true",
+		"sudo systemctl stop kubelet containerd || true",
+		"sudo systemctl disable kubelet containerd || true",
+		"sudo apt-get purge -y kubeadm kubelet kubectl kubernetes-cni cri-tools containerd.io || true",
+		"sudo apt-get autoremove -y || true",
+	}
+
+	for _, cmd := range cleanupCommands {
+		if _, stderr, err := utils.ExecCommandInteractive("", "bash", "-c", cmd); err != nil {
+			fmt.Printf("%sWarning: cleanup step failed (%s): %s\n", utils.PrefixWarn, cmd, stderr)
+		}
+	}
+
+	pathsToRemove := []string{
+		"/etc/kubernetes",
+		"/var/lib/etcd",
+		"/var/lib/kubelet",
+		"/var/lib/cni",
+		"/var/lib/calico",
+		"/var/run/calico",
+		"/etc/cni/net.d",
+		"/opt/cni/bin",
+		"/var/log/pods",
+	}
+	for _, path := range pathsToRemove {
+		if err := os.RemoveAll(path); err != nil && !os.IsNotExist(err) {
+			fmt.Printf("%sWarning: could not remove %s: %v\n", utils.PrefixWarn, path, err)
+		}
+	}
+
+	realHome, err := utils.GetRealHomeDir()
+	if err == nil {
+		_ = os.RemoveAll(filepath.Join(realHome, ".kube"))
+	}
+
+	fmt.Printf("%sKubernetes teardown completed.\n", utils.PrefixOK)
+	return nil
+}
+
+var performUninstallBinaries = func(dryRun bool) error {
+	if dryRun {
+		fmt.Printf("%s[DRY-RUN] Removing Kubernetes-related binaries and config\n", utils.PrefixInfo)
+		return nil
+	}
+	return uninstallKubernetesCluster()
+}
+
+var uninstallK8sCmd = &cobra.Command{
+	Use:   "k8s",
+	Short: "Uninstall Kubernetes-related binaries and resources",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return performUninstallBinaries(uninstallDryRun)
+	},
+}
+
 var uninstallCmd = &cobra.Command{
 	Use:   "uninstall",
 	Short: "Uninstall CloudInferOps components",
 	Long:  `Parent command for removing observability pipelines, gateway services, and local clusters.`,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if !hasRootPrivileges() {
+			return fmt.Errorf("the 'uninstall' command requires root privileges. Please run with sudo")
+		}
+		return nil
+	},
 }
 
 var uninstallObservabilityCmd = &cobra.Command{
@@ -54,17 +119,19 @@ var uninstallWebhookHandlerCmd = &cobra.Command{
 
 var uninstallAllCmd = &cobra.Command{
 	Use:   "all",
-	Short: "Interactive wizard to remove observability stack, local clusters, and configs",
+	Short: "Interactively remove all CloudInferOps components",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := config.InitConfig(false); err != nil {
 			config.GlobalConfig = config.DefaultConfig()
 		}
 
 		if forceUninstall {
+			fmt.Printf("\n%s--force flag detected. Starting complete uninstallation...\n", utils.PrefixInfo)
 			_ = performUninstallObservability(uninstallDryRun)
-			_ = performUninstallClusters(uninstallDryRun)
 			_ = performUninstallBinaries(uninstallDryRun)
-			return performUninstallConfig(uninstallDryRun)
+			_ = performUninstallConfig(uninstallDryRun)
+			fmt.Printf("\n%sComplete uninstall process finished.\n", utils.PrefixOK)
+			return nil
 		}
 
 		fmt.Printf("\n%s🧹 CloudInferOps Interactive Uninstall%s\n", utils.ColorBold, utils.ColorReset)
@@ -76,19 +143,13 @@ var uninstallAllCmd = &cobra.Command{
 			fmt.Printf("%sSkipping observability stack removal.\n", utils.PrefixInfo)
 		}
 
-		if promptConfirm("2. Tear down local CloudInferOps clusters (k3s, minikube, kind)? [y/N]: ") {
-			_ = performUninstallClusters(uninstallDryRun)
-		} else {
-			fmt.Printf("%sSkipping local clusters tear down.\n", utils.PrefixInfo)
-		}
-
-		if promptConfirm("3. Remove downloaded helper binaries (kubectl, kind, minikube)? [y/N]: ") {
+		if promptConfirm("2. Remove Kubernetes cluster and kubeadm artifacts? [y/N]: ") {
 			_ = performUninstallBinaries(uninstallDryRun)
 		} else {
-			fmt.Printf("%sSkipping binary removal.\n", utils.PrefixInfo)
+			fmt.Printf("%sSkipping Kubernetes cleanup.\n", utils.PrefixInfo)
 		}
 
-		if promptConfirm("4. Delete CloudInferOps configuration (~/.cloudinferops)? [y/N]: ") {
+		if promptConfirm("3. Delete CloudInferOps configuration (~/.cloudinferops)? [y/N]: ") {
 			_ = performUninstallConfig(uninstallDryRun)
 		} else {
 			fmt.Printf("%sSkipping configuration removal.\n", utils.PrefixInfo)
@@ -105,6 +166,7 @@ func init() {
 
 	uninstallCmd.AddCommand(uninstallObservabilityCmd)
 	uninstallCmd.AddCommand(uninstallWebhookHandlerCmd)
+	uninstallCmd.AddCommand(uninstallK8sCmd)
 	uninstallCmd.AddCommand(uninstallAllCmd)
 	RootCmd.AddCommand(uninstallCmd)
 }
@@ -185,85 +247,6 @@ func performUninstallWebhookHandler(dryRun bool) error {
 	stopSpinner()
 
 	fmt.Printf("%sWebhook handler uninstalled successfully.\n", utils.PrefixOK)
-	return nil
-}
-
-func performUninstallClusters(dryRun bool) error {
-	fmt.Printf("%sChecking for local clusters to tear down...\n", utils.PrefixInfo)
-
-	realHome, _ := utils.GetRealHomeDir()
-	kubeEnv := map[string]string{
-		"KUBECONFIG":    filepath.Join(realHome, ".kube", "config"),
-		"MINIKUBE_HOME": realHome,
-	}
-
-	// 1. Kind
-	if _, err := exec.LookPath("kind"); err == nil {
-		// Verify if cluster exists
-		out, _, _ := utils.ExecCommandEnv("", kubeEnv, "kind", "get", "clusters")
-		if strings.Contains(out, "cloudinferops") {
-			if dryRun {
-				fmt.Printf("%s[DRY-RUN] kind delete cluster --name cloudinferops\n", utils.PrefixInfo)
-			} else {
-				fmt.Printf("%sRemoving kind cluster 'cloudinferops'...\n", utils.PrefixInfo)
-				_, _, _ = utils.ExecCommandEnv("", kubeEnv, "kind", "delete", "cluster", "--name", "cloudinferops")
-			}
-		}
-	}
-
-	// 2. Minikube
-	if _, err := exec.LookPath("minikube"); err == nil {
-		// Verify if minikube profile exists
-		out, _, _ := utils.ExecCommandEnv("", kubeEnv, "minikube", "profile", "list")
-		if strings.Contains(out, "minikube") {
-			if dryRun {
-				fmt.Printf("%s[DRY-RUN] minikube delete\n", utils.PrefixInfo)
-			} else {
-				fmt.Printf("%sRemoving minikube cluster...\n", utils.PrefixInfo)
-				_, _, _ = utils.ExecCommandEnv("", kubeEnv, "minikube", "delete")
-			}
-		}
-	}
-
-	// 3. K3s
-	if _, err := os.Stat("/usr/local/bin/k3s-uninstall.sh"); err == nil {
-		if dryRun {
-			fmt.Printf("%s[DRY-RUN] /usr/local/bin/k3s-uninstall.sh\n", utils.PrefixInfo)
-		} else {
-			fmt.Printf("%sRemoving k3s cluster...\n", utils.PrefixInfo)
-			if os.Getuid() == 0 {
-				_, _, _ = utils.ExecCommand("", "/usr/local/bin/k3s-uninstall.sh")
-			} else {
-				_, _, _ = utils.ExecCommandInteractive("", "sudo", "/usr/local/bin/k3s-uninstall.sh")
-			}
-		}
-	}
-
-	fmt.Printf("%sLocal cluster cleanup complete.\n", utils.PrefixOK)
-	return nil
-}
-
-func performUninstallBinaries(dryRun bool) error {
-	fmt.Printf("%sChecking for downloaded binaries to remove...\n", utils.PrefixInfo)
-
-	binaries := []string{"kubectl", "kind", "minikube"}
-	for _, bin := range binaries {
-		path := filepath.Join("/usr/local/bin", bin)
-		if _, err := os.Stat(path); err == nil {
-			if dryRun {
-				fmt.Printf("%s[DRY-RUN] rm -f %s\n", utils.PrefixInfo, path)
-			} else {
-				fmt.Printf("%sRemoving %s binary from %s...\n", utils.PrefixInfo, bin, path)
-				if os.Getuid() == 0 {
-					_, _, _ = utils.ExecCommand("", "rm", "-f", path)
-				} else {
-					_, _, _ = utils.ExecCommandInteractive("", "sudo", "rm", "-f", path)
-				}
-			}
-		}
-	}
-
-	fmt.Printf("%sBinary cleanup complete.\n", utils.PrefixOK)
 	return nil
 }
 

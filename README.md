@@ -68,14 +68,13 @@ It works on:
 - ☁️ GCP Compute Engine VMs
 - ☁️ Azure VMs
 - ☸️ Existing Kubernetes clusters
-- 🧪 Local clusters such as k3s, kind, minikube, and Docker Desktop Kubernetes
+- 🧪 Kubernetes clusters such as kubeadm and custom setups
 
 CloudInferOps follows a simple workflow:
 
 ```bash
 sudo curl -sSL https://raw.githubusercontent.com/shivamshashank/CloudInferOps/main/scripts/install.sh | sudo bash
-sudo cloudinferops doctor
-sudo cloudinferops deploy observability
+sudo cloudinferops bootstrap
 sudo cloudinferops status
 ```
 
@@ -95,7 +94,7 @@ sudo cloudinferops status
 ### ☸️ Kubernetes First
 
 - Uses existing Kubernetes cluster if available
-- Installs k3s when Kubernetes is missing
+- Installs kubeadm when Kubernetes is missing
 - Supports local and cloud VM environments
 - Works consistently across local Linux, AWS EC2, GCP VM, and Azure VM
 
@@ -208,7 +207,7 @@ sudo cloudinferops deploy observability
 > [!TIP]
 > **No Kubernetes? No problem!** If CloudInferOps does not detect an existing
 > Kubernetes cluster, it will automatically ask to install and bootstrap a
-> lightweight local Kubernetes cluster (supporting `kind`, `minikube`, or `k3s`)
+> Kubernetes cluster via `kubeadm`
 > on-the-fly, then automatically deploy the observability stack onto it. If you
 > already have a cluster running, it will deploy directly onto your active
 > context.
@@ -279,12 +278,12 @@ Example:
                  │                       │                       │
           ┌──────▼──────┐        ┌───────▼───────┐        ┌──────▼──────┐
           │   Doctor    │        │ Kubernetes    │        │    Helm     │
-          │   Checks    │        │  Detection    │        │ Deployment  │
+          │   Doctor    │        │  Detection    │        │ Deployment  │
           └──────┬──────┘        └───────┬───────┘        └──────┬──────┘
                  │                       │                       │
                  │              ┌────────▼────────┐              │
                  │              │ Existing K8s or │              │
-                 │              │ k3s Installer   │              │
+                 │              │ kubeadm Install │              │
                  │              └────────┬────────┘              │
                  │                       │                       │
                  └───────────────────────▼───────────────────────┘
@@ -369,6 +368,7 @@ sudo cloudinferops deploy webhook-handler
 ```bash
 sudo cloudinferops uninstall observability
 sudo cloudinferops uninstall all
+sudo cloudinferops uninstall k8s
 ```
 
 ---
@@ -673,7 +673,7 @@ sudo cloudinferops status
 
 ## 🧪 Local Testing via Multipass (Recommended for macOS Users)
 
-Since native Linux VMs are required for k3s, macOS developers can test
+Since native Linux VMs are required for kubeadm, macOS developers can test
 CloudInferOps locally using a lightweight [Multipass](https://multipass.run/)
 Ubuntu VM.
 
@@ -723,8 +723,8 @@ sudo cloudinferops doctor
 sudo cloudinferops deploy observability
 ```
 
-When prompt options appear, select `2` to automatically install `k3s`
-lightweight Kubernetes or `1` for `kind`.
+When prompt options appear, select `1` to automatically install `kubeadm`
+or run directly on an existing cluster.
 
 ### 5. Access Dashboards from Host Browser
 

@@ -192,21 +192,12 @@ func PrintStatus() error {
 		ingressIP, err := FetchIngressIP(ns, false)
 		if err == nil && ingressIP != "" {
 			instanceIP = ingressIP
-		} else {
-			context, _, _ := utils.ExecCommand("", "kubectl", "config", "current-context")
-			context = strings.TrimSpace(context)
-			if strings.Contains(context, "minikube") {
-				minikubeIP, _, err := utils.ExecCommand("", "minikube", "ip")
-				if err == nil && minikubeIP != "" {
-					instanceIP = strings.TrimSpace(minikubeIP)
-				}
-			}
 		}
 
-		// If we are on a cloud VM, the ingress IP might be the private subnet IP.
+		// If we are on a cloud VM or running locally, the ingress IP might be a private subnet IP or loopback.
 		// Attempt to resolve the public IP for correct external browser access.
 		var detectedPublicIP string
-		if parsedIP := net.ParseIP(instanceIP); parsedIP != nil && parsedIP.IsPrivate() {
+		if parsedIP := net.ParseIP(instanceIP); parsedIP != nil && (parsedIP.IsPrivate() || parsedIP.IsLoopback()) {
 			detectedPublicIP = utils.GetPublicIP()
 			if detectedPublicIP != "" {
 				instanceIP = detectedPublicIP

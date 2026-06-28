@@ -52,32 +52,8 @@ func BootstrapGitOps(dryRun bool) error {
 	}
 
 	// 3. Deploy NGINX Ingress Controller
-	ingressFlags := []string{
-		"--set", "controller.watchIngressWithoutClass=true",
-	}
-	if err := helm.InstallRelease("cloudinferops-ingress-nginx", "ingress-nginx/ingress-nginx", ns, ingressFlags, dryRun); err != nil {
+	if err := observability.DeployIngressController(ns, dryRun); err != nil {
 		return err
-	}
-
-	// Wait for ingress controller
-	if !dryRun {
-		stopSpinner := utils.StartSpinner("Waiting for NGINX Ingress Controller to become ready...")
-		ready := false
-		for i := 0; i < 30; i++ {
-			_, _, waitErr := utils.ExecCommand("", "kubectl", "wait", "--namespace", ns,
-				"--for=condition=Ready", "pod",
-				"-l", "app.kubernetes.io/component=controller,app.kubernetes.io/instance=cloudinferops-ingress-nginx",
-				"--timeout=10s")
-			if waitErr == nil {
-				ready = true
-				break
-			}
-			time.Sleep(1 * time.Second)
-		}
-		stopSpinner()
-		if ready {
-			fmt.Printf("%sNGINX Ingress Controller is ready.\n", utils.PrefixOK)
-		}
 	}
 
 	// 4. Deploy ArgoCD
@@ -240,10 +216,23 @@ dependencies:
 `
 	}
 
-	infraValues := `ingress-nginx:
+	dnsPolicy := "ClusterFirst"
+	if config.GlobalConfig.Observability.HostNetwork {
+		dnsPolicy = "ClusterFirstWithHostNet"
+	}
+	ingressServiceType := config.GlobalConfig.Observability.IngressServiceType
+	if ingressServiceType == "" {
+		ingressServiceType = "ClusterIP"
+	}
+	infraValues := fmt.Sprintf(`ingress-nginx:
   controller:
     watchIngressWithoutClass: true
-`
+    service:
+      type: %s
+    hostNetwork: %t
+    dnsPolicy: %s
+`, ingressServiceType, config.GlobalConfig.Observability.HostNetwork, dnsPolicy)
+
 	if config.GlobalConfig.Observability.Thanos {
 		infraValues += `thanos:
   existingObjstoreSecret: cloudinferops-thanos-objstore
@@ -335,12 +324,12 @@ dependencies:
         isDefaultDatasource: true
         name: Prometheus
         uid: prometheus
-        url: http://cloudinferops-prometheus-kube-prometheus.observability:9090/prometheus
+        url: http://cloudinferops-prometheus-k-prometheus.observability:9090/prometheus
         alertmanager:
           enabled: true
           name: Alertmanager
           uid: alertmanager
-          url: http://cloudinferops-prometheus-kube-alertmanager.observability:9093/alertmanager
+          url: http://cloudinferops-prometheus-k-alertmanager.observability:9093/alertmanager
   prometheus:
     ingress:
       enabled: false
@@ -548,35 +537,34 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   ingressClassName: nginx
   rules:
     - http:
         paths:
-          - path: /grafana(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: /grafana
+            pathType: Prefix
             backend:
               service:
                 name: cloudinferops-prometheus-grafana
                 port:
                   number: 80
-          - path: /prometheus(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: /prometheus
+            pathType: Prefix
             backend:
               service:
-                name: cloudinferops-prometheus-kube-prometheus
+                name: cloudinferops-prometheus-k-prometheus
                 port:
                   number: 9090
-          - path: /alertmanager(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: /alertmanager
+            pathType: Prefix
             backend:
               service:
-                name: cloudinferops-prometheus-kube-alertmanager
+                name: cloudinferops-prometheus-k-alertmanager
                 port:
                   number: 9093
-          - path: /argocd(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: /argocd
+            pathType: Prefix
             backend:
               service:
                 name: cloudinferops-argocd-server
