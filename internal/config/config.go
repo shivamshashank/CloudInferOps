@@ -50,7 +50,7 @@ type AlertsConfig struct {
 
 type SlackConfig struct {
 	Enabled          bool   `mapstructure:"enabled"`
-	WebhookUrlSecret string `mapstructure:"webhookUrlSecret"`
+	WebhookURLSecret string `mapstructure:"webhookUrlSecret"`
 }
 
 type PagerDutyConfig struct {
@@ -92,7 +92,7 @@ func DefaultConfig() Config {
 		Alerts: AlertsConfig{
 			Slack: SlackConfig{
 				Enabled:          false,
-				WebhookUrlSecret: "cloudinferops-slack-webhook",
+				WebhookURLSecret: "cloudinferops-slack-webhook",
 			},
 			PagerDuty: PagerDutyConfig{
 				Enabled:              false,
@@ -173,7 +173,7 @@ func InitConfig(createIfMissing bool) error {
 			viper.Set("observability.ingressServiceType", defaults.Observability.IngressServiceType)
 			viper.Set("observability.hostNetwork", defaults.Observability.HostNetwork)
 			viper.Set("alerts.slack.enabled", defaults.Alerts.Slack.Enabled)
-			viper.Set("alerts.slack.webhookUrlSecret", defaults.Alerts.Slack.WebhookUrlSecret)
+			viper.Set("alerts.slack.webhookUrlSecret", defaults.Alerts.Slack.WebhookURLSecret)
 			viper.Set("alerts.pagerduty.enabled", defaults.Alerts.PagerDuty.Enabled)
 			viper.Set("alerts.pagerduty.integrationKeySecret", defaults.Alerts.PagerDuty.IntegrationKeySecret)
 
@@ -230,7 +230,7 @@ func SaveConfig() error {
 	viper.Set("observability.ingressServiceType", GlobalConfig.Observability.IngressServiceType)
 	viper.Set("observability.hostNetwork", GlobalConfig.Observability.HostNetwork)
 	viper.Set("alerts.slack.enabled", GlobalConfig.Alerts.Slack.Enabled)
-	viper.Set("alerts.slack.webhookUrlSecret", GlobalConfig.Alerts.Slack.WebhookUrlSecret)
+	viper.Set("alerts.slack.webhookUrlSecret", GlobalConfig.Alerts.Slack.WebhookURLSecret)
 	viper.Set("alerts.pagerduty.enabled", GlobalConfig.Alerts.PagerDuty.Enabled)
 	viper.Set("alerts.pagerduty.integrationKeySecret", GlobalConfig.Alerts.PagerDuty.IntegrationKeySecret)
 

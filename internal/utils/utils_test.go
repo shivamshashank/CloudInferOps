@@ -44,7 +44,7 @@ func TestGetPublicIP(t *testing.T) {
 	}
 }
 
-func TestIsCloudVM(t *testing.T) {
+func TestIsCloudVM(_ *testing.T) {
 	// Just ensure it does not panic and safely returns a boolean
 	IsCloudVM()
 }

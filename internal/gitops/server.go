@@ -108,7 +108,7 @@ func DeployGitServer(ns string, dryRun bool) error {
 // StartPortForward sets up a background port-forward for the git-server and returns a cancel function.
 func StartPortForward(ns string, localPort, targetPort int) (func(), error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	cmd := exec.CommandContext(ctx, "kubectl", "port-forward", "-n", ns, "svc/cloudinferops-git-server", fmt.Sprintf("%d:%d", localPort, targetPort))
+	cmd := exec.CommandContext(ctx, "kubectl", "port-forward", "-n", ns, "svc/cloudinferops-git-server", fmt.Sprintf("%d:%d", localPort, targetPort)) //nolint:gosec
 
 	if err := cmd.Start(); err != nil {
 		cancel()

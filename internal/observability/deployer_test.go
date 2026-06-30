@@ -16,7 +16,7 @@ func setupMocks(t *testing.T) {
 
 	// We mock kubectl to output an empty JSON list so 'get svc' parsing doesn't crash
 	mockScript := `#!/bin/sh
-echo '{"items":[]}' 
+echo '{"items":[]}'
 exit 0
 `
 	if err := os.WriteFile(filepath.Join(mockBinDir, "kubectl"), []byte(mockScript), 0755); err != nil {
@@ -68,6 +68,6 @@ func TestDeployViaArgoCD_DryRun(t *testing.T) {
 	}
 }
 
-func TestWaitForArgoCDApps_DryRun(t *testing.T) {
+func TestWaitForArgoCDApps_DryRun(_ *testing.T) {
 	waitForArgoCDApps("test-ns", true) // Should return immediately without error
 }

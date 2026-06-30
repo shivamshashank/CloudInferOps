@@ -12,11 +12,11 @@ import (
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "cloudinferops",
-	Short: "🚀 CloudInferOps is a one-command observability platform for Kubernetes and Linux VMs",
-	Long: `🚀 CloudInferOps is a Go-based DevOps/SRE CLI that detects your environment,
-validates Kubernetes readiness, installs lightweight Kubernetes when needed, and
-deploys a production-style observability stack with metrics, logs, traces,
-dashboards, alerts, and incident webhooks.`,
+	Short: "🚀 CloudInferOps is a cloud-native AI Inference Operations Platform for Kubernetes",
+	Long: `🚀 CloudInferOps is an end-to-end AI Inference Operations Platform designed to simplify
+the deployment, management, and observability of LLM inference workloads on Kubernetes.
+
+It provides a powerful CLI to deploy the core platform, inference services, and more.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

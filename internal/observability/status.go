@@ -83,32 +83,73 @@ func PrintStatus() error {
 		}
 	}
 
+	// 2b. Fetch Inference Pod States
+	inferencePodsOut, _, err := utils.ExecCommand("", "kubectl", "get", "pods", "-n", "inference", "--no-headers")
+	hasInferencePods := err == nil && inferencePodsOut != ""
+
+	inferenceGatewayStatus := "⚪  Not Deployed"
+	inferenceBackendStatus := "⚪  Not Deployed"
+
+	if hasInferencePods {
+		lines := strings.Split(strings.TrimSpace(inferencePodsOut), "\n")
+		for _, line := range lines {
+			fields := strings.Fields(line)
+			if len(fields) < 3 {
+				continue
+			}
+			podName := fields[0]
+			podState := fields[2]
+
+			statusStr := "🔴  Failed (" + podState + ")"
+			switch podState {
+			case "Running":
+				statusStr = "🟢  Running"
+			case "Pending", "ContainerCreating", "PodInitializing":
+				statusStr = "🟡  Initializing"
+			}
+
+			if strings.Contains(podName, "cloudinferops-gateway") || strings.Contains(podName, "gateway") {
+				inferenceGatewayStatus = statusStr
+			} else if strings.Contains(podName, "ollama") {
+				inferenceBackendStatus = "🟢  Running (Ollama)"
+				if podState != "Running" {
+					inferenceBackendStatus = "🔴  Failed (Ollama) (" + podState + ")"
+				}
+			} else if strings.Contains(podName, "vllm") {
+				inferenceBackendStatus = "🟢  Running (vLLM)"
+				if podState != "Running" {
+					inferenceBackendStatus = "🔴  Failed (vLLM) (" + podState + ")"
+				}
+			}
+		}
+	}
+
 	// 3. Fetch and Decode Grafana Admin Password
-	plainPassword := "<unretrievable>"
+	plainPass := "<unretrievable>"
 	pwdSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "cloudinferops-prometheus-grafana", "-n", ns, "-o", "jsonpath={.data.admin-password}")
 	if err == nil && pwdSecret != "" {
 		decoded, err := DecodeBase64(strings.TrimSpace(pwdSecret))
 		if err == nil {
-			plainPassword = decoded
+			plainPass = decoded
 		}
 	}
 
 	// 3b. Fetch and Decode ArgoCD Admin Password
-	argoPassword := "<unretrievable>"
-	argoSecretName := "argocd-initial-admin-secret" // Default fallback
+	argoPass := "<unretrievable>"
+	argoSecName := "argocd-initial-admin-secret" // Default fallback
 	if out, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "-n", ns, "-o", "name"); err == nil {
 		for _, line := range strings.Split(out, "\n") {
 			if strings.Contains(line, "initial-admin-secret") {
-				argoSecretName = strings.TrimPrefix(strings.TrimSpace(line), "secret/")
+				argoSecName = strings.TrimPrefix(strings.TrimSpace(line), "secret/")
 				break
 			}
 		}
 	}
-	argoSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", argoSecretName, "-n", ns, "-o", "jsonpath={.data.password}")
+	argoSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", argoSecName, "-n", ns, "-o", "jsonpath={.data.password}")
 	if err == nil && argoSecret != "" {
 		decoded, err := DecodeBase64(strings.TrimSpace(argoSecret))
 		if err == nil {
-			argoPassword = decoded
+			argoPass = decoded
 		}
 	}
 
@@ -142,6 +183,11 @@ func PrintStatus() error {
 		fmt.Printf("    %-25s %s\n", "Thanos Storage:", thanosStatus)
 	}
 	fmt.Printf("    %-25s %s\n", "ArgoCD Delivery:", argoStatus)
+	fmt.Println()
+
+	fmt.Println("🤖  Inference Services:")
+	fmt.Printf("    %-25s %s\n", "Inference Gateway:", inferenceGatewayStatus)
+	fmt.Printf("    %-25s %s\n", "Model Backend:", inferenceBackendStatus)
 	fmt.Println()
 
 	// 5. GitOps Status
@@ -213,9 +259,9 @@ func PrintStatus() error {
 		}
 
 		fmt.Printf("    🔑  Username:            admin\n")
-		fmt.Printf("    🔑  Grafana Password:    %s\n", utils.ColorGreen+plainPassword+utils.ColorReset)
+		fmt.Printf("    🔑  Grafana Password:    %s\n", utils.ColorGreen+plainPass+utils.ColorReset)
 		if config.GlobalConfig.Observability.ArgoCD {
-			fmt.Printf("    🔑  ArgoCD Password:     %s\n", utils.ColorGreen+argoPassword+utils.ColorReset)
+			fmt.Printf("    🔑  ArgoCD Password:     %s\n", utils.ColorGreen+argoPass+utils.ColorReset)
 		}
 		fmt.Println()
 	}

@@ -20,15 +20,15 @@ type CheckResult struct {
 	Message string
 }
 
-// DoctorReport contains all check results and overall status
-type DoctorReport struct {
+// Report contains all check results and overall status
+type Report struct {
 	Results   []CheckResult
 	HasErrors bool
 	HasK8s    bool
 }
 
 // Print prints a stylized doctor report to the terminal
-func (r *DoctorReport) Print() {
+func (r *Report) Print() {
 	fmt.Println(utils.ColorBold + "🩺  CloudInferOps Doctor" + utils.ColorReset)
 	fmt.Println()
 
@@ -59,8 +59,8 @@ func (r *DoctorReport) Print() {
 }
 
 // RunDoctor aggregates and executes all pre-flight diagnostic checks
-func RunDoctor() *DoctorReport {
-	report := &DoctorReport{}
+func RunDoctor() *Report {
+	report := &Report{}
 
 	// System checks
 	report.Results = append(report.Results, CheckOS())

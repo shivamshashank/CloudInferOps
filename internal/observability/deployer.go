@@ -424,11 +424,11 @@ func DeployObservability(dryRun bool) error {
 		}
 	}
 
-	argoSecretName := "argocd-initial-admin-secret"
+	argoSecName := "argocd-initial-admin-secret"
 	if out, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "-n", ns, "-o", "name"); err == nil {
 		for _, line := range strings.Split(out, "\n") {
 			if strings.Contains(line, "initial-admin-secret") {
-				argoSecretName = strings.TrimPrefix(strings.TrimSpace(line), "secret/")
+				argoSecName = strings.TrimPrefix(strings.TrimSpace(line), "secret/")
 				break
 			}
 		}
@@ -452,7 +452,7 @@ func DeployObservability(dryRun bool) error {
 		fmt.Println("\n    👤  Default credentials:   Username: admin")
 		fmt.Printf("                               Password command: %s\n", utils.ColorCyan+fmt.Sprintf("kubectl get secret --namespace %s cloudinferops-prometheus-grafana -o jsonpath=\"{.data.admin-password}\" | base64 --decode ; echo", ns)+utils.ColorReset)
 		if config.GlobalConfig.Observability.ArgoCD {
-			fmt.Printf("                               ArgoCD Password:  %s\n", utils.ColorCyan+fmt.Sprintf("kubectl get secret --namespace %s %s -o jsonpath=\"{.data.password}\" | base64 --decode ; echo", ns, argoSecretName)+utils.ColorReset)
+			fmt.Printf("                               ArgoCD Password:  %s\n", utils.ColorCyan+fmt.Sprintf("kubectl get secret --namespace %s %s -o jsonpath=\"{.data.password}\" | base64 --decode ; echo", ns, argoSecName)+utils.ColorReset)
 		}
 	}
 

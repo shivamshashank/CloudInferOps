@@ -15,7 +15,7 @@ var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Check the status and retrieve credentials of the deployed stack",
 	Long:  `Queries active Kubernetes pods, collects components liveness checkpoints, and decrypts ingress/credentials dashboards.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		// 1. Pre-flight check: Verify cluster reachability early
 		_, hasK8s := doctor.CheckK8sCluster()
 		if !hasK8s {

@@ -18,7 +18,7 @@ func TestDoctorReportAndRun(t *testing.T) {
 	mockKubectlContent := `#!/bin/sh
 exit 0
 `
-	if err := os.WriteFile(mockKubectlPath, []byte(mockKubectlContent), 0755); err != nil {
+	if err := os.WriteFile(mockKubectlPath, []byte(mockKubectlContent), 0755); err != nil { //nolint:gosec
 		t.Fatalf("failed to write mock kubectl: %v", err)
 	}
 
@@ -28,7 +28,7 @@ exit 0
 	// Run aggregated diagnostics
 	report := RunDoctor()
 	if report == nil {
-		t.Fatal("expected non-nil DoctorReport")
+		t.Fatal("expected non-nil Report")
 	}
 
 	// Capture stdout of Print()

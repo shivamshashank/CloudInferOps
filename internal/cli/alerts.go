@@ -30,7 +30,7 @@ var configureCmd = &cobra.Command{
 	Use:   "configure",
 	Short: "Configure alert secrets inside your active cluster",
 	Long:  `Interactively prompts for credentials and provisions Kubernetes Secrets securely inside the cluster.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		// 1. Verify Kubernetes cluster connectivity first
 		_, hasK8s := doctor.CheckK8sCluster()
 		if !hasK8s {
@@ -65,7 +65,7 @@ var configureCmd = &cobra.Command{
 			}
 
 			fmt.Printf("%sProvisioning Slack Webhook Secret in cluster...\n", utils.PrefixInfo)
-			err = alerts.CreateSecret(config.GlobalConfig.Alerts.Slack.WebhookUrlSecret, "webhook-url", url, ns)
+			err = alerts.CreateSecret(config.GlobalConfig.Alerts.Slack.WebhookURLSecret, "webhook-url", url, ns)
 			if err != nil {
 				return err
 			}

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: model-config
+  namespace: inference
+data:
+  provider: "ollama"
+  model: "llama3"
+  ollama_host: "http://ollama-service:11434"
