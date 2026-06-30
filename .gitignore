@@ -3,6 +3,10 @@
 
 # Coverage
 coverage.out
+.coverage
+coverage.xml
+htmlcov/
+
 
 # Python virtual environment and cache
 .venv/
