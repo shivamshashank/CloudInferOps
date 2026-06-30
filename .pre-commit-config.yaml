@@ -16,7 +16,7 @@ repos:
         language: system
         types: [go]
         pass_filenames: false
-        args: [--config=golangci.json]
+        args: [--config=.golangci.json]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.5.0

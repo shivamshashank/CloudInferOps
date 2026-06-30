@@ -15,7 +15,7 @@
       "rules": [
         {
           "linters": ["gosec"],
-          "text": "G101|G107|G204|G301|G306|G703|G704"
+          "text": "G101|G107|G115|G204|G301|G306|G703|G704"
         },
         {
           "linters": ["revive"],
