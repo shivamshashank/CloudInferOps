@@ -6,14 +6,19 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   ingressClassName: nginx
   rules:
   - http:
       paths:
-      # Route both /v1/chat/completions and /models to the gateway service
-      - path: /(v1|models)(/|$)(.*)
+      - path: /v1
+        pathType: Prefix
+        backend:
+          service:
+            name: gateway-service
+            port:
+              number: 8000
+      - path: /models
         pathType: Prefix
         backend:
           service:

@@ -2,7 +2,6 @@
 name = "cloudinferops-gateway"
 version = "1.0.0"
 description = "FastAPI Inference Gateway for CloudInferOps"
-readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.100.0",

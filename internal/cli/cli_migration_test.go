@@ -12,9 +12,6 @@ func TestMigrationCommandsExist(t *testing.T) {
 	if deployCmd == nil {
 		t.Error("deployCmd was not initialized")
 	}
-	if deployPlatformCmd == nil {
-		t.Error("deployPlatformCmd was not initialized")
-	}
 	if deployObservabilityCmd == nil {
 		t.Error("deployObservabilityCmd was not initialized")
 	}
@@ -105,11 +102,5 @@ func TestBenchmarkRunCmd(t *testing.T) {
 	}
 	if !strings.Contains(output, "Target Provider: vllm") {
 		t.Errorf("Expected provider vllm in output, got: %s", output)
-	}
-}
-
-func TestDeployObservabilityAliasDeprecated(t *testing.T) {
-	if deployObservabilityCmd.Deprecated == "" {
-		t.Error("Expected deployObservabilityCmd to be marked as deprecated")
 	}
 }

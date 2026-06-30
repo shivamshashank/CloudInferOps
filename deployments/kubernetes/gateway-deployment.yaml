@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
       - name: gateway
-        image: cloudinferops-gateway:latest
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/shivamshashank/cloudinferops-gateway:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8000
           name: http

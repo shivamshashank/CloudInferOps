@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  packages: write
+
 
 jobs:
   release:
@@ -97,3 +99,20 @@ jobs:
             dist/cloudinferops-linux-amd64
             dist/cloudinferops-linux-arm64
             dist/checksums.txt
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Gateway Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api
+          file: ./api/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/shivamshashank/cloudinferops-gateway:latest
+            ghcr.io/shivamshashank/cloudinferops-gateway:${{ steps.next_version.outputs.next_tag }}

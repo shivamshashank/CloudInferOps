@@ -24,7 +24,7 @@ It performs the following actions:
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// The bootstrap command now just calls the same logic as 'deploy platform'
+		// The bootstrap command now just calls the same logic as 'deploy observability'
 		deployDryRun = bootstrapDryRun // Ensure the dry-run flag is respected
 		return runDeployObservability(cmd, args)
 	},

@@ -24,7 +24,7 @@ func addDeployObservabilityFlags(cmd *cobra.Command) {
 
 func runDeployObservability(_ *cobra.Command, _ []string) error {
 	// 1. Pre-flight check: Verify cluster reachability and install if missing.
-	if err := ensureKubernetes(deployDryRun, "deploy platform"); err != nil {
+	if err := ensureKubernetes(deployDryRun, "deploy observability"); err != nil {
 		return err
 	}
 
@@ -124,4 +124,23 @@ func promptClusterOption(reader io.Reader) (string, error) {
 		fmt.Printf("%sInvalid choice '%s'. Defaulting to exit.\n", utils.PrefixWarn, response)
 		return "no", nil
 	}
+}
+
+var deployObservabilityCmd = &cobra.Command{
+	Use:   "observability",
+	Short: "Deploy the core CloudInferOps observability stack",
+	Long: `Deploys the observability platform, which includes:
+- Prometheus for metrics
+- Grafana for dashboards
+- Loki for logs
+- Tempo for traces
+- ArgoCD for GitOps
+- Alertmanager for alerts
+- OpenTelemetry Collector for telemetry pipelines`,
+	RunE: runDeployObservability,
+}
+
+func init() {
+	addDeployObservabilityFlags(deployObservabilityCmd)
+	deployCmd.AddCommand(deployObservabilityCmd)
 }

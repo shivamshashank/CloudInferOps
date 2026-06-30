@@ -55,8 +55,8 @@ spec:
     spec:
       containers:
       - name: gateway
-        image: cloudinferops-gateway:latest
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/shivamshashank/cloudinferops-gateway:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8000
           name: http
@@ -130,13 +130,19 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   ingressClassName: nginx
   rules:
   - http:
       paths:
-      - path: /(v1|models)(/|$)(.*)
+      - path: /v1
+        pathType: Prefix
+        backend:
+          service:
+            name: gateway-service
+            port:
+              number: 8000
+      - path: /models
         pathType: Prefix
         backend:
           service:
