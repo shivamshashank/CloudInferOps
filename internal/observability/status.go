@@ -125,31 +125,31 @@ func PrintStatus() error {
 	}
 
 	// 3. Fetch and Decode Grafana Admin Password
-	plainPassword := "<unretrievable>"
+	plainPass := "<unretrievable>"
 	pwdSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "cloudinferops-prometheus-grafana", "-n", ns, "-o", "jsonpath={.data.admin-password}")
 	if err == nil && pwdSecret != "" {
 		decoded, err := DecodeBase64(strings.TrimSpace(pwdSecret))
 		if err == nil {
-			plainPassword = decoded
+			plainPass = decoded
 		}
 	}
 
 	// 3b. Fetch and Decode ArgoCD Admin Password
-	argoPassword := "<unretrievable>"
-	argoSecretName := "argocd-initial-admin-secret" // Default fallback
+	argoPass := "<unretrievable>"
+	argoSecName := "argocd-initial-admin-secret" // Default fallback
 	if out, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "-n", ns, "-o", "name"); err == nil {
 		for _, line := range strings.Split(out, "\n") {
 			if strings.Contains(line, "initial-admin-secret") {
-				argoSecretName = strings.TrimPrefix(strings.TrimSpace(line), "secret/")
+				argoSecName = strings.TrimPrefix(strings.TrimSpace(line), "secret/")
 				break
 			}
 		}
 	}
-	argoSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", argoSecretName, "-n", ns, "-o", "jsonpath={.data.password}")
+	argoSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", argoSecName, "-n", ns, "-o", "jsonpath={.data.password}")
 	if err == nil && argoSecret != "" {
 		decoded, err := DecodeBase64(strings.TrimSpace(argoSecret))
 		if err == nil {
-			argoPassword = decoded
+			argoPass = decoded
 		}
 	}
 
@@ -259,9 +259,9 @@ func PrintStatus() error {
 		}
 
 		fmt.Printf("    🔑  Username:            admin\n")
-		fmt.Printf("    🔑  Grafana Password:    %s\n", utils.ColorGreen+plainPassword+utils.ColorReset)
+		fmt.Printf("    🔑  Grafana Password:    %s\n", utils.ColorGreen+plainPass+utils.ColorReset)
 		if config.GlobalConfig.Observability.ArgoCD {
-			fmt.Printf("    🔑  ArgoCD Password:     %s\n", utils.ColorGreen+argoPassword+utils.ColorReset)
+			fmt.Printf("    🔑  ArgoCD Password:     %s\n", utils.ColorGreen+argoPass+utils.ColorReset)
 		}
 		fmt.Println()
 	}

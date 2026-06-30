@@ -42,7 +42,7 @@ func TestGetLinuxMemory(t *testing.T) {
 	tmpDir := t.TempDir()
 	meminfoFile := filepath.Join(tmpDir, "meminfo")
 	content := "MemTotal:        8192000 kB\nMemFree:         4096000 kB\n"
-	if err := os.WriteFile(meminfoFile, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(meminfoFile, []byte(content), 0600); err != nil {
 		t.Fatalf("failed to write mock meminfo: %v", err)
 	}
 
@@ -61,7 +61,7 @@ func TestGetLinuxMemory(t *testing.T) {
 
 	// 2. Failure: missing field
 	badContent := "MemFree:         4096000 kB\n"
-	if err := os.WriteFile(meminfoFile, []byte(badContent), 0644); err != nil {
+	if err := os.WriteFile(meminfoFile, []byte(badContent), 0600); err != nil {
 		t.Fatalf("failed to write mock meminfo: %v", err)
 	}
 	_, err = getLinuxMemory()

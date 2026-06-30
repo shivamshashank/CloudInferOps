@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-deployment
+  namespace: inference
+  labels:
+    app: cloudinferops-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudinferops-gateway
+  template:
+    metadata:
+      labels:
+        app: cloudinferops-gateway
+    spec:
+      containers:
+      - name: gateway
+        image: cloudinferops-gateway:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: PROVIDER
+          valueFrom:
+            configMapKeyRef:
+              name: model-config
+              key: provider
+        - name: OLLAMA_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: model-config
+              key: ollama_host
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://cloudinferops-otel.observability.svc.cluster.local:4318/v1/traces"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi

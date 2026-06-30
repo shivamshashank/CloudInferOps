@@ -3,3 +3,14 @@
 
 # Coverage
 coverage.out
+
+# Python virtual environment and cache
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Python packaging/build files
+*.egg-info/
+dist/
+build/

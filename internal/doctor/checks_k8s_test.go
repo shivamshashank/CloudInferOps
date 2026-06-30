@@ -60,7 +60,7 @@ case "$*" in
     ;;
 esac
 `
-	if err := os.WriteFile(mockKubectlPath, []byte(mockKubectlContent), 0755); err != nil {
+	if err := os.WriteFile(mockKubectlPath, []byte(mockKubectlContent), 0755); err != nil { //nolint:gosec
 		t.Fatalf("failed to write mock kubectl: %v", err)
 	}
 
@@ -123,7 +123,7 @@ func TestCheckK8sClusterFailures(t *testing.T) {
 echo "mock kubectl failed" >&2
 exit 1
 `
-	if err := os.WriteFile(mockKubectlPath, []byte(mockKubectlContent), 0755); err != nil {
+	if err := os.WriteFile(mockKubectlPath, []byte(mockKubectlContent), 0755); err != nil { //nolint:gosec
 		t.Fatalf("failed to write mock kubectl: %v", err)
 	}
 
@@ -135,7 +135,7 @@ exit 1
 	}
 }
 
-func TestCheckK8sVersionAndIngress(t *testing.T) {
+func TestCheckK8sVersionAndIngress(_ *testing.T) {
 	_ = CheckK8sVersion()
 	_ = CheckIngressController()
 }

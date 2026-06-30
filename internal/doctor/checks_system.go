@@ -144,7 +144,11 @@ func CheckDisk() CheckResult {
 	}
 
 	// Bavail is the number of blocks available to non-superuser. Bsize is block size.
-	freeBytes := stat.Bavail * uint64(stat.Bsize)
+	bsize := int64(stat.Bsize)
+	if bsize < 0 {
+		bsize = 0
+	}
+	freeBytes := uint64(stat.Bavail) * uint64(bsize)
 	freeGB := float64(freeBytes) / (1024 * 1024 * 1024)
 	msg := fmt.Sprintf("Minimum disk space: %.2fGB free (12GB+ recommended)", freeGB)
 

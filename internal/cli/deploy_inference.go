@@ -1,9 +1,7 @@
 package cli
 
 import (
-	"fmt"
-
-	"github.com/shivamshashank/CloudInferOps/internal/utils"
+	"github.com/shivamshashank/CloudInferOps/internal/inference"
 	"github.com/spf13/cobra"
 )
 
@@ -20,15 +18,8 @@ var deployInferenceCmd = &cobra.Command{
 
 You can specify the model provider and the model to be deployed.
 Example: cloudinferops deploy inference --provider ollama --model llama3`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if inferenceDryRun {
-			fmt.Printf("%s[DRY-RUN] Would deploy inference gateway and model backend\n", utils.PrefixInfo)
-			fmt.Printf("%s[DRY-RUN] Provider: %s, Model: %s\n", utils.PrefixInfo, inferenceProvider, inferenceModel)
-			return nil
-		}
-		fmt.Printf("%sDeploying inference service (Provider: %s, Model: %s)...\n", utils.PrefixInfo, inferenceProvider, inferenceModel)
-		fmt.Println(utils.PrefixInfo + "Inference deployment logic will be fully implemented in Phase 3.")
-		return nil
+	RunE: func(_ *cobra.Command, _ []string) error {
+		return inference.DeployInference(inferenceProvider, inferenceModel, inferenceDryRun)
 	},
 }
 

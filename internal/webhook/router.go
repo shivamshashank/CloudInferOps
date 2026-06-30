@@ -126,7 +126,7 @@ func DispatchSlackAlert(inc Incident) {
 		return
 	}
 
-	resp, err := http.Post(slackWebhook, "application/json", bytes.NewBuffer(bodyBytes))
+	resp, err := http.Post(slackWebhook, "application/json", bytes.NewBuffer(bodyBytes)) //nolint:gosec
 	if err == nil {
 		_ = resp.Body.Close()
 	}

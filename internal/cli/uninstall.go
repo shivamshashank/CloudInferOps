@@ -70,7 +70,7 @@ var performUninstallBinaries = func(dryRun bool) error {
 var uninstallK8sCmd = &cobra.Command{
 	Use:   "k8s",
 	Short: "Uninstall Kubernetes-related binaries and resources",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		return performUninstallBinaries(uninstallDryRun)
 	},
 }
@@ -79,7 +79,7 @@ var uninstallCmd = &cobra.Command{
 	Use:   "uninstall",
 	Short: "Uninstall CloudInferOps components",
 	Long:  `Parent command for removing observability pipelines, gateway services, and local clusters.`,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
 		if !hasRootPrivileges() {
 			return fmt.Errorf("the 'uninstall' command requires root privileges. Please run with sudo")
 		}
@@ -90,7 +90,7 @@ var uninstallCmd = &cobra.Command{
 var uninstallObservabilityCmd = &cobra.Command{
 	Use:   "observability",
 	Short: "Remove the observability stack",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		if err := config.InitConfig(false); err != nil {
 			config.GlobalConfig = config.DefaultConfig()
 		}
@@ -105,7 +105,7 @@ var uninstallObservabilityCmd = &cobra.Command{
 var uninstallWebhookHandlerCmd = &cobra.Command{
 	Use:   "webhook-handler",
 	Short: "Remove the custom Go webhook incident gateway",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		if err := config.InitConfig(false); err != nil {
 			config.GlobalConfig = config.DefaultConfig()
 		}
@@ -120,7 +120,7 @@ var uninstallWebhookHandlerCmd = &cobra.Command{
 var uninstallAllCmd = &cobra.Command{
 	Use:   "all",
 	Short: "Interactively remove all CloudInferOps components",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		if err := config.InitConfig(false); err != nil {
 			config.GlobalConfig = config.DefaultConfig()
 		}

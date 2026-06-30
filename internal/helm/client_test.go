@@ -37,7 +37,7 @@ func TestHelmOperationsMockedPATH(t *testing.T) {
 echo "mock helm executed with: $*"
 exit 0
 `
-	if err := os.WriteFile(mockHelmPath, []byte(mockHelmContent), 0755); err != nil {
+	if err := os.WriteFile(mockHelmPath, []byte(mockHelmContent), 0755); err != nil { //nolint:gosec
 		t.Fatalf("failed to write mock helm: %v", err)
 	}
 
@@ -63,7 +63,7 @@ exit 0
 echo "mock helm failed command" >&2
 exit 1
 `
-	if err := os.WriteFile(mockHelmPath, []byte(mockHelmFailContent), 0755); err != nil {
+	if err := os.WriteFile(mockHelmPath, []byte(mockHelmFailContent), 0755); err != nil { //nolint:gosec
 		t.Fatalf("failed to rewrite mock helm: %v", err)
 	}
 

@@ -17,7 +17,7 @@ It performs the following actions:
 1. Checks for an existing Kubernetes cluster.
 2. If no cluster is found, it prompts to install one for you via kubeadm.
 3. Deploys the complete observability stack.`,
-	PreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(_ *cobra.Command, _ []string) error {
 		if !hasRootPrivileges() {
 			return fmt.Errorf("the 'bootstrap' command requires root privileges. Please run with sudo")
 		}

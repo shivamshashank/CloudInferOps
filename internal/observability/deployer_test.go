@@ -68,6 +68,6 @@ func TestDeployViaArgoCD_DryRun(t *testing.T) {
 	}
 }
 
-func TestWaitForArgoCDApps_DryRun(t *testing.T) {
+func TestWaitForArgoCDApps_DryRun(_ *testing.T) {
 	waitForArgoCDApps("test-ns", true) // Should return immediately without error
 }

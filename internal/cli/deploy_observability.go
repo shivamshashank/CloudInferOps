@@ -22,7 +22,7 @@ func addDeployObservabilityFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&deployDryRun, "dry-run", false, "Show what would be deployed without actually deploying")
 }
 
-func runDeployObservability(cmd *cobra.Command, args []string) error {
+func runDeployObservability(_ *cobra.Command, _ []string) error {
 	// 1. Pre-flight check: Verify cluster reachability and install if missing.
 	if err := ensureKubernetes(deployDryRun, "deploy platform"); err != nil {
 		return err

@@ -170,20 +170,20 @@ interface, metrics, tracing, and Kubernetes deployment integration.
 
 ### Phase 3 Checklist
 
-- [ ] Create Python FastAPI gateway package structure
-- [ ] Implement health endpoint
-- [ ] Implement model listing endpoint
-- [ ] Implement completions endpoint
-- [ ] Implement metrics endpoint
-- [ ] Add provider interface with Ollama support
-- [ ] Add Docker packaging and Python dependencies
-- [ ] Add tests for health, models, chat, and routing
-- [ ] Add Prometheus metric instrumentation
-- [ ] Add OpenTelemetry tracing for requests
-- [ ] Add Kubernetes deployment manifests for inference service
-- [ ] Validate the FastAPI app starts locally
-- [ ] Validate health endpoint
-- [ ] Validate mock provider tests
+- [x] Create Python FastAPI gateway package structure
+- [x] Implement health endpoint
+- [x] Implement model listing endpoint
+- [x] Implement completions endpoint
+- [x] Implement metrics endpoint
+- [x] Add provider interface with Ollama support
+- [x] Add Docker packaging and Python dependencies
+- [x] Add tests for health, models, chat, and routing
+- [x] Add Prometheus metric instrumentation
+- [x] Add OpenTelemetry tracing for requests
+- [x] Add Kubernetes deployment manifests for inference service
+- [x] Validate the FastAPI app starts locally
+- [x] Validate health endpoint
+- [x] Validate mock provider tests
 
 ---
 

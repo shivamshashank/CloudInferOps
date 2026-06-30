@@ -14,8 +14,8 @@ func TestDefaultConfig(t *testing.T) {
 	if !cfg.Observability.Prometheus {
 		t.Error("Expected Prometheus to be true by default")
 	}
-	if cfg.Alerts.Slack.WebhookUrlSecret != "cloudinferops-slack-webhook" {
-		t.Errorf("Expected default slack webhook secret, got '%s'", cfg.Alerts.Slack.WebhookUrlSecret)
+	if cfg.Alerts.Slack.WebhookURLSecret != "cloudinferops-slack-webhook" {
+		t.Errorf("Expected default slack webhook secret, got '%s'", cfg.Alerts.Slack.WebhookURLSecret)
 	}
 }
 
