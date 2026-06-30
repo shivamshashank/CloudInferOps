@@ -20,7 +20,7 @@ var initCmd = &cobra.Command{
 		}
 
 		if _, err := os.Stat(path); err == nil {
-			fmt.Printf("%sStackPulse is already initialized. Config file found at: %s\n", utils.PrefixOK, path)
+			fmt.Printf("%sCloudInferOps is already initialized. Config file found at: %s\n", utils.PrefixOK, path)
 			return nil
 		}
 

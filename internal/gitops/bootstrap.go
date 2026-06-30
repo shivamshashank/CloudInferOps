@@ -165,7 +165,7 @@ func BootstrapGitOps(dryRun bool) error {
 	}
 
 	fmt.Println()
-	fmt.Printf("%s%sStackPulse GitOps Bootstrap (Model B) Completed!%s\n", utils.PrefixReady, utils.ColorBold, utils.ColorReset)
+	fmt.Printf("%s%sCloudInferOps GitOps Bootstrap (Model B) Completed!%s\n", utils.PrefixReady, utils.ColorBold, utils.ColorReset)
 	fmt.Println("-----------------------------------------------------------------")
 	fmt.Printf("🌐  Namespace:           %s\n", ns)
 	fmt.Printf("📦  GitOps Mode:         %s\n", utils.ColorCyan+"Local GitOps (ArgoCD managed)"+utils.ColorReset)

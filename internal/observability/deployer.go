@@ -436,7 +436,7 @@ func DeployObservability(dryRun bool) error {
 
 	// 5. Output complete instructions and credential hooks
 	fmt.Println()
-	fmt.Printf("%s%sStackPulse Observability Stack deployed successfully!%s\n", utils.PrefixReady, utils.ColorBold, utils.ColorReset)
+	fmt.Printf("%s%sCloudInferOps Observability Stack deployed successfully!%s\n", utils.PrefixReady, utils.ColorBold, utils.ColorReset)
 	fmt.Println("-----------------------------------------------------------------")
 	fmt.Printf("🌐  Namespace: %s\n", ns)
 
@@ -584,7 +584,7 @@ spec:
 	if err != nil {
 		return fmt.Errorf("failed to apply observability ingress routes: %w (stderr: %s)", err, stderr)
 	}
-	fmt.Printf("%sStackPulse observability Ingress routes applied.\n", utils.PrefixOK)
+	fmt.Printf("%sCloudInferOps observability Ingress routes applied.\n", utils.PrefixOK)
 	return nil
 }
 

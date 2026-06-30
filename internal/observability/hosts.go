@@ -107,7 +107,7 @@ func UpdateHostsFile(ip, host string) error {
 	}
 
 	// 5. Use sudo cp to copy back to /etc/hosts
-	fmt.Printf("%sStackPulse will now update your local /etc/hosts file.\n", utils.PrefixInfo)
+	fmt.Printf("%sCloudInferOps will now update your local /etc/hosts file.\n", utils.PrefixInfo)
 	fmt.Printf("%sAdministrative privileges required. Requesting sudo password...\n", utils.PrefixInfo)
 
 	var stderr string

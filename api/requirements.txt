@@ -5,7 +5,6 @@ asgiref==3.11.1
 certifi==2026.6.17
 charset-normalizer==3.4.7
 click==8.4.2
--e git+https://github.com/shivamshashank/CloudInferOps.git@5e98ad384ed1065303757916ef7424b957dd2f0e#egg=cloudinferops_gateway&subdirectory=api
 coverage==7.14.3
 fastapi==0.138.2
 googleapis-common-protos==1.75.0

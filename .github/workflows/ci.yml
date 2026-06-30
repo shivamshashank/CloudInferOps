@@ -56,8 +56,7 @@ jobs:
 
       - name: Run Python Unit Tests
         run: |
-          cd api
-          PYTHONPATH=. python -m pytest --cov=app --cov-report=xml:coverage.xml
+          PYTHONPATH=api python -m pytest api/tests --cov=api/app --cov-report=xml:api/coverage.xml
 
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v6
