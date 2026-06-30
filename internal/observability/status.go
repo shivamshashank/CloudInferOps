@@ -83,6 +83,47 @@ func PrintStatus() error {
 		}
 	}
 
+	// 2b. Fetch Inference Pod States
+	inferencePodsOut, _, err := utils.ExecCommand("", "kubectl", "get", "pods", "-n", "inference", "--no-headers")
+	hasInferencePods := err == nil && inferencePodsOut != ""
+
+	inferenceGatewayStatus := "⚪  Not Deployed"
+	inferenceBackendStatus := "⚪  Not Deployed"
+
+	if hasInferencePods {
+		lines := strings.Split(strings.TrimSpace(inferencePodsOut), "\n")
+		for _, line := range lines {
+			fields := strings.Fields(line)
+			if len(fields) < 3 {
+				continue
+			}
+			podName := fields[0]
+			podState := fields[2]
+
+			statusStr := "🔴  Failed (" + podState + ")"
+			switch podState {
+			case "Running":
+				statusStr = "🟢  Running"
+			case "Pending", "ContainerCreating", "PodInitializing":
+				statusStr = "🟡  Initializing"
+			}
+
+			if strings.Contains(podName, "cloudinferops-gateway") || strings.Contains(podName, "gateway") {
+				inferenceGatewayStatus = statusStr
+			} else if strings.Contains(podName, "ollama") {
+				inferenceBackendStatus = "🟢  Running (Ollama)"
+				if podState != "Running" {
+					inferenceBackendStatus = "🔴  Failed (Ollama) (" + podState + ")"
+				}
+			} else if strings.Contains(podName, "vllm") {
+				inferenceBackendStatus = "🟢  Running (vLLM)"
+				if podState != "Running" {
+					inferenceBackendStatus = "🔴  Failed (vLLM) (" + podState + ")"
+				}
+			}
+		}
+	}
+
 	// 3. Fetch and Decode Grafana Admin Password
 	plainPassword := "<unretrievable>"
 	pwdSecret, _, err := utils.ExecCommand("", "kubectl", "get", "secret", "cloudinferops-prometheus-grafana", "-n", ns, "-o", "jsonpath={.data.admin-password}")
@@ -142,6 +183,11 @@ func PrintStatus() error {
 		fmt.Printf("    %-25s %s\n", "Thanos Storage:", thanosStatus)
 	}
 	fmt.Printf("    %-25s %s\n", "ArgoCD Delivery:", argoStatus)
+	fmt.Println()
+
+	fmt.Println("🤖  Inference Services:")
+	fmt.Printf("    %-25s %s\n", "Inference Gateway:", inferenceGatewayStatus)
+	fmt.Printf("    %-25s %s\n", "Model Backend:", inferenceBackendStatus)
 	fmt.Println()
 
 	// 5. GitOps Status

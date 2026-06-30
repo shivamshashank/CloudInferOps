@@ -102,7 +102,7 @@ exec "$@"
 	}
 
 	// Read back and verify
-	data, err := os.ReadFile(mockHostsFile)
+	data, err := os.ReadFile(mockHostsFile) //nolint:gosec
 	if err != nil {
 		t.Fatalf("failed to read mock hosts file: %v", err)
 	}
