@@ -20,7 +20,7 @@ repos:
 
       - id: web-tsc
         name: Web TypeScript Typecheck
-        entry: bash -c "cd web && PATH=\"/opt/homebrew/bin:/usr/bin:/bin:\$PATH\" npx tsc --noEmit"
+        entry: bash -c "cd web && npm exec --silent tsc --noEmit"
         language: system
         files: ^web/src/.*\.(ts|tsx)$
         pass_filenames: false
