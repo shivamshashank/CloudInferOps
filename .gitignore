@@ -7,7 +7,6 @@ coverage.out
 coverage.xml
 htmlcov/
 
-
 # Python virtual environment and cache
 .venv/
 __pycache__/
@@ -18,3 +17,35 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+
+# Node / frontend
+node_modules/
+web/dist/
+web/.vite/
+web/coverage/
+*.tsbuildinfo
+
+# Environment and local config
+.env
+.env.*
+*.local
+*.local.yaml
+*.local.yml
+
+# OS / editor noise
+.DS_Store
+.vscode/
+.idea/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Local test artifacts
+/tmp/
+
+# Benchmarking reports and generated outputs
+internal/cli/benchmarking/reports/*.json
+internal/cli/benchmarking/reports/*.md

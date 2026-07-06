@@ -58,11 +58,26 @@ jobs:
         run: |
           PYTHONPATH=api python -m pytest api/tests --cov=api/app --cov-report=xml:api/coverage.xml
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "web/package-lock.json"
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+        working-directory: web
+
+      - name: Run Frontend Unit Tests
+        run: npm run test:coverage
+        working-directory: web
+
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.out,api/coverage.xml
+          files: coverage.out,api/coverage.xml,web/coverage/clover.xml
           flags: unittests
 
       - name: Test Build Package

@@ -3,10 +3,12 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/shivamshashank/CloudInferOps/internal/config"
 	"github.com/shivamshashank/CloudInferOps/internal/doctor"
+	"github.com/shivamshashank/CloudInferOps/internal/gitops"
 	"github.com/shivamshashank/CloudInferOps/internal/utils"
 	"github.com/spf13/cobra"
 )
@@ -20,16 +22,47 @@ var gitopsBootstrapDryRun bool
 
 var gitopsBootstrapCmd = &cobra.Command{
 	Use:   "bootstrap",
-	Short: "Alias for 'cloudinferops bootstrap'. Installs Kubernetes and deploys the GitOps stack.",
-	Long: `This command is an alias for 'cloudinferops bootstrap'.
-
-It installs Kubernetes if not found, then deploys the full observability stack using GitOps with ArgoCD.`,
+	Short: "Install Kubernetes and bootstrap the local GitOps (ArgoCD) stack",
+	Long: `Performs end-to-end setup of the local GitOps pipeline:
+1. Checks for an existing Kubernetes cluster (and prompts to install one via kubeadm if missing).
+2. Verifies and installs Helm if missing.
+3. Provisions the in-cluster Git server.
+4. Generates local GitOps repository structure under ~/.cloudinferops/gitops-repo.
+5. Initializes, commits, and pushes configurations to the in-cluster Git server.
+6. Deploys Ingress NGINX, ArgoCD, and registers ArgoCD applications for GitOps deployment.`,
+	PreRunE: func(_ *cobra.Command, _ []string) error {
+		if !hasRootPrivileges() {
+			return fmt.Errorf("the 'gitops bootstrap' command requires root privileges. Please run with sudo")
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// This is an alias. We just call the main bootstrap command's logic.
-		bootstrapCmd.SetArgs(args)
-		bootstrapDryRun = gitopsBootstrapDryRun // Sync the dry-run flag
-		return bootstrapCmd.RunE(cmd, args)
+		// 1. Pre-flight check: Verify cluster reachability and install if missing.
+		if err := ensureKubernetes(gitopsBootstrapDryRun, "gitops bootstrap"); err != nil {
+			return err
+		}
 
+		// 2. Pre-flight check: Verify Helm is installed and install if missing
+		if _, err := exec.LookPath("helm"); err != nil {
+			if gitopsBootstrapDryRun {
+				fmt.Printf("%s[DRY-RUN] Would install Helm\n", utils.PrefixInfo)
+			} else {
+				fmt.Printf("%sHelm is required but was not found. Installing Helm now...\n", utils.PrefixInfo)
+				if _, stderr, installErr := utils.ExecCommandInteractive("", "bash", "-c", "curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash"); installErr != nil { // #nosec G204
+					return fmt.Errorf("failed to install Helm: %w (stderr: %s)", installErr, stderr)
+				}
+				fmt.Printf("%sHelm installed successfully.\n", utils.PrefixOK)
+			}
+		}
+
+		// 3. Load configuration (fallback on defaults if not initialized)
+		if err := config.InitConfig(false); err != nil {
+			fmt.Printf("%sConfiguration file not found. Bootstrapping GitOps with default settings...\n", utils.PrefixInfo)
+			config.GlobalConfig = config.DefaultConfig()
+		}
+
+		// 4. Trigger GitOps bootstrap
+		return gitops.BootstrapGitOps(gitopsBootstrapDryRun)
 	},
 }
 

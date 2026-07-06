@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudinferops-ui
+  namespace: observability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudinferops-ui
+  template:
+    metadata:
+      labels:
+        app: cloudinferops-ui
+    spec:
+      containers:
+        - name: cloudinferops-ui
+          image: ghcr.io/example/cloudinferops-ui:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudinferops-ui
+  namespace: observability
+spec:
+  selector:
+    app: cloudinferops-ui
+  ports:
+    - port: 80
+      targetPort: 8080

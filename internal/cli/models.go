@@ -3,7 +3,9 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/shivamshashank/CloudInferOps/internal/utils"
@@ -110,6 +112,8 @@ var modelsListCmd = &cobra.Command{
 	},
 }
 
+var modelsTestURL string
+
 var modelsPullCmd = &cobra.Command{
 	Use:   "pull [model]",
 	Short: "Pull a model to local model registry",
@@ -117,12 +121,59 @@ var modelsPullCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		modelName := args[0]
 		fmt.Printf("%sPulling model %s%s%s...\n", utils.PrefixInfo, utils.ColorBold, modelName, utils.ColorReset)
-		fmt.Println(utils.PrefixInfo + "Downloading model manifest and weights (Logic to be implemented in Phase 4)...")
+
+		url := "http://localhost:11434/api/pull"
+		if modelsTestURL != "" {
+			url = modelsTestURL
+		}
+
+		client := http.Client{Timeout: 0}
+		requestBody := strings.NewReader(fmt.Sprintf(`{"name": "%s", "stream": true}`, modelName))
+		resp, err := client.Post(url, "application/json", requestBody)
+		if err != nil {
+			return fmt.Errorf("ollama daemon not detected or unreachable at %s. Please make sure Ollama is running: %w", url, err)
+		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("failed to pull model: server returned status %d", resp.StatusCode)
+		}
+
+		decoder := json.NewDecoder(resp.Body)
+		var progress struct {
+			Status    string `json:"status"`
+			Completed int64  `json:"completed"`
+			Total     int64  `json:"total"`
+		}
+
+		fmt.Printf("%sDownloading model layers...\n", utils.PrefixInfo)
+		for {
+			if err := decoder.Decode(&progress); err != nil {
+				if err.Error() == "io: read/write on closed pipe" || err == io.EOF || err.Error() == "EOF" {
+					break
+				}
+				return fmt.Errorf("failed to parse progress stream: %w", err)
+			}
+
+			if progress.Total > 0 {
+				percent := float64(progress.Completed) / float64(progress.Total) * 100
+				fmt.Printf("\r\033[K%sStatus: %s (%.2f%%)", utils.PrefixInfo, progress.Status, percent)
+			} else {
+				fmt.Printf("\r\033[K%sStatus: %s", utils.PrefixInfo, progress.Status)
+			}
+		}
+		fmt.Println()
+		fmt.Printf("%sSuccessfully pulled model '%s'.\n", utils.PrefixOK, modelName)
 		return nil
 	},
 }
 
 func init() {
+	modelsPullCmd.Flags().StringVar(&modelsTestURL, "test-url", "", "Custom target URL for unit testing (hidden)")
+	_ = modelsPullCmd.Flags().MarkHidden("test-url")
+
 	modelsCmd.AddCommand(modelsListCmd)
 	modelsCmd.AddCommand(modelsPullCmd)
 	RootCmd.AddCommand(modelsCmd)
