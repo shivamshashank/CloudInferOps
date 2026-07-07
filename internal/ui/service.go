@@ -171,14 +171,20 @@ func (s *Service) Alerts() []AlertItem {
 
 func (s *Service) Observability() []ComponentStatus {
 	components := []string{"grafana", "prometheus", "loki", "tempo", "alertmanager", "otel", "argocd"}
-	deployments := s.Deployments()
+	pods := s.Pods()
 	result := make([]ComponentStatus, 0, len(components))
 	for _, component := range components {
 		status := "Not deployed"
-		for _, deployment := range deployments {
-			if deployment.Namespace == s.namespace() && strings.Contains(strings.ToLower(deployment.Name), component) {
-				status = deployment.Status
-				break
+		for _, pod := range pods {
+			if pod.Namespace == s.namespace() && strings.Contains(strings.ToLower(pod.Name), component) {
+				if pod.Status == "Running" {
+					status = "Running"
+					break
+				} else if pod.Status == "Pending" {
+					status = "Pending"
+				} else if status == "Not deployed" {
+					status = pod.Status
+				}
 			}
 		}
 		result = append(result, ComponentStatus{Name: component, Namespace: s.namespace(), Status: status})
@@ -295,6 +301,27 @@ func (s *Service) Deploy(target string) error {
 	defer cancel()
 	_, err := s.run(ctx, "cloudinferops", "deploy", target)
 	return err
+}
+
+func (s *Service) Undeploy(target string) error {
+	if !s.actionsEnabled {
+		return errors.New("control-plane actions are disabled")
+	}
+	if target != "inference" && target != "observability" {
+		return errors.New("unsupported undeployment target")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
+	defer cancel()
+	switch target {
+	case "observability":
+		_, err := s.run(ctx, "cloudinferops", "uninstall", "observability", "-f")
+		return err
+	case "inference":
+		_, err := s.run(ctx, "kubectl", "delete", "namespace", "inference", "--ignore-not-found=true")
+		return err
+	default:
+		return errors.New("unsupported undeployment target")
+	}
 }
 
 func (s *Service) RunBenchmark(request BenchmarkRequest) (BenchmarkResult, error) {

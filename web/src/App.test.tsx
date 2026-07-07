@@ -69,7 +69,7 @@ describe("CloudInferOps portal", () => {
     fireEvent.click(screen.getByRole("button", { name: /Deployments/i }));
     expect(await screen.findByText(/Read-only mode/)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Deploy inference" }),
+      screen.getByRole("button", { name: "Undeploy inference" }),
     ).toBeDisabled();
   });
 });

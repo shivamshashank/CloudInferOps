@@ -14,14 +14,14 @@ COPY internal ./internal
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/cloudinferops-ui ./cmd/ui && \
     CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/cloudinferops ./cmd/cloudinferops
 
-FROM bitnami/kubectl:1.31 AS kubectl
+FROM registry.k8s.io/kubectl:v1.31.0 AS kubectl
 FROM alpine/helm:3.16.2 AS helm
 FROM alpine:3.21
 RUN apk add --no-cache ca-certificates && adduser -D -u 65532 portal
 WORKDIR /app
 COPY --from=go /out/cloudinferops-ui /usr/local/bin/cloudinferops-ui
 COPY --from=go /out/cloudinferops /usr/local/bin/cloudinferops
-COPY --from=kubectl /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/kubectl
+COPY --from=kubectl /bin/kubectl /usr/local/bin/kubectl
 COPY --from=helm /usr/bin/helm /usr/local/bin/helm
 COPY --from=web /src/web/dist /app/web/dist
 ENV CLOUDINFEROPS_WEB_ROOT=/app/web/dist PORT=8080

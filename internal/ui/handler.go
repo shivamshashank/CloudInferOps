@@ -89,6 +89,18 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.writeJSON(w, map[string]string{"status": "ok", "message": "deployment reconciled for " + payload.Name})
+	case path == "/api/actions/undeploy" && r.Method == http.MethodPost:
+		var payload struct {
+			Name string `json:"name"`
+		}
+		if !h.decode(w, r, &payload) {
+			return
+		}
+		if err := h.service.Undeploy(strings.TrimSpace(payload.Name)); err != nil {
+			h.writeError(w, http.StatusForbidden, err)
+			return
+		}
+		h.writeJSON(w, map[string]string{"status": "ok", "message": "uninstallation completed for " + payload.Name})
 	case path == "/api/actions/restart" && r.Method == http.MethodPost:
 		var payload struct {
 			Namespace string `json:"namespace"`
