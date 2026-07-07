@@ -363,6 +363,26 @@ sudo cloudinferops alerts test
 sudo cloudinferops deploy webhook-handler
 ```
 
+### AI inference and self-hosted portal
+
+```bash
+sudo cloudinferops deploy inference --provider ollama --model llama3
+sudo cloudinferops deploy ui
+cloudinferops models list
+cloudinferops benchmark run --model llama3
+```
+
+The portal is served at `http://<ingress-address>/cloudinferops/` and provides
+live Kubernetes deployment health, model inventory, observability components,
+incidents, searchable and streaming pod logs, benchmarks, and guarded control
+plane actions. Actions are allowlisted and can be disabled by setting
+`CLOUDINFEROPS_UI_ENABLE_ACTIONS=0`. An optional bearer token can be configured
+with `CLOUDINFEROPS_UI_TOKEN`.
+
+The default portal deployment is read-only. For a trusted private cluster,
+explicitly enable its allowlisted operations with
+`cloudinferops deploy ui --enable-actions`.
+
 ### Cleanup
 
 ```bash

@@ -11,6 +11,12 @@ repos:
 
   - repo: local
     hooks:
+      - id: gofmt
+        name: gofmt
+        entry: gofmt -w
+        language: system
+        types: [go]
+
       - id: golangci-lint
         name: golangci-lint
         entry: golangci-lint run
@@ -31,3 +37,9 @@ repos:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        files: ^web/.*\.(ts|tsx|js|jsx|json|css|html|md)$

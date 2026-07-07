@@ -116,3 +116,13 @@ jobs:
           tags: |
             ghcr.io/shivamshashank/cloudinferops-gateway:latest
             ghcr.io/shivamshashank/cloudinferops-gateway:${{ steps.next_version.outputs.next_tag }}
+
+      - name: Build and Push Portal Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.ui
+          push: true
+          tags: |
+            ghcr.io/shivamshashank/cloudinferops-ui:latest
+            ghcr.io/shivamshashank/cloudinferops-ui:${{ steps.next_version.outputs.next_tag }}
