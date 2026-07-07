@@ -52,3 +52,53 @@ func TestUninstallK8sCommand(t *testing.T) {
 		t.Error("expected performUninstallBinaries to be called, but it wasn't")
 	}
 }
+
+func TestUninstallInferenceCommand(t *testing.T) {
+	originalPerformUninstallInference := performUninstallInference
+	defer func() {
+		performUninstallInference = originalPerformUninstallInference
+	}()
+
+	var inferenceCalled bool
+	performUninstallInference = func(dryRun bool) error {
+		inferenceCalled = true
+		return nil
+	}
+
+	forceUninstall = true
+	defer func() { forceUninstall = false }()
+
+	err := uninstallInferenceCmd.RunE(uninstallInferenceCmd, []string{})
+	if err != nil {
+		t.Fatalf("uninstall inference command failed: %v", err)
+	}
+
+	if !inferenceCalled {
+		t.Error("expected performUninstallInference to be called, but it wasn't")
+	}
+}
+
+func TestUninstallUICommand(t *testing.T) {
+	originalPerformUninstallUI := performUninstallUI
+	defer func() {
+		performUninstallUI = originalPerformUninstallUI
+	}()
+
+	var uiCalled bool
+	performUninstallUI = func(dryRun bool) error {
+		uiCalled = true
+		return nil
+	}
+
+	forceUninstall = true
+	defer func() { forceUninstall = false }()
+
+	err := uninstallUICmd.RunE(uninstallUICmd, []string{})
+	if err != nil {
+		t.Fatalf("uninstall ui command failed: %v", err)
+	}
+
+	if !uiCalled {
+		t.Error("expected performUninstallUI to be called, but it wasn't")
+	}
+}

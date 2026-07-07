@@ -78,7 +78,9 @@ export default function LogsPage({ pods }: { pods: Pod[] }) {
         <div className="pod-items">
           {pods.map((p) => (
             <button
-              className={selected === `${p.namespace}/${p.name}` ? "active" : ""}
+              className={
+                selected === `${p.namespace}/${p.name}` ? "active" : ""
+              }
               key={`${p.namespace}/${p.name}`}
               onClick={() => setSelected(`${p.namespace}/${p.name}`)}
             >

@@ -57,7 +57,10 @@ export default function DeploymentsPage({
               Undeploy observability
             </button>
           ) : (
-            <button disabled={!actions} onClick={() => onDeploy("observability")}>
+            <button
+              disabled={!actions}
+              onClick={() => onDeploy("observability")}
+            >
               Deploy observability
             </button>
           )}

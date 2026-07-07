@@ -1,4 +1,10 @@
-export default function Empty({ title, copy }: { title: string; copy: string }) {
+export default function Empty({
+  title,
+  copy,
+}: {
+  title: string;
+  copy: string;
+}) {
   return (
     <div className="empty">
       <div>◇</div>
