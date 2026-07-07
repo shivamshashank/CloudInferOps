@@ -1,210 +1,262 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import {
+  Alert,
+  Benchmark,
+  Component,
+  Deployment,
+  Model,
+  Page,
+  Overview,
+  Pod,
+  PortalConfig,
+} from "./types";
+import { api, tone } from "./utils";
+import OverviewPage from "./pages/OverviewPage";
+import DeploymentsPage from "./pages/DeploymentsPage";
+import ModelsPage from "./pages/ModelsPage";
+import ObservabilityPage from "./pages/ObservabilityPage";
+import AlertsPage from "./pages/AlertsPage";
+import LogsPage from "./pages/LogsPage";
+import BenchmarkPage from "./pages/BenchmarkPage";
+import ConfigPage from "./pages/ConfigPage";
 
-type Overview = {
-  cluster: string;
-  gateway: string;
-  observability: string;
-  models: number;
-  alerts: number;
-  pods: number;
-  last_updated: string;
-  version: string;
+const pages: { id: Page; label: string; icon: string }[] = [
+  { id: "overview", label: "Overview", icon: "◈" },
+  { id: "deployments", label: "Deployments", icon: "⬡" },
+  { id: "models", label: "Models", icon: "◇" },
+  { id: "observability", label: "Observability", icon: "◉" },
+  { id: "alerts", label: "Alerts", icon: "△" },
+  { id: "logs", label: "Logs", icon: "≡" },
+  { id: "benchmark", label: "Benchmarks", icon: "↗" },
+  { id: "config", label: "Configuration", icon: "⚙" },
+];
+
+const emptyOverview: Overview = {
+  cluster: "Checking…",
+  namespace: "observability",
+  gateway: "Unknown",
+  observability: "Unknown",
+  models: 0,
+  alerts: 0,
+  pods: 0,
+  last_updated: "",
+  version: "dev",
+  actions_enabled: false,
 };
 
-type DeploymentStatus = {
-  name: string;
-  namespace: string;
-  status: string;
-  replicas: string;
-};
-
-type ModelStatus = {
-  name: string;
-  provider: string;
-  status: string;
-  location: string;
-};
-
-type AlertItem = {
-  title: string;
-  severity: string;
-  status: string;
-  timestamp: string;
-};
-
-const App = () => {
-  const [overview, setOverview] = useState<Overview | null>(null);
-  const [deployments, setDeployments] = useState<DeploymentStatus[]>([]);
-  const [models, setModels] = useState<ModelStatus[]>([]);
-  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+export default function App() {
+  const [page, setPage] = useState<Page>(
+    () => (location.hash.slice(1) as Page) || "overview",
+  );
+  const [overview, setOverview] = useState<Overview>(emptyOverview);
+  const [deployments, setDeployments] = useState<Deployment[]>([]);
+  const [models, setModels] = useState<Model[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [components, setComponents] = useState<Component[]>([]);
+  const [pods, setPods] = useState<Pod[]>([]);
+  const [config, setConfig] = useState<PortalConfig>({
+    namespace: "observability",
+    provider: "ollama",
+    model: "llama3",
+  });
+  const [benchmark, setBenchmark] = useState<Benchmark | null>(null);
   const [loading, setLoading] = useState(true);
-  const [actionMessage, setActionMessage] = useState('');
-  const [deployTarget, setDeployTarget] = useState('inference');
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  const loadData = async () => {
+  const load = async () => {
     setLoading(true);
-    const [overviewRes, deploymentsRes, modelsRes, alertsRes] = await Promise.all([
-      fetch('/api/overview'),
-      fetch('/api/deployments'),
-      fetch('/api/models'),
-      fetch('/api/alerts'),
-    ]);
-
-    setOverview(await overviewRes.json());
-    setDeployments(await deploymentsRes.json());
-    setModels(await modelsRes.json());
-    setAlerts(await alertsRes.json());
-    setLoading(false);
+    setError("");
+    try {
+      const [o, d, m, a, c, p, cfg, b] = await Promise.all([
+        api<Overview>("overview"),
+        api<Deployment[]>("deployments"),
+        api<Model[]>("models"),
+        api<Alert[]>("alerts"),
+        api<Component[]>("observability"),
+        api<Pod[]>("pods"),
+        api<PortalConfig>("config"),
+        api<Benchmark | null>("benchmark"),
+      ]);
+      setOverview(o);
+      setDeployments(d);
+      setModels(m);
+      setAlerts(a);
+      setComponents(c);
+      setPods(p);
+      setConfig(cfg);
+      setBenchmark(b);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to load portal data");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    void loadData();
+    void load();
   }, []);
 
-  const triggerDeploy = async () => {
-    const res = await fetch('/api/actions/deploy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: deployTarget }),
-    });
-    const payload = await res.json();
-    setActionMessage(payload.message ?? 'Deployment request submitted');
-    await loadData();
+  useEffect(() => {
+    location.hash = page;
+  }, [page]);
+
+  const action = async (path: string, body: unknown, message: string) => {
+    setNotice("Working…");
+    setError("");
+    try {
+      await api(path, { method: "POST", body: JSON.stringify(body) });
+      setNotice(message);
+      await load();
+    } catch (e) {
+      setNotice("");
+      setError(e instanceof Error ? e.message : "Action failed");
+    }
   };
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div>
-          <h1>CloudInferOps</h1>
-          <p>Self-hosted AI inference operations</p>
+        <div className="brand">
+          <div className="brand-mark">CI</div>
+          <div>
+            <h1>CloudInferOps</h1>
+            <p>Inference control plane</p>
+          </div>
         </div>
         <nav>
-          <a href="#overview">Overview</a>
-          <a href="#deployments">Deployments</a>
-          <a href="#models">Models</a>
-          <a href="#alerts">Alerts</a>
+          {pages.map((item) => (
+            <button
+              key={item.id}
+              className={page === item.id ? "active" : ""}
+              onClick={() => setPage(item.id)}
+            >
+              <span>{item.icon}</span>
+              {item.label}
+              {item.id === "alerts" && overview.alerts > 0 ? (
+                <b>{overview.alerts}</b>
+              ) : null}
+            </button>
+          ))}
         </nav>
-      </aside>
-
-      <main className="main-content">
-        <section id="overview" className="hero-card">
+        <div className="sidebar-foot">
+          <span className={`dot ${tone(overview.cluster)}`} />
           <div>
-            <p className="eyebrow">Operational dashboard</p>
-            <h2>Run inference workloads with clarity</h2>
-            <p>Deploy, monitor, and observe your LLM stack from one self-hosted portal.</p>
+            <strong>{overview.cluster}</strong>
+            <small>
+              {overview.namespace} · {overview.version}
+            </small>
           </div>
-          <div className="hero-stats">
-            <div className="stat-card">
-              <span>Cluster</span>
-              <strong>{overview?.cluster ?? '—'}</strong>
-            </div>
-            <div className="stat-card">
-              <span>Gateway</span>
-              <strong>{overview?.gateway ?? '—'}</strong>
-            </div>
-            <div className="stat-card">
-              <span>Models</span>
-              <strong>{overview?.models ?? 0}</strong>
-            </div>
+        </div>
+      </aside>
+      <main>
+        <header>
+          <div>
+            <p className="eyebrow">Workspace / {page}</p>
+            <h2>{pages.find((item) => item.id === page)?.label}</h2>
           </div>
-        </section>
-
-        <section className="panel action-panel">
-          <div className="action-header">
-            <h3>Control plane actions</h3>
-            <p>Trigger a deploy request and refresh the dashboard instantly.</p>
+          <button
+            className="secondary"
+            onClick={() => void load()}
+            disabled={loading}
+          >
+            {loading ? "Refreshing…" : "Refresh data"}
+          </button>
+        </header>
+        {error ? (
+          <div className="banner error">
+            <strong>Something needs attention</strong>
+            <span>{error}</span>
+            <button onClick={() => setError("")}>×</button>
           </div>
-          <div className="action-controls">
-            <input value={deployTarget} onChange={(event) => setDeployTarget(event.target.value)} placeholder="deployment target" />
-            <button onClick={() => void triggerDeploy()}>Deploy</button>
+        ) : null}
+        {notice ? (
+          <div className="banner success">
+            <span>{notice}</span>
+            <button onClick={() => setNotice("")}>×</button>
           </div>
-          {actionMessage ? <div className="action-message">{actionMessage}</div> : null}
-        </section>
-
-        <section className="grid">
-          <div className="panel">
-            <h3>System health</h3>
-            {loading ? <div className="empty-state">Loading live status…</div> : (
-              <ul>
-                <li>Observability: {overview?.observability ?? '—'}</li>
-                <li>Pods: {overview?.pods ?? 0}</li>
-                <li>Last updated: {overview?.last_updated ?? '—'}</li>
-              </ul>
-            )}
-          </div>
-
-          <div className="panel" id="deployments">
-            <h3>Deployments</h3>
-            {loading ? <div className="empty-state">Loading deployments…</div> : deployments.length === 0 ? <div className="empty-state">No deployments detected yet.</div> : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Namespace</th>
-                    <th>Status</th>
-                    <th>Replicas</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {deployments.map((deployment) => (
-                    <tr key={deployment.name}>
-                      <td>{deployment.name}</td>
-                      <td>{deployment.namespace}</td>
-                      <td>{deployment.status}</td>
-                      <td>{deployment.replicas}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </section>
-
-        <section className="grid">
-          <div className="panel" id="models">
-            <h3>Models</h3>
-            {models.length === 0 ? <div className="empty-state">No model inventory found.</div> : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Provider</th>
-                    <th>Status</th>
-                    <th>Location</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {models.map((model) => (
-                    <tr key={model.name}>
-                      <td>{model.name}</td>
-                      <td>{model.provider}</td>
-                      <td>{model.status}</td>
-                      <td>{model.location}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          <div className="panel" id="alerts">
-            <h3>Recent alerts</h3>
-            {alerts.length === 0 ? <div className="empty-state">No alerts detected.</div> : (
-              <ul>
-                {alerts.map((alert) => (
-                  <li key={alert.title}>
-                    <strong>{alert.title}</strong>
-                    <div>{alert.severity} • {alert.status}</div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </section>
+        ) : null}
+        {page === "overview" ? (
+          <OverviewPage
+            overview={overview}
+            deployments={deployments}
+            alerts={alerts}
+            onNavigate={setPage}
+          />
+        ) : null}
+        {page === "deployments" ? (
+          <DeploymentsPage
+            items={deployments}
+            actions={overview.actions_enabled}
+            onDeploy={(target) =>
+              void action(
+                "actions/deploy",
+                { name: target },
+                `${target} reconciliation completed`,
+              )
+            }
+            onUndeploy={(target) =>
+              void action(
+                "actions/undeploy",
+                { name: target },
+                `${target} uninstallation completed`,
+              )
+            }
+            onRestart={(namespace, name) =>
+              void action(
+                "actions/restart",
+                { namespace, name },
+                `Restart requested for ${name}`,
+              )
+            }
+          />
+        ) : null}
+        {page === "models" ? <ModelsPage items={models} /> : null}
+        {page === "observability" ? (
+          <ObservabilityPage items={components} />
+        ) : null}
+        {page === "alerts" ? <AlertsPage items={alerts} /> : null}
+        {page === "logs" ? <LogsPage pods={pods} /> : null}
+        {page === "benchmark" ? (
+          <BenchmarkPage
+            result={benchmark}
+            actions={overview.actions_enabled}
+            model={config.model}
+            onRun={async (model, requests) => {
+              setNotice("Benchmark is running…");
+              try {
+                const result = await api<Benchmark>("benchmark", {
+                  method: "POST",
+                  body: JSON.stringify({ model, requests }),
+                });
+                setBenchmark(result);
+                setNotice("Benchmark completed");
+              } catch (e) {
+                setNotice("");
+                setError(e instanceof Error ? e.message : "Benchmark failed");
+              }
+            }}
+          />
+        ) : null}
+        {page === "config" ? (
+          <ConfigPage
+            value={config}
+            actions={overview.actions_enabled}
+            onSave={async (value) => {
+              try {
+                await api("config", {
+                  method: "PUT",
+                  body: JSON.stringify(value),
+                });
+                setConfig(value);
+                setNotice("Configuration saved");
+              } catch (e) {
+                setError(e instanceof Error ? e.message : "Save failed");
+              }
+            }}
+          />
+        ) : null}
       </main>
     </div>
   );
-};
-
-export default App;
+}

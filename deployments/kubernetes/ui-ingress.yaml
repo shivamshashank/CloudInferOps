@@ -3,19 +3,14 @@ kind: Ingress
 metadata:
   name: cloudinferops-ui
   namespace: observability
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
-    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   ingressClassName: nginx
   rules:
-    - host: ""
-      http:
+    - http:
         paths:
-          - path: /cloudinferops(/|$)(.*)
+          - path: /cloudinferops
             pathType: Prefix
             backend:
               service:
                 name: cloudinferops-ui
-                port:
-                  number: 80
+                port: {number: 80}

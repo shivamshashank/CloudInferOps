@@ -38,6 +38,7 @@ func PrintStatus() error {
 	thanosStatus := "⚪  Not Deployed"
 	blackboxStatus := "⚪  Not Deployed"
 	alertmanagerStatus := "⚪  Not Deployed"
+	uiStatus := "⚪  Not Deployed"
 
 	if hasPods {
 		lines := strings.Split(strings.TrimSpace(podsOut), "\n")
@@ -79,6 +80,8 @@ func PrintStatus() error {
 				blackboxStatus = statusStr
 			} else if strings.Contains(podName, "alertmanager") {
 				alertmanagerStatus = statusStr
+			} else if strings.Contains(podName, "cloudinferops-ui") {
+				uiStatus = statusStr
 			}
 		}
 	}
@@ -183,6 +186,7 @@ func PrintStatus() error {
 		fmt.Printf("    %-25s %s\n", "Thanos Storage:", thanosStatus)
 	}
 	fmt.Printf("    %-25s %s\n", "ArgoCD Delivery:", argoStatus)
+	fmt.Printf("    %-25s %s\n", "UI Portal:", uiStatus)
 	fmt.Println()
 
 	fmt.Println("🤖  Inference Services:")
@@ -232,7 +236,9 @@ func PrintStatus() error {
 	}
 	fmt.Println()
 
-	if config.GlobalConfig.Observability.Prometheus {
+	hasIngressURLs := config.GlobalConfig.Observability.Prometheus || uiStatus != "⚪  Not Deployed" || inferenceGatewayStatus != "⚪  Not Deployed"
+
+	if hasIngressURLs {
 		// Fetch instance IP for active display
 		instanceIP := "127.0.0.1"
 		ingressIP, err := FetchIngressIP(ns, false)
@@ -250,16 +256,27 @@ func PrintStatus() error {
 			}
 		}
 
-		fmt.Println("📊  Access Telemetry Dashboards via Ingress:")
-		fmt.Printf("    🔗  Grafana Dashboard:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/grafana/", instanceIP)+utils.ColorReset)
-		fmt.Printf("    🔗  Prometheus Server:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/prometheus/", instanceIP)+utils.ColorReset)
-		fmt.Printf("    🔗  Alertmanager Panel:  %s\n", utils.ColorBold+fmt.Sprintf("http://%s/alertmanager/", instanceIP)+utils.ColorReset)
+		fmt.Println("📊  Access Dashboards & APIs via Ingress:")
+		if config.GlobalConfig.Observability.Prometheus {
+			fmt.Printf("    🔗  Grafana Dashboard:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/grafana/", instanceIP)+utils.ColorReset)
+			fmt.Printf("    🔗  Prometheus Server:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/prometheus/", instanceIP)+utils.ColorReset)
+			fmt.Printf("    🔗  Alertmanager Panel:  %s\n", utils.ColorBold+fmt.Sprintf("http://%s/alertmanager/", instanceIP)+utils.ColorReset)
+		}
 		if config.GlobalConfig.Observability.ArgoCD {
 			fmt.Printf("    🔗  ArgoCD Dashboard:    %s\n", utils.ColorBold+fmt.Sprintf("http://%s/argocd", instanceIP)+utils.ColorReset)
 		}
+		if uiStatus != "⚪  Not Deployed" {
+			fmt.Printf("    🔗  UI Portal:           %s\n", utils.ColorBold+fmt.Sprintf("http://%s/cloudinferops/", instanceIP)+utils.ColorReset)
+		}
+		if inferenceGatewayStatus != "⚪  Not Deployed" {
+			fmt.Printf("    🔗  Inference Gateway:   %s\n", utils.ColorBold+fmt.Sprintf("http://%s/v1", instanceIP)+utils.ColorReset)
+		}
 
-		fmt.Printf("    🔑  Username:            admin\n")
-		fmt.Printf("    🔑  Grafana Password:    %s\n", utils.ColorGreen+plainPass+utils.ColorReset)
+		fmt.Println()
+		if config.GlobalConfig.Observability.Prometheus {
+			fmt.Printf("    🔑  Username:            admin\n")
+			fmt.Printf("    🔑  Grafana Password:    %s\n", utils.ColorGreen+plainPass+utils.ColorReset)
+		}
 		if config.GlobalConfig.Observability.ArgoCD {
 			fmt.Printf("    🔑  ArgoCD Password:     %s\n", utils.ColorGreen+argoPass+utils.ColorReset)
 		}

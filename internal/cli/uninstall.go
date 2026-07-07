@@ -67,6 +67,93 @@ var performUninstallBinaries = func(dryRun bool) error {
 	return uninstallKubernetesCluster()
 }
 
+var performUninstallInference = func(dryRun bool) error {
+	fmt.Printf("%sUninstalling inference stack...\n", utils.PrefixInfo)
+
+	if _, err := exec.LookPath("kubectl"); err != nil {
+		fmt.Printf("%s'kubectl' not found, assuming inference stack is already removed.\n", utils.PrefixWarn)
+		return nil
+	}
+
+	if dryRun {
+		fmt.Printf("%s[DRY-RUN] kubectl delete namespace inference --ignore-not-found=true\n", utils.PrefixInfo)
+		return nil
+	}
+
+	stopSpinner := utils.StartSpinner("Deleting inference namespace...")
+	realHome, _ := utils.GetRealHomeDir()
+	kubeEnv := map[string]string{
+		"KUBECONFIG": filepath.Join(realHome, ".kube", "config"),
+	}
+
+	_, stderr, err := utils.ExecCommandEnv("", kubeEnv, "kubectl", "delete", "namespace", "inference", "--ignore-not-found=true")
+	stopSpinner()
+
+	if err != nil {
+		return fmt.Errorf("failed to delete inference namespace: %w (stderr: %s)", err, stderr)
+	}
+
+	fmt.Printf("%sInference stack uninstalled successfully.\n", utils.PrefixOK)
+	return nil
+}
+
+var performUninstallUI = func(dryRun bool) error {
+	fmt.Printf("%sUninstalling UI portal...\n", utils.PrefixInfo)
+
+	if _, err := exec.LookPath("kubectl"); err != nil {
+		fmt.Printf("%s'kubectl' not found, assuming UI portal is already removed.\n", utils.PrefixWarn)
+		return nil
+	}
+
+	ns := config.GlobalConfig.Namespace
+	if ns == "" {
+		ns = "observability"
+	}
+
+	resources := []struct {
+		kind string
+		name string
+	}{
+		{"ingress", "cloudinferops-ui"},
+		{"service", "cloudinferops-ui"},
+		{"deployment", "cloudinferops-ui"},
+		{"clusterrolebinding", "cloudinferops-ui"},
+		{"clusterrole", "cloudinferops-ui"},
+		{"serviceaccount", "cloudinferops-ui"},
+	}
+
+	if dryRun {
+		for _, r := range resources {
+			if r.kind == "clusterrole" || r.kind == "clusterrolebinding" {
+				fmt.Printf("%s[DRY-RUN] kubectl delete %s %s\n", utils.PrefixInfo, r.kind, r.name)
+			} else {
+				fmt.Printf("%s[DRY-RUN] kubectl delete %s %s -n %s\n", utils.PrefixInfo, r.kind, r.name, ns)
+			}
+		}
+		return nil
+	}
+
+	stopSpinner := utils.StartSpinner("Deleting UI portal resources...")
+	realHome, _ := utils.GetRealHomeDir()
+	kubeEnv := map[string]string{
+		"KUBECONFIG": filepath.Join(realHome, ".kube", "config"),
+	}
+
+	for _, r := range resources {
+		var args []string
+		if r.kind == "clusterrole" || r.kind == "clusterrolebinding" {
+			args = []string{"delete", r.kind, r.name, "--ignore-not-found=true"}
+		} else {
+			args = []string{"delete", r.kind, r.name, "-n", ns, "--ignore-not-found=true"}
+		}
+		_, _, _ = utils.ExecCommandEnv("", kubeEnv, "kubectl", args...)
+	}
+	stopSpinner()
+
+	fmt.Printf("%sUI portal uninstalled successfully.\n", utils.PrefixOK)
+	return nil
+}
+
 var uninstallK8sCmd = &cobra.Command{
 	Use:   "k8s",
 	Short: "Uninstall Kubernetes-related binaries and resources",
@@ -85,6 +172,50 @@ var uninstallCmd = &cobra.Command{
 		}
 		return nil
 	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		fmt.Printf("\n%s🧹 CloudInferOps Uninstall Menu%s\n", utils.ColorBold, utils.ColorReset)
+		fmt.Println("-----------------------------------------------------------------")
+		fmt.Println("Select a component to uninstall:")
+		fmt.Println("  1. Observability Stack (Prometheus, Grafana, Loki, Tempo, ArgoCD, etc.)")
+		fmt.Println("  2. Inference Stack (Ollama, Gateway, etc.)")
+		fmt.Println("  3. UI Portal")
+		fmt.Println("  4. All Components (including Kubernetes cluster and config)")
+		fmt.Print("Choose an option [1-4]: ")
+
+		var response string
+		_, _ = fmt.Fscanln(os.Stdin, &response)
+		response = strings.TrimSpace(response)
+
+		if err := config.InitConfig(false); err != nil {
+			config.GlobalConfig = config.DefaultConfig()
+		}
+
+		switch response {
+		case "1":
+			if !forceUninstall && !promptConfirm("This will remove the CloudInferOps observability stack. Continue? [y/N]: ") {
+				fmt.Printf("%sUninstall cancelled.\n", utils.PrefixWarn)
+				return nil
+			}
+			return performUninstallObservability(uninstallDryRun)
+		case "2":
+			if !forceUninstall && !promptConfirm("This will remove the CloudInferOps inference stack. Continue? [y/N]: ") {
+				fmt.Printf("%sUninstall cancelled.\n", utils.PrefixWarn)
+				return nil
+			}
+			return performUninstallInference(uninstallDryRun)
+		case "3":
+			if !forceUninstall && !promptConfirm("This will remove the CloudInferOps UI portal. Continue? [y/N]: ") {
+				fmt.Printf("%sUninstall cancelled.\n", utils.PrefixWarn)
+				return nil
+			}
+			return performUninstallUI(uninstallDryRun)
+		case "4":
+			return runUninstallAll(uninstallDryRun, forceUninstall)
+		default:
+			fmt.Printf("%sInvalid choice '%s'. Uninstall cancelled.\n", utils.PrefixWarn, response)
+			return nil
+		}
+	},
 }
 
 var uninstallObservabilityCmd = &cobra.Command{
@@ -99,6 +230,36 @@ var uninstallObservabilityCmd = &cobra.Command{
 			return nil
 		}
 		return performUninstallObservability(uninstallDryRun)
+	},
+}
+
+var uninstallInferenceCmd = &cobra.Command{
+	Use:   "inference",
+	Short: "Remove the inference stack",
+	RunE: func(_ *cobra.Command, _ []string) error {
+		if err := config.InitConfig(false); err != nil {
+			config.GlobalConfig = config.DefaultConfig()
+		}
+		if !forceUninstall && !promptConfirm("This will remove the CloudInferOps inference stack. Continue? [y/N]: ") {
+			fmt.Printf("%sUninstall cancelled.\n", utils.PrefixWarn)
+			return nil
+		}
+		return performUninstallInference(uninstallDryRun)
+	},
+}
+
+var uninstallUICmd = &cobra.Command{
+	Use:   "ui",
+	Short: "Remove the UI portal",
+	RunE: func(_ *cobra.Command, _ []string) error {
+		if err := config.InitConfig(false); err != nil {
+			config.GlobalConfig = config.DefaultConfig()
+		}
+		if !forceUninstall && !promptConfirm("This will remove the CloudInferOps UI portal. Continue? [y/N]: ") {
+			fmt.Printf("%sUninstall cancelled.\n", utils.PrefixWarn)
+			return nil
+		}
+		return performUninstallUI(uninstallDryRun)
 	},
 }
 
@@ -117,6 +278,62 @@ var uninstallWebhookHandlerCmd = &cobra.Command{
 	},
 }
 
+var runUninstallAll = func(dryRun, force bool) error {
+	if force {
+		fmt.Printf("\n%s--force flag detected. Starting complete uninstallation...\n", utils.PrefixInfo)
+		_ = performUninstallObservability(dryRun)
+		_ = performUninstallInference(dryRun)
+		_ = performUninstallUI(dryRun)
+		_ = performUninstallWebhookHandler(dryRun)
+		_ = performUninstallBinaries(dryRun)
+		_ = performUninstallConfig(dryRun)
+		fmt.Printf("\n%sComplete uninstall process finished.\n", utils.PrefixOK)
+		return nil
+	}
+
+	fmt.Printf("\n%s🧹 CloudInferOps Interactive Uninstall%s\n", utils.ColorBold, utils.ColorReset)
+	fmt.Println("-----------------------------------------------------------------")
+
+	if promptConfirm("1. Remove the Observability Stack (Prometheus, Grafana, etc.)? [y/N]: ") {
+		_ = performUninstallObservability(dryRun)
+	} else {
+		fmt.Printf("%sSkipping observability stack removal.\n", utils.PrefixInfo)
+	}
+
+	if promptConfirm("2. Remove the Inference Stack (Ollama, Gateway, etc.)? [y/N]: ") {
+		_ = performUninstallInference(dryRun)
+	} else {
+		fmt.Printf("%sSkipping inference stack removal.\n", utils.PrefixInfo)
+	}
+
+	if promptConfirm("3. Remove the UI Portal? [y/N]: ") {
+		_ = performUninstallUI(dryRun)
+	} else {
+		fmt.Printf("%sSkipping UI portal removal.\n", utils.PrefixInfo)
+	}
+
+	if promptConfirm("4. Remove the Webhook Handler? [y/N]: ") {
+		_ = performUninstallWebhookHandler(dryRun)
+	} else {
+		fmt.Printf("%sSkipping webhook handler removal.\n", utils.PrefixInfo)
+	}
+
+	if promptConfirm("5. Remove Kubernetes cluster and kubeadm artifacts? [y/N]: ") {
+		_ = performUninstallBinaries(dryRun)
+	} else {
+		fmt.Printf("%sSkipping Kubernetes cleanup.\n", utils.PrefixInfo)
+	}
+
+	if promptConfirm("6. Delete CloudInferOps configuration (~/.cloudinferops)? [y/N]: ") {
+		_ = performUninstallConfig(dryRun)
+	} else {
+		fmt.Printf("%sSkipping configuration removal.\n", utils.PrefixInfo)
+	}
+
+	fmt.Printf("\n%sUninstall process finished.\n", utils.PrefixOK)
+	return nil
+}
+
 var uninstallAllCmd = &cobra.Command{
 	Use:   "all",
 	Short: "Interactively remove all CloudInferOps components",
@@ -124,39 +341,7 @@ var uninstallAllCmd = &cobra.Command{
 		if err := config.InitConfig(false); err != nil {
 			config.GlobalConfig = config.DefaultConfig()
 		}
-
-		if forceUninstall {
-			fmt.Printf("\n%s--force flag detected. Starting complete uninstallation...\n", utils.PrefixInfo)
-			_ = performUninstallObservability(uninstallDryRun)
-			_ = performUninstallBinaries(uninstallDryRun)
-			_ = performUninstallConfig(uninstallDryRun)
-			fmt.Printf("\n%sComplete uninstall process finished.\n", utils.PrefixOK)
-			return nil
-		}
-
-		fmt.Printf("\n%s🧹 CloudInferOps Interactive Uninstall%s\n", utils.ColorBold, utils.ColorReset)
-		fmt.Println("-----------------------------------------------------------------")
-
-		if promptConfirm("1. Remove the Observability Stack (Prometheus, Grafana, etc.)? [y/N]: ") {
-			_ = performUninstallObservability(uninstallDryRun)
-		} else {
-			fmt.Printf("%sSkipping observability stack removal.\n", utils.PrefixInfo)
-		}
-
-		if promptConfirm("2. Remove Kubernetes cluster and kubeadm artifacts? [y/N]: ") {
-			_ = performUninstallBinaries(uninstallDryRun)
-		} else {
-			fmt.Printf("%sSkipping Kubernetes cleanup.\n", utils.PrefixInfo)
-		}
-
-		if promptConfirm("3. Delete CloudInferOps configuration (~/.cloudinferops)? [y/N]: ") {
-			_ = performUninstallConfig(uninstallDryRun)
-		} else {
-			fmt.Printf("%sSkipping configuration removal.\n", utils.PrefixInfo)
-		}
-
-		fmt.Printf("\n%sUninstall process finished.\n", utils.PrefixOK)
-		return nil
+		return runUninstallAll(uninstallDryRun, forceUninstall)
 	},
 }
 
@@ -165,6 +350,8 @@ func init() {
 	uninstallCmd.PersistentFlags().BoolVarP(&forceUninstall, "force", "f", false, "Skip confirmation prompts")
 
 	uninstallCmd.AddCommand(uninstallObservabilityCmd)
+	uninstallCmd.AddCommand(uninstallInferenceCmd)
+	uninstallCmd.AddCommand(uninstallUICmd)
 	uninstallCmd.AddCommand(uninstallWebhookHandlerCmd)
 	uninstallCmd.AddCommand(uninstallK8sCmd)
 	uninstallCmd.AddCommand(uninstallAllCmd)

@@ -1,3 +1,34 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cloudinferops-ui
+  namespace: observability
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloudinferops-ui
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "configmaps", "namespaces"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/scale", "daemonsets", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["monitoring.coreos.com"]
+    resources: ["prometheusrules", "servicemonitors"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloudinferops-ui
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: cloudinferops-ui}
+subjects: [{kind: ServiceAccount, name: cloudinferops-ui, namespace: observability}]
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,22 +36,26 @@ metadata:
   namespace: observability
 spec:
   replicas: 1
-  selector:
-    matchLabels:
-      app: cloudinferops-ui
+  selector: {matchLabels: {app: cloudinferops-ui}}
   template:
-    metadata:
-      labels:
-        app: cloudinferops-ui
+    metadata: {labels: {app: cloudinferops-ui}}
     spec:
+      serviceAccountName: cloudinferops-ui
+      securityContext: {runAsNonRoot: true, runAsUser: 65532, seccompProfile: {type: RuntimeDefault}}
       containers:
-        - name: cloudinferops-ui
-          image: ghcr.io/example/cloudinferops-ui:latest
-          ports:
-            - containerPort: 8080
+        - name: portal
+          image: ghcr.io/shivamshashank/cloudinferops-ui:latest
+          imagePullPolicy: IfNotPresent
+          ports: [{name: http, containerPort: 8080}]
           env:
-            - name: PORT
-              value: "8080"
+            - {name: CLOUDINFEROPS_UI_ENABLE_ACTIONS, value: "0"}
+            - {name: CLOUDINFEROPS_NAMESPACE, value: observability}
+          readinessProbe: {httpGet: {path: /api/health, port: http}, initialDelaySeconds: 3, periodSeconds: 10}
+          livenessProbe: {httpGet: {path: /api/health, port: http}, initialDelaySeconds: 10, periodSeconds: 20}
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: ["ALL"]}}
 ---
 apiVersion: v1
 kind: Service
@@ -28,8 +63,5 @@ metadata:
   name: cloudinferops-ui
   namespace: observability
 spec:
-  selector:
-    app: cloudinferops-ui
-  ports:
-    - port: 80
-      targetPort: 8080
+  selector: {app: cloudinferops-ui}
+  ports: [{name: http, port: 80, targetPort: http}]

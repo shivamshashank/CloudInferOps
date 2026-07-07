@@ -99,20 +99,20 @@ Allow the user to perform basic operations from the UI:
 - [x] Logs endpoint foundation
 - [x] Basic health indicators and modern UI styling
 
-### Still pending
+### Completed end-to-end portal milestone
 
-- [ ] Real Kubernetes-backed data instead of seeded/default values
-- [ ] Full logs viewer with pod selection and stream support
-- [ ] Auth or local-only guardrails for non-local environments
-- [ ] Real deployment action that triggers actual cluster operations
-- [ ] Container image build and publish flow
-- [ ] Auto-install and auto-provision command for the UI
-- [ ] Dedicated pages for Observability and Alerts
-- [ ] Benchmark results page
-- [ ] Config editor page
-- [ ] One-click redeploy
-- [ ] Service restart action
-- [ ] Search/filter in logs and models
+- [x] Real Kubernetes-backed data instead of seeded/default values
+- [x] Full logs viewer with pod selection and stream support
+- [x] Optional bearer-token guard and safe read-only mode
+- [x] Allowlisted deployment actions that trigger cluster operations
+- [x] Container image build and publish flow
+- [x] Auto-install and auto-provision command for the UI
+- [x] Dedicated pages for Observability and Alerts
+- [x] Benchmark runner and results page
+- [x] Safe, non-secret config editor page
+- [x] One-click deployment reconciliation
+- [x] Service restart action
+- [x] Search/filter in deployments, logs, models, and alerts
 
 ---
 
@@ -448,19 +448,19 @@ Goal:
 - display structured data and UI states
 - verify route and deployment structure
 
-### Phase 2 — Real backend integration (In progress)
+### Phase 2 — Real backend integration (Completed)
 Goal:
 
 - connect live data from Kubernetes and CloudInferOps logic
 - show real status cards and tables
 
-### Phase 3 — Deployment actions (In progress)
+### Phase 3 — Deployment actions (Completed)
 Goal:
 
 - add buttons to deploy or refresh services
 - make UI useful for operations
 
-### Phase 4 — Polish and packaging (Planned)
+### Phase 4 — Polish and packaging (Completed)
 Goal:
 
 - make it easy to install and expose under /cloudinferops
@@ -505,11 +505,13 @@ Completed:
 - ingress route structure for /cloudinferops
 - deployment manifests for the UI portal
 
-Next:
+Completed in the end-to-end milestone:
 
-- switch the backend from seeded/default state to live Kubernetes status
-- add a real deploy action that triggers actual operations
-- add a true log viewer experience
+- live Kubernetes-backed inventory and health
+- real, allowlisted operations with explicit enablement
+- pod selection, log tails, and live streaming
+- a combined frontend/backend container and release pipeline
+- CLI deployment, RBAC, probes, security context, Service, and Ingress
 
 This gives you a strong first milestone and reduces the risk of building too much too soon.
 
@@ -542,29 +544,29 @@ This UI becomes a strong story for LinkedIn and community growth:
 
 ## 17. Recommended Next Actions
 
-### Immediate next steps
+### Immediate milestone — completed
 
-- [ ] Create the frontend project structure
-- [ ] Create the Go API service
-- [ ] Add one overview dashboard page
-- [ ] Add one deployments page
-- [ ] Add a simple ingress route
-- [ ] Connect the backend to live Kubernetes status
-- [ ] Add a CLI command to deploy the UI
+- [x] Create the frontend project structure
+- [x] Create the Go API service
+- [x] Add the overview dashboard
+- [x] Add the deployments page
+- [x] Add the `/cloudinferops` ingress route
+- [x] Connect the backend to live Kubernetes status
+- [x] Add `cloudinferops deploy ui`
 
 ### Short-term goals
 
-- [ ] Show cluster status
-- [ ] Show deployed services
-- [ ] Show model list
-- [ ] Make the portal reachable at /cloudinferops
+- [x] Show cluster status
+- [x] Show deployed services
+- [x] Show model list
+- [x] Make the portal reachable at /cloudinferops
 
 ### Medium-term goals
 
-- [ ] Add deployment actions
-- [ ] Add logs and alert views
-- [ ] Add benchmark reports
-- [ ] Polish the UI experience
+- [x] Add deployment actions
+- [x] Add logs and alert views
+- [x] Add benchmark reports
+- [x] Polish the UI experience
 
 ---
 

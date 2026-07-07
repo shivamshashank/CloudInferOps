@@ -74,9 +74,8 @@ CloudInferOps follows a simple workflow:
 
 ```bash
 sudo curl -sSL https://raw.githubusercontent.com/shivamshashank/CloudInferOps/main/scripts/install.sh | sudo bash
-sudo cloudinferops bootstrap
+sudo cloudinferops deploy all
 sudo cloudinferops status
-sudo cloudinferops deploy observability
 ```
 
 ---
@@ -180,7 +179,7 @@ CloudInferOps Doctor
 [OK] Minimum memory: 4GB+
 [OK] Minimum CPU: 2 cores+
 
-[INFO] Run: sudo cloudinferops deploy observability
+[INFO] Run: sudo cloudinferops deploy all
 ```
 
 If Kubernetes already exists:
@@ -192,44 +191,34 @@ If Kubernetes already exists:
 [OK] Helm found
 [OK] StorageClass found
 
-[READY] Run: sudo cloudinferops deploy observability
+[READY] Run: sudo cloudinferops deploy all
 ```
 
 ---
 
-### 3. Deploy Observability Stack & Auto-bootstrap Kubernetes
+### 3. Deploy All Components & Auto-bootstrap Kubernetes
 
-To deploy the observability stack, simply run:
+To deploy all CloudInferOps components (observability, inference model gateway, self-hosted UI, and webhook handler), simply run:
 
 ```bash
-sudo cloudinferops deploy observability
+sudo cloudinferops deploy all
 ```
 
 > [!TIP]
 > **No Kubernetes? No problem!** If CloudInferOps does not detect an existing
 > Kubernetes cluster, it will automatically ask to install and bootstrap a
-> Kubernetes cluster via `kubeadm` on-the-fly, then automatically deploy the
-> observability stack onto it. If you already have a cluster running, it will
-> deploy directly onto your active context.
+> Kubernetes cluster via `kubeadm` on-the-fly, then deploy the complete platform onto it. If you already have a cluster running, it will deploy directly onto your active context.
 
 CloudInferOps deploys:
 
-- Prometheus
-- Grafana
-- Loki
-- Tempo
-- ArgoCD
-- Alertmanager
-- OpenTelemetry Collector
-- Node Exporter
-- kube-state-metrics
-- Grafana Alloy / Promtail
-- Dashboards
-- Alert rules
+- **Observability:** Prometheus, Grafana, Loki, Tempo, ArgoCD, Alertmanager, OpenTelemetry Collector, Node Exporter, kube-state-metrics, Grafana Alloy/Promtail.
+- **Inference Stack:** Ollama backend and local gateway in the `inference` namespace.
+- **Web Portal:** Self-hosted UI dashboard exposed at `/cloudinferops/`.
+- **Alert Gateway:** Incident and webhook receiver.
 
 ---
 
-### 5. Check Status
+### 4. Check Status
 
 ```bash
 sudo cloudinferops status
@@ -250,6 +239,11 @@ Example:
     Tempo Tracing:            🟢  Running
     OTel Collector:           🟢  Running
     ArgoCD Delivery:          🟢  Running
+    UI Portal:                🟢  Running
+
+🤖  Inference Services:
+    Inference Gateway:        🟢  Running
+    Model Backend:            🟢  Running (Ollama)
 
 📦  GitOps Overview:
     Mode:                     ArgoCD Managed
@@ -257,11 +251,13 @@ Example:
     Synced:                   4/4
     Healthy:                  4/4
 
-📊  Access Telemetry Dashboards via Ingress:
+📊  Access Dashboards & APIs via Ingress:
     🔗  Grafana Dashboard:   http://127.0.0.1/grafana/
     🔗  Prometheus Server:   http://127.0.0.1/prometheus/
     🔗  Alertmanager Panel:  http://127.0.0.1/alertmanager/
     🔗  ArgoCD Dashboard:    http://127.0.0.1/argocd
+    🔗  UI Portal:           http://127.0.0.1/cloudinferops/
+    🔗  Inference Gateway:   http://127.0.0.1/v1
 ```
 
 ---
@@ -319,57 +315,20 @@ Example:
 
 ## 🧰 CLI Commands
 
-### General
+A complete reference of all CLI commands is available in [commands.md](docs/commands.md).
 
-```bash
-cloudinferops version
-sudo cloudinferops init
-sudo cloudinferops doctor
-sudo cloudinferops status
-```
+### Quick Reference
 
-### Observability
-
-```bash
-sudo cloudinferops deploy observability
-sudo cloudinferops deploy observability --dry-run
-sudo cloudinferops deploy observability --ha
-sudo cloudinferops dashboards import
-sudo cloudinferops logs
-sudo cloudinferops logs --component grafana
-sudo cloudinferops logs --component prometheus
-sudo cloudinferops logs --component loki
-```
-
-### GitOps & Continuous Delivery
-
-```bash
-sudo cloudinferops gitops bootstrap
-sudo cloudinferops gitops bootstrap --dry-run
-sudo cloudinferops gitops status
-```
-
-### Alerts
-
-```bash
-sudo cloudinferops alerts configure --slack
-sudo cloudinferops alerts configure --pagerduty
-sudo cloudinferops alerts test
-```
-
-### Webhook Handler
-
-```bash
-sudo cloudinferops deploy webhook-handler
-```
-
-### Cleanup
-
-```bash
-sudo cloudinferops uninstall observability
-sudo cloudinferops uninstall all
-sudo cloudinferops uninstall k8s
-```
+| Action | Command | Description |
+|---|---|---|
+| **Install CLI** | `sudo curl -sSL https://raw.githubusercontent.com/shivamshashank/CloudInferOps/main/scripts/install.sh \| sudo bash` | Downloads and installs the `cloudinferops` binary. |
+| **Check Environment** | `sudo cloudinferops doctor` | Runs diagnostics to verify system requirements and Kubernetes. |
+| **Deploy All** | `sudo cloudinferops deploy all` | Deploys the complete platform stack (observability, inference, UI portal, webhook). |
+| **Deploy Observability** | `sudo cloudinferops deploy observability` | Deploys the observability stack only. |
+| **Deploy Inference** | `sudo cloudinferops deploy inference` | Deploys Ollama and gateway in the `inference` namespace. |
+| **Deploy UI** | `sudo cloudinferops deploy ui` | Deploys the self-hosted portal. |
+| **Check Status** | `sudo cloudinferops status` | Shows a live dashboard with service states and Ingress URLs. |
+| **Interactive Uninstall**| `sudo cloudinferops uninstall` | Launches the interactive uninstallation menu. |
 
 ---
 
